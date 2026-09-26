@@ -1,0 +1,486 @@
+{
+  "kind": "cfs_multicam_16x9_offline_qa",
+  "range": "00:49:20.000-00:59:20.000",
+  "speaker_timeline": "data/speakers/CFS03_49-59_turns_v3.json",
+  "old_speaker_blocks_used": false,
+  "visual_gate": "reels_factory/cfs_offline_verify.py",
+  "reviewed_before_render": true,
+  "plan_computed_before_render": true,
+  "compared_with": "data/director_tests/CFS03_49-59_offline_multicam_16x9_simple_v1.mp4",
+  "floor_changes": [
+    {
+      "turn_start": "00:49:20.000",
+      "turn_end": "00:50:08.140",
+      "diarized_speaker": "speaker_a",
+      "selected_camera": "FULL_A",
+      "visual_check": "opening hold, no incoming boundary"
+    },
+    {
+      "turn_start": "00:51:09.560",
+      "turn_end": "00:51:28.220",
+      "diarized_speaker": "speaker_c",
+      "selected_camera": "FULL_C",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": true,
+      "mouth_activity_a": 7.218,
+      "mouth_activity_b": 0.809,
+      "mouth_activity_c": 1.496,
+      "visual_note": "Clear mouth and jaw activity is on speaker_a (7.22) while speaker_c is 1.50. The resolved label is not used for the camera."
+    },
+    {
+      "turn_start": "00:51:28.220",
+      "turn_end": "00:51:48.280",
+      "diarized_speaker": "speaker_a",
+      "selected_camera": "FULL_A",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": false,
+      "mouth_activity_a": 6.732,
+      "mouth_activity_b": 2.021,
+      "mouth_activity_c": 1.175,
+      "visual_note": "Resolved speaker_a stands. Mouth A=6.73 B=2.02 C=1.18."
+    },
+    {
+      "turn_start": "00:51:48.280",
+      "turn_end": "00:52:06.540",
+      "diarized_speaker": "speaker_c",
+      "selected_camera": "FULL_C",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": true,
+      "mouth_activity_a": 18.207,
+      "mouth_activity_b": 0.635,
+      "mouth_activity_c": 5.433,
+      "visual_note": "Clear mouth and jaw activity is on speaker_a (18.21) while speaker_c is 5.43. The resolved label is not used for the camera."
+    },
+    {
+      "turn_start": "00:52:06.540",
+      "turn_end": "00:52:15.560",
+      "diarized_speaker": "speaker_a",
+      "selected_camera": "FULL_A",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": false,
+      "mouth_activity_a": 3.172,
+      "mouth_activity_b": 3.178,
+      "mouth_activity_c": 2.847,
+      "visual_note": "Resolved speaker_a stands. Mouth A=3.17 B=3.18 C=2.85."
+    },
+    {
+      "turn_start": "00:52:15.560",
+      "turn_end": "00:52:36.140",
+      "diarized_speaker": "speaker_b",
+      "selected_camera": "FULL_B",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": true,
+      "mouth_activity_a": 23.048,
+      "mouth_activity_b": 1.806,
+      "mouth_activity_c": 2.647,
+      "visual_note": "Clear mouth and jaw activity is on speaker_a (23.05) while speaker_b is 1.81. The resolved label is not used for the camera."
+    },
+    {
+      "turn_start": "00:52:53.500",
+      "turn_end": "00:53:07.160",
+      "diarized_speaker": "speaker_c",
+      "selected_camera": "FULL_C",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": false,
+      "mouth_activity_a": 2.926,
+      "mouth_activity_b": 0.345,
+      "mouth_activity_c": 4.814,
+      "visual_note": "Resolved speaker_c stands. Mouth A=2.93 B=0.34 C=4.81."
+    },
+    {
+      "turn_start": "00:53:07.160",
+      "turn_end": "00:54:08.040",
+      "diarized_speaker": "speaker_a",
+      "selected_camera": "FULL_A",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": false,
+      "mouth_activity_a": 3.802,
+      "mouth_activity_b": 2.457,
+      "mouth_activity_c": 1.105,
+      "visual_note": "Resolved speaker_a stands. Mouth A=3.80 B=2.46 C=1.10."
+    },
+    {
+      "turn_start": "00:54:14.160",
+      "turn_end": "00:54:17.100",
+      "diarized_speaker": "speaker_c",
+      "selected_camera": "FULL_C",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": false,
+      "mouth_activity_a": 2.6,
+      "mouth_activity_b": 1.143,
+      "mouth_activity_c": 1.258,
+      "visual_note": "Resolved speaker_c stands. Mouth A=2.60 B=1.14 C=1.26."
+    },
+    {
+      "turn_start": "00:54:47.420",
+      "turn_end": "00:56:15.940",
+      "diarized_speaker": "speaker_c",
+      "selected_camera": "FULL_C",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": false,
+      "mouth_activity_a": 3.06,
+      "mouth_activity_b": 0.209,
+      "mouth_activity_c": 3.258,
+      "visual_note": "Resolved speaker_c stands. Mouth A=3.06 B=0.21 C=3.26."
+    },
+    {
+      "turn_start": "00:56:15.940",
+      "turn_end": "00:56:36.240",
+      "diarized_speaker": "speaker_a",
+      "selected_camera": "FULL_A",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": false,
+      "mouth_activity_a": 1.804,
+      "mouth_activity_b": -0.276,
+      "mouth_activity_c": 2.785,
+      "visual_note": "Resolved speaker_a stands. Mouth A=1.80 B=-0.28 C=2.79."
+    },
+    {
+      "turn_start": "00:57:41.840",
+      "turn_end": "00:57:46.960",
+      "diarized_speaker": "speaker_c",
+      "selected_camera": "FULL_C",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": true,
+      "mouth_activity_a": 6.888,
+      "mouth_activity_b": 2.413,
+      "mouth_activity_c": 1.498,
+      "visual_note": "Clear mouth and jaw activity is on speaker_a (6.89) while speaker_c is 1.50. The resolved label is not used for the camera."
+    },
+    {
+      "turn_start": "00:57:46.960",
+      "turn_end": "00:57:53.080",
+      "diarized_speaker": "speaker_a",
+      "selected_camera": "FULL_A",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": false,
+      "mouth_activity_a": 7.329,
+      "mouth_activity_b": 0.266,
+      "mouth_activity_c": 0.15,
+      "visual_note": "Resolved speaker_a stands. Mouth A=7.33 B=0.27 C=0.15."
+    },
+    {
+      "turn_start": "00:57:53.080",
+      "turn_end": "00:58:00.840",
+      "diarized_speaker": "speaker_b",
+      "selected_camera": "FULL_B",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": true,
+      "mouth_activity_a": 2.584,
+      "mouth_activity_b": -1.01,
+      "mouth_activity_c": 0.088,
+      "visual_note": "Clear mouth and jaw activity is on speaker_a (2.58) while speaker_b is -1.01. The resolved label is not used for the camera."
+    },
+    {
+      "turn_start": "00:58:00.840",
+      "turn_end": "00:58:33.060",
+      "diarized_speaker": "speaker_a",
+      "selected_camera": "FULL_A",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": false,
+      "mouth_activity_a": 7.146,
+      "mouth_activity_b": -0.045,
+      "mouth_activity_c": 0.682,
+      "visual_note": "Resolved speaker_a stands. Mouth A=7.15 B=-0.04 C=0.68."
+    },
+    {
+      "turn_start": "00:58:33.060",
+      "turn_end": "00:59:15.920",
+      "diarized_speaker": "speaker_c",
+      "selected_camera": "FULL_C",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": false,
+      "mouth_activity_a": -0.088,
+      "mouth_activity_b": -0.023,
+      "mouth_activity_c": 2.211,
+      "visual_note": "Resolved speaker_c stands. Mouth A=-0.09 B=-0.02 C=2.21."
+    },
+    {
+      "turn_start": "00:59:15.920",
+      "turn_end": "00:59:20.000",
+      "diarized_speaker": "speaker_a",
+      "selected_camera": "FULL_A",
+      "visual_override_applied": false,
+      "visual_contradiction_logged": false,
+      "mouth_activity_a": 5.361,
+      "mouth_activity_b": 4.154,
+      "mouth_activity_c": 0.817,
+      "visual_note": "Resolved speaker_a stands. Mouth A=5.36 B=4.15 C=0.82."
+    }
+  ],
+  "turn_filter": {
+    "diarized_turns": 102,
+    "meaningful_turns_used": 46,
+    "tiny_or_backchannel_ignored": 13,
+    "unknown_boundary_turns_ignored": 43,
+    "meaningful_turn_ids": [
+      "T0001",
+      "T0003",
+      "T0005",
+      "T0007",
+      "T0009",
+      "T0011",
+      "T0012",
+      "T0013",
+      "T0015",
+      "T0016",
+      "T0018",
+      "T0020",
+      "T0021",
+      "T0027",
+      "T0029",
+      "T0031",
+      "T0032",
+      "T0034",
+      "T0038",
+      "T0040",
+      "T0041",
+      "T0045",
+      "T0047",
+      "T0049",
+      "T0050",
+      "T0053",
+      "T0055",
+      "T0058",
+      "T0059",
+      "T0062",
+      "T0065",
+      "T0066",
+      "T0068",
+      "T0070",
+      "T0072",
+      "T0076",
+      "T0077",
+      "T0079",
+      "T0081",
+      "T0085",
+      "T0088",
+      "T0089",
+      "T0095",
+      "T0097",
+      "T0099",
+      "T0101"
+    ],
+    "ignored_tiny_ids": [
+      "T0023",
+      "T0025",
+      "T0036",
+      "T0043",
+      "T0051",
+      "T0056",
+      "T0061",
+      "T0064",
+      "T0074",
+      "T0083",
+      "T0086",
+      "T0091",
+      "T0093"
+    ],
+    "ignored_unknown_ids": [
+      "T0002",
+      "T0004",
+      "T0006",
+      "T0008",
+      "T0010",
+      "T0014",
+      "T0017",
+      "T0019",
+      "T0022",
+      "T0024",
+      "T0026",
+      "T0028",
+      "T0030",
+      "T0033",
+      "T0035",
+      "T0037",
+      "T0039",
+      "T0042",
+      "T0044",
+      "T0046",
+      "T0048",
+      "T0052",
+      "T0054",
+      "T0057",
+      "T0060",
+      "T0063",
+      "T0067",
+      "T0069",
+      "T0071",
+      "T0073",
+      "T0075",
+      "T0078",
+      "T0080",
+      "T0082",
+      "T0084",
+      "T0087",
+      "T0090",
+      "T0092",
+      "T0094",
+      "T0096",
+      "T0098",
+      "T0100",
+      "T0102"
+    ]
+  },
+  "reaction_shots": [
+    "00:50:08.140 FULL_B while speaker_a",
+    "00:52:36.140 FULL_A while speaker_b",
+    "00:54:08.040 FULL_B while speaker_a",
+    "00:56:36.240 FULL_B while speaker_a",
+    "00:57:22.060 FULL_B while speaker_a"
+  ],
+  "reactions_not_inserted": [
+    "00:57:48.320 would leave a stub"
+  ],
+  "original_wide": [
+    {
+      "start": "00:54:17.100",
+      "end": "00:54:47.420",
+      "duration_s": 30.32,
+      "reason": "No words for more than 12 seconds. A one-word unknown would hold the current camera. This gap is long, so the original frame holds until the next named turn."
+    }
+  ],
+  "long_shots_over_12s": [
+    {
+      "start": "00:49:20.000",
+      "end": "00:50:08.140",
+      "duration_s": 48.14,
+      "shot_type": "FULL_A"
+    },
+    {
+      "start": "00:50:16.140",
+      "end": "00:51:09.560",
+      "duration_s": 53.42,
+      "shot_type": "FULL_A"
+    },
+    {
+      "start": "00:51:09.560",
+      "end": "00:51:28.220",
+      "duration_s": 18.66,
+      "shot_type": "FULL_C"
+    },
+    {
+      "start": "00:51:28.220",
+      "end": "00:51:48.280",
+      "duration_s": 20.06,
+      "shot_type": "FULL_A"
+    },
+    {
+      "start": "00:51:48.280",
+      "end": "00:52:06.540",
+      "duration_s": 18.26,
+      "shot_type": "FULL_C"
+    },
+    {
+      "start": "00:52:15.560",
+      "end": "00:52:36.140",
+      "duration_s": 20.58,
+      "shot_type": "FULL_B"
+    },
+    {
+      "start": "00:52:53.500",
+      "end": "00:53:07.160",
+      "duration_s": 13.66,
+      "shot_type": "FULL_C"
+    },
+    {
+      "start": "00:53:07.160",
+      "end": "00:54:08.040",
+      "duration_s": 60.88,
+      "shot_type": "FULL_A"
+    },
+    {
+      "start": "00:54:17.100",
+      "end": "00:54:47.420",
+      "duration_s": 30.32,
+      "shot_type": "ORIGINAL_WIDE"
+    },
+    {
+      "start": "00:54:47.420",
+      "end": "00:56:15.940",
+      "duration_s": 88.52,
+      "shot_type": "FULL_C"
+    },
+    {
+      "start": "00:56:15.940",
+      "end": "00:56:36.240",
+      "duration_s": 20.3,
+      "shot_type": "FULL_A"
+    },
+    {
+      "start": "00:56:44.040",
+      "end": "00:57:22.060",
+      "duration_s": 38.02,
+      "shot_type": "FULL_A"
+    },
+    {
+      "start": "00:58:00.840",
+      "end": "00:58:33.060",
+      "duration_s": 32.22,
+      "shot_type": "FULL_A"
+    },
+    {
+      "start": "00:58:33.060",
+      "end": "00:59:15.920",
+      "duration_s": 42.86,
+      "shot_type": "FULL_C"
+    }
+  ],
+  "probe_vs_simple_v1": [
+    {
+      "time": "00:51:08.000",
+      "simple_v1": "FULL_A",
+      "diarized_turns_v1": "FULL_A",
+      "changed": false
+    },
+    {
+      "time": "00:51:10.000",
+      "simple_v1": "FULL_A",
+      "diarized_turns_v1": "FULL_C",
+      "changed": true
+    },
+    {
+      "time": "00:51:12.000",
+      "simple_v1": "FULL_A",
+      "diarized_turns_v1": "FULL_C",
+      "changed": true
+    },
+    {
+      "time": "00:51:20.000",
+      "simple_v1": "FULL_A",
+      "diarized_turns_v1": "FULL_C",
+      "changed": true
+    },
+    {
+      "time": "00:51:24.000",
+      "simple_v1": "FULL_A",
+      "diarized_turns_v1": "FULL_C",
+      "changed": true
+    },
+    {
+      "time": "00:51:28.000",
+      "simple_v1": "FULL_A",
+      "diarized_turns_v1": "FULL_C",
+      "changed": true
+    },
+    {
+      "time": "00:51:32.000",
+      "simple_v1": "FULL_A",
+      "diarized_turns_v1": "FULL_A",
+      "changed": false
+    },
+    {
+      "time": "00:51:48.000",
+      "simple_v1": "ORIGINAL_WIDE",
+      "diarized_turns_v1": "FULL_A",
+      "changed": true
+    },
+    {
+      "time": "00:51:50.000",
+      "simple_v1": "ORIGINAL_WIDE",
+      "diarized_turns_v1": "FULL_C",
+      "changed": true
+    }
+  ],
+  "problems": []
+}

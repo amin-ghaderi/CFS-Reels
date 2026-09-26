@@ -1,0 +1,231 @@
+{
+  "kind": "episode_summary",
+  "summary_id": "CFS03_summary_01",
+  "title": "CFS03 episode trailer — strongest moments",
+  "source_video": "data/inbox/CFS03.mp4",
+  "source_duration": "03:00:08.107",
+  "draft": true,
+  "packaging": false,
+  "subtitles": false,
+  "cover": false,
+  "stack_order": [
+    "speaker_a",
+    "speaker_c",
+    "speaker_b"
+  ],
+  "stack_locked": true,
+  "stack_note": "Fixed for this summary only. TOP A, MIDDLE C, BOTTOM B. Not per-excerpt dominant-speaker order. Frozen CFS03 crops unchanged.",
+  "layout": {
+    "canvas": [
+      1080,
+      1920
+    ],
+    "pad_top": 48,
+    "pad_bottom": 48,
+    "tile": [
+      1080,
+      608
+    ],
+    "crops_frozen": {
+      "speaker_a": {
+        "x": 52,
+        "y": 24,
+        "w": 896,
+        "h": 504
+      },
+      "speaker_b": {
+        "x": 972,
+        "y": 24,
+        "w": 896,
+        "h": 504
+      },
+      "speaker_c": {
+        "x": 512,
+        "y": 552,
+        "w": 896,
+        "h": 504
+      }
+    }
+  },
+  "target_duration_seconds": [
+    55,
+    70
+  ],
+  "planned_duration": 68.72,
+  "excerpt_count": 8,
+  "threads_represented": [
+    "T02",
+    "T03",
+    "T07",
+    "T08",
+    "T09",
+    "T12",
+    "T14"
+  ],
+  "speaker_seconds": {
+    "speaker_a": 20.76,
+    "speaker_b": 23.44,
+    "speaker_c": 22.3,
+    "unknown": 0.0
+  },
+  "segments": [
+    {
+      "index": 1,
+      "role": "hook",
+      "speaker": "speaker_a",
+      "start": "00:45:32.160",
+      "end": "00:45:43.980",
+      "duration": 11.82,
+      "text": "رفته دونیای واقعیی، فهمیده که این سواله تو فلان سایته، رفته اون سایته را حک کرده، جوابا رو در وورده، فرگشته تو سراخ جوابا رو داده.",
+      "thread_id": "T03",
+      "why_selected": "Surprising containment story: the model leaves the exam box, hacks the live answer site, and comes back. Strongest opening image in the episode.",
+      "speaker_seconds": {
+        "speaker_a": 11.56,
+        "speaker_b": 0.0,
+        "speaker_c": 0.0,
+        "unknown": 0.0
+      },
+      "first_word": "رفته",
+      "last_word": "داده."
+    },
+    {
+      "index": 2,
+      "role": "beat",
+      "speaker": "speaker_b",
+      "start": "00:28:41.060",
+      "end": "00:28:47.660",
+      "duration": 6.6,
+      "text": "داشان توی داشبورده من نگام می کنم. بالای هشتاد درسد. ویوها از ایران بود.",
+      "thread_id": "T02",
+      "why_selected": "Counterintuitive reach: dashboard check that over 80 percent of views were inside Iran.",
+      "speaker_seconds": {
+        "speaker_a": 0.0,
+        "speaker_b": 6.6,
+        "speaker_c": 0.0,
+        "unknown": 0.0
+      },
+      "first_word": "داشان",
+      "last_word": "بود."
+    },
+    {
+      "index": 3,
+      "role": "beat",
+      "speaker": "speaker_c",
+      "start": "01:24:44.100",
+      "end": "01:24:52.360",
+      "duration": 8.26,
+      "text": "این که اگه مناری روی ویدیوه مینه بشیم بیه پهلوی مطمعن ام بسم این بجای نیمیلیون یه میلیونی بودن.",
+      "thread_id": "T07",
+      "why_selected": "Cynical platform punchline: putting Pahlavi on a video is treated as a million-view Explore cheat.",
+      "speaker_seconds": {
+        "speaker_a": 0.0,
+        "speaker_b": 0.0,
+        "speaker_c": 7.14,
+        "unknown": 0.0
+      },
+      "first_word": "این",
+      "last_word": "بودن."
+    },
+    {
+      "index": 4,
+      "role": "beat",
+      "speaker": "speaker_b",
+      "start": "01:30:23.020",
+      "end": "01:30:29.940",
+      "duration": 6.92,
+      "text": "اینو در نظر داشته اشکرن ست عزار نفر از ما کم شده ست عزار نفر از ما کم شده",
+      "thread_id": "T07",
+      "why_selected": "Emotional number, spoken twice: a hundred thousand of us are gone.",
+      "speaker_seconds": {
+        "speaker_a": 0.0,
+        "speaker_b": 6.14,
+        "speaker_c": 0.0,
+        "unknown": 0.0
+      },
+      "first_word": "اینو",
+      "last_word": "شده"
+    },
+    {
+      "index": 5,
+      "role": "beat",
+      "speaker": "speaker_c",
+      "start": "01:45:34.520",
+      "end": "01:45:41.780",
+      "duration": 7.26,
+      "text": "دو میلیار ده نوادو هف کم پولی نبود. جودا از دو میلیار ده خونت هم میدیم. مشینه هم میدیم. نمیدن فلان هم میدیم.",
+      "thread_id": "T08",
+      "why_selected": "Recruitment package: two billion a year was not money; they also offered a house, a car, and a SIM.",
+      "speaker_seconds": {
+        "speaker_a": 0.0,
+        "speaker_b": 0.0,
+        "speaker_c": 7.26,
+        "unknown": 0.0
+      },
+      "first_word": "دو",
+      "last_word": "میدیم."
+    },
+    {
+      "index": 6,
+      "role": "beat",
+      "speaker": "speaker_c",
+      "start": "01:51:42.960",
+      "end": "01:51:50.860",
+      "duration": 7.9,
+      "text": "تا روزی که جوموری اسلامی هست من نمی تونم پامتون که شفر بزرم چون میدونم که این دو تا بچه نمی کانون جوموری اسلامی اونجا باشه",
+      "thread_id": "T09",
+      "why_selected": "Hard personal no: will not travel there while the Islamic Republic exists, because of two children.",
+      "speaker_seconds": {
+        "speaker_a": 0.0,
+        "speaker_b": 0.0,
+        "speaker_c": 7.9,
+        "unknown": 0.0
+      },
+      "first_word": "تا",
+      "last_word": "باشه"
+    },
+    {
+      "index": 7,
+      "role": "beat",
+      "speaker": "speaker_b",
+      "start": "02:28:02.280",
+      "end": "02:28:13.040",
+      "duration": 10.76,
+      "text": "این که خونر همیشه دسته چپی ها بوده، و اینم نختقه قواتشون بوده، از امان این تو دوران زند زندگه آزا دیگه، چرا ما نمیگیرم دستم، چرا ما خودم اونده نمیگیرم دستم،",
+      "thread_id": "T12",
+      "why_selected": "Provocative disagreement: the left always held the money, so why do we not take it into our own hands.",
+      "speaker_seconds": {
+        "speaker_a": 0.0,
+        "speaker_b": 10.7,
+        "speaker_c": 0.0,
+        "unknown": 0.0
+      },
+      "first_word": "این",
+      "last_word": "دستم،"
+    },
+    {
+      "index": 8,
+      "role": "closer",
+      "speaker": "speaker_a",
+      "start": "02:57:00.100",
+      "end": "02:57:09.300",
+      "duration": 9.2,
+      "text": "سیستم داره امی نبیسم، که فیلمو بهش به دن، و فیلمو با فهم کامل مخفوم ادیت بزنه خودش",
+      "thread_id": "T14",
+      "why_selected": "Meta punchline to end on: writing a system that ingest this film and edits it with full understanding.",
+      "speaker_seconds": {
+        "speaker_a": 9.2,
+        "speaker_b": 0.0,
+        "speaker_c": 0.0,
+        "unknown": 0.0
+      },
+      "first_word": "سیستم",
+      "last_word": "خودش"
+    }
+  ],
+  "integrity_notes": [
+    "One-off episode summary/trailer. Not a normal thematic Reel.",
+    "Clips are a montage from the full 3-hour conversation, not a single argument.",
+    "Word-level cuts; no speaker meaning inverted; no R01-R17 plan reuse.",
+    "Do not render through per-Reel stack-order logic."
+  ]
+}

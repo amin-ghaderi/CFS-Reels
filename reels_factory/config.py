@@ -21,6 +21,9 @@ DEFAULT_CONFIG = {
         "metadata": "data/metadata",
         "portraits": "data/portraits",
         "framing_profiles": "data/framing_profiles",
+        "speakers": "data/speakers",
+        "conversation_maps": "data/conversation_maps",
+        "conversation_plans": "data/conversation_plans",
         "final": "data/final",
     },
     "transcription": {

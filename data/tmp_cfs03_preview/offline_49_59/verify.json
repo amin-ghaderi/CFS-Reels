@@ -1,0 +1,119 @@
+[
+  {
+    "verified_active_speaker": "speaker_b",
+    "visual_override": false,
+    "reason": "Resolved speaker_b stands. Mouth A=3.17 B=2.40 C=0.03.",
+    "mouth_activity": {
+      "speaker_a": 3.171,
+      "speaker_b": 2.395,
+      "speaker_c": 0.031
+    },
+    "resolved_speaker": "speaker_b",
+    "boundary": 3144.2,
+    "name": "A_to_B"
+  },
+  {
+    "verified_active_speaker": "speaker_b",
+    "visual_override": true,
+    "reason": "Clear mouth and jaw activity is on speaker_b (3.09) while speaker_a is -0.20. The resolved label is not used for the camera.",
+    "mouth_activity": {
+      "speaker_a": -0.197,
+      "speaker_b": 3.09,
+      "speaker_c": 1.013
+    },
+    "resolved_speaker": "speaker_a",
+    "boundary": 3171.5,
+    "name": "B_to_A"
+  },
+  {
+    "verified_active_speaker": "speaker_a",
+    "visual_override": false,
+    "reason": "Resolved speaker_a stands. Mouth A=2.26 B=2.73 C=3.14.",
+    "mouth_activity": {
+      "speaker_a": 2.26,
+      "speaker_b": 2.73,
+      "speaker_c": 3.14
+    },
+    "resolved_speaker": "speaker_a",
+    "boundary": 3176.81,
+    "name": "interior_B0191"
+  },
+  {
+    "verified_active_speaker": "speaker_c",
+    "visual_override": true,
+    "reason": "Clear mouth and jaw activity is on speaker_c (4.76) while speaker_a is 2.57. The resolved label is not used for the camera.",
+    "mouth_activity": {
+      "speaker_a": 2.573,
+      "speaker_b": -0.207,
+      "speaker_c": 4.765
+    },
+    "resolved_speaker": "speaker_a",
+    "boundary": 3304.0,
+    "name": "gap_after_A"
+  },
+  {
+    "verified_active_speaker": "speaker_a",
+    "visual_override": false,
+    "reason": "Resolved speaker_a stands. Mouth A=2.42 B=0.65 C=1.31.",
+    "mouth_activity": {
+      "speaker_a": 2.416,
+      "speaker_b": 0.65,
+      "speaker_c": 1.306
+    },
+    "resolved_speaker": "speaker_a",
+    "boundary": 3317.0,
+    "name": "gap_mid"
+  },
+  {
+    "verified_active_speaker": "speaker_c",
+    "visual_override": false,
+    "reason": "Resolved speaker_c stands. Mouth A=-3.61 B=3.31 C=1.97.",
+    "mouth_activity": {
+      "speaker_a": -3.61,
+      "speaker_b": 3.312,
+      "speaker_c": 1.974
+    },
+    "resolved_speaker": "speaker_c",
+    "boundary": 3362.78,
+    "name": "to_C"
+  },
+  {
+    "verified_active_speaker": "speaker_a",
+    "visual_override": false,
+    "reason": "Resolved speaker_a stands. Mouth A=1.66 B=2.19 C=2.44.",
+    "mouth_activity": {
+      "speaker_a": 1.655,
+      "speaker_b": 2.185,
+      "speaker_c": 2.437
+    },
+    "resolved_speaker": "speaker_a",
+    "boundary": 3368.94,
+    "name": "C_to_A"
+  },
+  {
+    "verified_active_speaker": "speaker_a",
+    "visual_override": true,
+    "reason": "Clear mouth and jaw activity is on speaker_a (6.03) while speaker_c is 0.40. The resolved label is not used for the camera.",
+    "mouth_activity": {
+      "speaker_a": 6.031,
+      "speaker_b": 0.388,
+      "speaker_c": 0.396
+    },
+    "resolved_speaker": "speaker_c",
+    "boundary": 3498.76,
+    "name": "A_to_C"
+  },
+  {
+    "verified_active_speaker": "speaker_c",
+    "visual_override": true,
+    "reason": "Clear mouth and jaw activity is on speaker_c (4.35) while speaker_a is -1.22. The resolved label is not used for the camera.",
+    "mouth_activity": {
+      "speaker_a": -1.219,
+      "speaker_b": -0.584,
+      "speaker_c": 4.352
+    },
+    "resolved_speaker": "speaker_a",
+    "boundary": 3539.36,
+    "name": "C_to_A_return"
+  }
+]

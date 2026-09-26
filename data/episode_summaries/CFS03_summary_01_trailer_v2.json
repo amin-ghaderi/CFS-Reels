@@ -1,0 +1,70 @@
+{
+  "kind": "episode_summary_trailer_v2",
+  "summary_id": "CFS03_summary_01_trailer_v2",
+  "source_plan": "data/episode_summaries/CFS03_summary_01.json",
+  "source_trailer_v1": "data/output/CFS03_summary/CFS03_episode_summary_01_trailer.mp4",
+  "source_summary_mp4": "data/output/CFS03_summary/CFS03_episode_summary_01.mp4",
+  "output_mp4": "data/output/CFS03_summary/CFS03_episode_summary_01_trailer_v2.mp4",
+  "title": "CFS03 episode trailer V2 — same pictures, louder mix",
+  "editorial_lock": "Exact same 8 excerpts, order, timestamps, layout, and visual transitions as V1. Audio energy only.",
+  "visuals": "Video copied from V1 trailer. No re-edit.",
+  "stack_order": ["speaker_a", "speaker_c", "speaker_b"],
+  "subtitles": false,
+  "cover": false,
+  "narration": false,
+  "music": {
+    "source": "generated_original",
+    "path": "data/episode_summaries/trailer_assets/cfs03_trailer_bed_v2.wav",
+    "style": "modern dark electronic / cinematic hybrid — AI tension, pulse, deep bass",
+    "bpm": 98
+  },
+    "mix": {
+    "dialogue_gain": 1.18,
+    "music_under_speech": 0.42,
+    "music_in_gaps": 0.88,
+    "duck_attack_s": 0.032,
+    "duck_release_s": 0.18,
+    "sfx_gain": 0.98,
+    "echo_gain": 1.18,
+    "limiter_ceiling": 0.96,
+    "target_lufs": -14
+  },
+  "ending_tail_s": 1.55,
+  "echo": [
+    {
+      "after_segment_index": 1,
+      "where": "hook last phrase — gone into the real world / hacked the site",
+      "send_s": 0.62,
+      "wet": 0.55
+    },
+    {
+      "after_segment_index": 4,
+      "where": "صد هزار نفر از ما کم شده",
+      "send_s": 0.58,
+      "wet": 0.5
+    },
+    {
+      "after_segment_index": 8,
+      "where": "ادیت بزنه خودش into the ending tail",
+      "send_s": 0.78,
+      "wet": 0.6
+    }
+  ],
+  "dialogue_accents": [
+    {"segment_index": 1, "at_s": 0.04, "type": "reverse_swell", "why": "into the sandbox-hack hook"},
+    {"segment_index": 1, "at_s": 6.85, "type": "bass_pulse", "why": "under the live-site hack claim"},
+    {"segment_index": 2, "at_s": 5.55, "type": "impact", "why": "after 80 percent of views from Iran"},
+    {"segment_index": 3, "at_s": 4.15, "type": "bass_pulse", "why": "under the Pahlavi Explore punchline"},
+    {"segment_index": 4, "at_s": 6.35, "type": "boom", "why": "after صد هزار نفر از ما کم شده"},
+    {"segment_index": 8, "at_s": 0.06, "type": "reverse_swell", "why": "into the AI-will-edit closer"}
+  ],
+  "transitions": [
+    {"between": [1, 2], "type": "dip_black", "duration_ms": 140, "sfx": ["whoosh_reverse", "bass_pulse"], "energy": "open"},
+    {"between": [2, 3], "type": "hard_impact", "duration_ms": 90, "sfx": ["impact_low", "sub_drop"], "energy": "build"},
+    {"between": [3, 4], "type": "push", "duration_ms": 180, "sfx": ["whoosh_existing", "sweep"], "energy": "build"},
+    {"between": [4, 5], "type": "dip_black", "duration_ms": 220, "sfx": ["boom", "downer"], "micro_pause": true, "energy": "middle"},
+    {"between": [5, 6], "type": "soft_hit", "duration_ms": 100, "sfx": ["hit_soft", "bass_pulse"], "energy": "middle"},
+    {"between": [6, 7], "type": "flash", "duration_ms": 160, "sfx": ["whoosh_short", "impact_low"], "energy": "final_third"},
+    {"between": [7, 8], "type": "push", "duration_ms": 240, "sfx": ["riser", "impact_low", "boom"], "energy": "highest"}
+  ]
+}

@@ -30,6 +30,12 @@ data/qa_plans/*
 !data/qa_plans/.gitkeep
 data/portraits/*
 !data/portraits/.gitkeep
+data/speakers/*
+!data/speakers/.gitkeep
+data/conversation_maps/*
+!data/conversation_maps/.gitkeep
+data/conversation_plans/*
+!data/conversation_plans/.gitkeep
 data/final/*
 !data/final/.gitkeep
 !data/final/covers/
@@ -39,3 +45,17 @@ data/final/covers/*
 *.mp4
 
 *.mp4
+
+*.mp4
+
+*.mp4
+
+# Local/generated media
+*.mp4
+*.wav
+*.npz
+*.mov
+*.mkv
+*.avi
+*.webm
+data/director_tests/_work*/

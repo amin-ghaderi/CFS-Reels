@@ -1,0 +1,37 @@
+{
+  "kind": "visual_hook_fire_realism_v2",
+  "note": "Improved fire-behind realism only. Not attached to any Reel. Does not replace the approved POC.",
+  "visual_hook": {
+    "enabled": true,
+    "preset": "fire_behind_subject",
+    "target_speaker": "speaker_c",
+    "start_time": 5064.1,
+    "duration": 1.8,
+    "intensity": 0.7,
+    "sfx_enabled": true
+  },
+  "render": {
+    "output": "C:\\Users\\Public\\Myapps\\CFS-Reels\\data\\visual_hook_tests\\CFS03_fire_behind_c_realism_v2.mp4",
+    "before_after": "C:\\Users\\Public\\Myapps\\CFS-Reels\\data\\visual_hook_tests\\CFS03_fire_behind_c_realism_v2_before_after.mp4",
+    "preset": "fire_behind_subject",
+    "target_speaker": "speaker_c",
+    "crop": {
+      "x": 512,
+      "y": 552,
+      "w": 896,
+      "h": 504
+    },
+    "duration_s": 1.8,
+    "frame_count": 54,
+    "segmentation": "rembg:u2net_human_seg",
+    "render_time_s": 142.71,
+    "source": "C:\\Users\\Public\\Myapps\\CFS-Reels\\data\\inbox\\CFS03.mp4",
+    "sfx_enabled": true
+  },
+  "preserved_poc": "C:\\Users\\Public\\Myapps\\CFS-Reels\\data\\visual_hook_tests\\CFS03_fire_behind_c.mp4",
+  "preserved_poc_sha256": "1c7c08f45bb5e44bdb5f264e2e04bcd7808983556ac62995f6cc97a1e6e80b38",
+  "source_video": "data/inbox/CFS03.mp4",
+  "framing_profile": "data/framing_profiles/CFS03.json",
+  "vfx_assets": "local aperiodic photoreal fire/smoke plates (hash-noise tongues, no stock footage)",
+  "sfx_assets": "quiet procedural ignition/flare under original dialogue"
+}

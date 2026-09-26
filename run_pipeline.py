@@ -16,6 +16,7 @@ from reels_factory.program_map import map_program
 from reels_factory.refine import parse_refine_request, refine_window, refine_windows
 from reels_factory.render import render_reel, resolve_transcript_for_plan
 from reels_factory.semantic_editor import semantic_edit
+from reels_factory.conversation import analyze_conversation
 from reels_factory.utils import parse_timestamp, read_json
 
 ROOT = Path(__file__).resolve().parent
@@ -242,6 +243,24 @@ def cmd_make_reels(args):
     print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
 
 
+def cmd_analyze_conversation(args):
+    cfg = load_config(ROOT, Path(args.config) if args.config else None)
+    video = Path(args.video)
+    try:
+        result = analyze_conversation(
+            video,
+            cfg,
+            root=ROOT,
+            force=args.force,
+            language=args.language,
+            audio_wav=Path(args.audio) if args.audio else None,
+        )
+    except CursorAIError as exc:
+        print(f"[analyze-conversation] FAILED: {exc}")
+        raise SystemExit(1) from exc
+    print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+
+
 def cmd_render_semantic(args):
     cfg = load_config(ROOT, Path(args.config) if args.config else None)
     plan = Path(args.plan)
@@ -317,6 +336,16 @@ def build_parser():
     mr.add_argument("--video", required=True)
     mr.add_argument("--force", action="store_true", help="Redo AI stages (normalize, map, Q&A editor) and re-render")
     mr.set_defaults(func=cmd_make_reels)
+
+    ac = sub.add_parser(
+        "analyze-conversation",
+        help="CFS03-style talk-show analysis: words, speakers, discussion threads, Reel plans (no render)",
+    )
+    ac.add_argument("--video", required=True)
+    ac.add_argument("--force", action="store_true")
+    ac.add_argument("--language", default="fa")
+    ac.add_argument("--audio", help="Optional 16kHz wav to skip video audio decode")
+    ac.set_defaults(func=cmd_analyze_conversation)
 
     gp = sub.add_parser("master-portrait", help="Build one master guest portrait PNG for a source video")
     gp.add_argument("--video", required=True)

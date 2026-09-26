@@ -1,0 +1,119 @@
+{
+  "kind": "episode_summary_trailer",
+  "summary_id": "CFS03_summary_01_trailer",
+  "source_plan": "data/episode_summaries/CFS03_summary_01.json",
+  "source_summary_mp4": "data/output/CFS03_summary/CFS03_episode_summary_01.mp4",
+  "output_mp4": "data/output/CFS03_summary/CFS03_episode_summary_01_trailer.mp4",
+  "title": "CFS03 episode trailer — cinematic mix of summary_01",
+  "editorial_lock": "Exact same excerpts, order, text, and meaning as CFS03_summary_01.json. Transitions/music/SFX only.",
+  "stack_order": ["speaker_a", "speaker_c", "speaker_b"],
+  "stack_locked": true,
+  "subtitles": false,
+  "cover": false,
+  "narration": false,
+  "music": {
+    "source": "generated_original",
+    "path": "data/episode_summaries/trailer_assets/cfs03_trailer_bed.wav",
+    "style": "modern tense pulse, D minor, 88 BPM half-time, no vocals"
+  },
+  "sfx_assets": {
+    "whoosh_existing": "assets/sounds/whoosh_soft.wav",
+    "whoosh_short": "data/episode_summaries/trailer_assets/sfx_whoosh_short.wav",
+    "whoosh_reverse": "data/episode_summaries/trailer_assets/sfx_whoosh_reverse.wav",
+    "impact_low": "data/episode_summaries/trailer_assets/sfx_impact_low.wav",
+    "hit_soft": "data/episode_summaries/trailer_assets/sfx_hit_soft.wav",
+    "riser": "data/episode_summaries/trailer_assets/sfx_riser.wav",
+    "bass_pulse": "data/episode_summaries/trailer_assets/sfx_bass_pulse.wav"
+  },
+  "mix": {
+    "dialogue_lufs": -16,
+    "music_under_speech": 0.16,
+    "music_in_gaps": 0.48,
+    "duck_attack_s": 0.045,
+    "duck_release_s": 0.22,
+    "limiter_ceiling": 0.95
+  },
+  "ending_tail_s": 1.55,
+  "echo": [
+    {
+      "after_segment_index": 1,
+      "where": "last phrase of the sandbox-hack hook, tail continues into the first transition",
+      "send_s": 0.55,
+      "wet": 0.32
+    },
+    {
+      "after_segment_index": 4,
+      "where": "last repeat of صد هزار نفر از ما کم شده, into the dip before the cinema-offer beat",
+      "send_s": 0.5,
+      "wet": 0.28
+    },
+    {
+      "after_segment_index": 8,
+      "where": "closing phrase ادیت بزنه خودش, tail into the music ending",
+      "send_s": 0.7,
+      "wet": 0.36
+    }
+  ],
+  "transitions": [
+    {
+      "between": [1, 2],
+      "type": "dip_black",
+      "duration_ms": 140,
+      "sfx": "whoosh_reverse",
+      "energy": "open"
+    },
+    {
+      "between": [2, 3],
+      "type": "hard_impact",
+      "duration_ms": 90,
+      "sfx": "impact_low",
+      "energy": "build"
+    },
+    {
+      "between": [3, 4],
+      "type": "push",
+      "duration_ms": 180,
+      "sfx": "whoosh_existing",
+      "energy": "build"
+    },
+    {
+      "between": [4, 5],
+      "type": "dip_black",
+      "duration_ms": 220,
+      "sfx": "bass_pulse",
+      "micro_pause": true,
+      "energy": "middle"
+    },
+    {
+      "between": [5, 6],
+      "type": "soft_hit",
+      "duration_ms": 100,
+      "sfx": "hit_soft",
+      "energy": "middle"
+    },
+    {
+      "between": [6, 7],
+      "type": "flash",
+      "duration_ms": 160,
+      "sfx": "whoosh_short",
+      "energy": "final_third"
+    },
+    {
+      "between": [7, 8],
+      "type": "push",
+      "duration_ms": 240,
+      "sfx": "riser",
+      "energy": "highest"
+    }
+  ],
+  "clip_treatments": [
+    {"segment_index": 1, "start_punch": true, "end_fade": true},
+    {"segment_index": 2, "start_punch": false, "end_fade": true},
+    {"segment_index": 3, "start_punch": true, "end_fade": true},
+    {"segment_index": 4, "start_punch": false, "end_fade": true},
+    {"segment_index": 5, "start_punch": false, "end_fade": true},
+    {"segment_index": 6, "start_punch": true, "end_fade": true},
+    {"segment_index": 7, "start_punch": true, "end_fade": true},
+    {"segment_index": 8, "start_punch": false, "end_fade": false}
+  ]
+}

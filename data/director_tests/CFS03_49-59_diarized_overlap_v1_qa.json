@@ -1,0 +1,379 @@
+{
+  "kind": "cfs_multicam_16x9_offline_qa",
+  "range": "00:49:20.000-00:59:20.000",
+  "speaker_timeline": "data/speakers/CFS03_49-59_turns_v3.json",
+  "speaker_timeline_modified": false,
+  "overlap_timeline": "data/speakers/CFS03_49-59_overlaps_v3.json",
+  "turn_filter": {
+    "diarized_turns": 102,
+    "meaningful_turns_used": 46,
+    "tiny_or_backchannel_ignored": 13,
+    "unknown_boundary_turns_ignored": 43,
+    "meaningful_turn_ids": [
+      "T0001",
+      "T0003",
+      "T0005",
+      "T0007",
+      "T0009",
+      "T0011",
+      "T0012",
+      "T0013",
+      "T0015",
+      "T0016",
+      "T0018",
+      "T0020",
+      "T0021",
+      "T0027",
+      "T0029",
+      "T0031",
+      "T0032",
+      "T0034",
+      "T0038",
+      "T0040",
+      "T0041",
+      "T0045",
+      "T0047",
+      "T0049",
+      "T0050",
+      "T0053",
+      "T0055",
+      "T0058",
+      "T0059",
+      "T0062",
+      "T0065",
+      "T0066",
+      "T0068",
+      "T0070",
+      "T0072",
+      "T0076",
+      "T0077",
+      "T0079",
+      "T0081",
+      "T0085",
+      "T0088",
+      "T0089",
+      "T0095",
+      "T0097",
+      "T0099",
+      "T0101"
+    ],
+    "ignored_tiny_ids": [
+      "T0023",
+      "T0025",
+      "T0036",
+      "T0043",
+      "T0051",
+      "T0056",
+      "T0061",
+      "T0064",
+      "T0074",
+      "T0083",
+      "T0086",
+      "T0091",
+      "T0093"
+    ],
+    "ignored_unknown_ids": [
+      "T0002",
+      "T0004",
+      "T0006",
+      "T0008",
+      "T0010",
+      "T0014",
+      "T0017",
+      "T0019",
+      "T0022",
+      "T0024",
+      "T0026",
+      "T0028",
+      "T0030",
+      "T0033",
+      "T0035",
+      "T0037",
+      "T0039",
+      "T0042",
+      "T0044",
+      "T0046",
+      "T0048",
+      "T0052",
+      "T0054",
+      "T0057",
+      "T0060",
+      "T0063",
+      "T0067",
+      "T0069",
+      "T0071",
+      "T0073",
+      "T0075",
+      "T0078",
+      "T0080",
+      "T0082",
+      "T0084",
+      "T0087",
+      "T0090",
+      "T0092",
+      "T0094",
+      "T0096",
+      "T0098",
+      "T0100",
+      "T0102"
+    ]
+  },
+  "overlaps": [
+    {
+      "start": 3022.5,
+      "end": 3025.5,
+      "speakers_active": [
+        "speaker_a",
+        "speaker_b"
+      ],
+      "duration": 3.0,
+      "confidence": 0.93,
+      "kind": "overlap",
+      "evidence": {
+        "mouth_activity_a": 17.424,
+        "mouth_activity_b": 7.457,
+        "mouth_activity_c": 1.306,
+        "audio_activity": 0.08889
+      },
+      "reason": "speaker_a + speaker_b stay in the same overlap. A short gap was joined so the wide shot does not flicker."
+    },
+    {
+      "start": 3105.5,
+      "end": 3112.0,
+      "speakers_active": [
+        "speaker_a",
+        "speaker_c"
+      ],
+      "duration": 6.5,
+      "confidence": 0.93,
+      "kind": "overlap",
+      "evidence": {
+        "mouth_activity_a": 19.279,
+        "mouth_activity_b": 0.772,
+        "mouth_activity_c": 8.663,
+        "audio_activity": 0.18224
+      },
+      "reason": "speaker_a + speaker_c stay in the same overlap. A short gap was joined so the wide shot does not flicker."
+    },
+    {
+      "start": 3267.0,
+      "end": 3269.5,
+      "speakers_active": [
+        "speaker_a",
+        "speaker_c"
+      ],
+      "duration": 2.5,
+      "confidence": 0.93,
+      "kind": "overlap",
+      "evidence": {
+        "mouth_activity_a": 13.455,
+        "mouth_activity_b": 0.964,
+        "mouth_activity_c": 9.614,
+        "audio_activity": 0.17284
+      },
+      "reason": "speaker_a + speaker_c show sustained lip articulation together for 2.50s while the mixed audio is active. Floor labels are not changed."
+    },
+    {
+      "start": 3392.25,
+      "end": 3397.5,
+      "speakers_active": [
+        "speaker_a",
+        "speaker_b"
+      ],
+      "duration": 5.25,
+      "confidence": 0.93,
+      "kind": "overlap",
+      "evidence": {
+        "mouth_activity_a": 15.662,
+        "mouth_activity_b": 8.177,
+        "mouth_activity_c": 1.014,
+        "audio_activity": 0.12392
+      },
+      "reason": "speaker_a + speaker_b stay in the same overlap. A short gap was joined so the wide shot does not flicker."
+    },
+    {
+      "start": 3432.25,
+      "end": 3436.0,
+      "speakers_active": [
+        "speaker_a",
+        "speaker_c"
+      ],
+      "duration": 3.75,
+      "confidence": 0.93,
+      "kind": "overlap",
+      "evidence": {
+        "mouth_activity_a": 15.382,
+        "mouth_activity_b": 1.089,
+        "mouth_activity_c": 10.395,
+        "audio_activity": 0.08466
+      },
+      "reason": "speaker_a + speaker_c stay in the same overlap. A short gap was joined so the wide shot does not flicker."
+    },
+    {
+      "start": 3517.75,
+      "end": 3520.25,
+      "speakers_active": [
+        "speaker_a",
+        "speaker_c"
+      ],
+      "duration": 2.5,
+      "confidence": 0.876,
+      "kind": "overlap",
+      "evidence": {
+        "mouth_activity_a": 6.52,
+        "mouth_activity_b": 0.964,
+        "mouth_activity_c": 8.58,
+        "audio_activity": 0.14102
+      },
+      "reason": "speaker_a + speaker_c show sustained lip articulation together for 2.50s while the mixed audio is active. Floor labels are not changed."
+    }
+  ],
+  "original_wide": [
+    {
+      "start": "00:50:22.440",
+      "end": "00:50:25.500",
+      "duration_s": 3.06,
+      "reason": "OVERLAP",
+      "floor_owner": "speaker_a",
+      "note": "overlap 00:50:22.440 to 00:50:25.500: speaker_a, speaker_b. Floor owner from turns_v3 is speaker_a. Speaker labels are not changed."
+    },
+    {
+      "start": "00:51:45.500",
+      "end": "00:51:52.000",
+      "duration_s": 6.5,
+      "reason": "OVERLAP",
+      "floor_owner": "speaker_a",
+      "note": "overlap 00:51:45.500 to 00:51:52.000: speaker_a, speaker_c. Floor owner from turns_v3 is speaker_a. Speaker labels are not changed. overlap 00:51:45.500 to 00:51:52.000: speaker_a, speaker_c. Floor owner from turns_v3 is speaker_c. Speaker labels are not changed."
+    },
+    {
+      "start": "00:54:17.100",
+      "end": "00:54:47.420",
+      "duration_s": 30.32,
+      "reason": "OTHER_EXISTING_EDITORIAL_REASON",
+      "floor_owner": null,
+      "note": "No words for more than 12 seconds. A one-word unknown would hold the current camera. This gap is long, so the original frame holds until the next named turn. overlap 00:54:27.000 to 00:54:29.500: speaker_a, speaker_c. Floor owner from turns_v3 is None. Speaker labels are not changed. No words for more than 12 seconds. A one-word unknown would hold the current camera. This gap is long, so the original frame holds until the next named turn."
+    },
+    {
+      "start": "00:56:31.860",
+      "end": "00:56:37.700",
+      "duration_s": 5.84,
+      "reason": "OVERLAP",
+      "floor_owner": "speaker_a",
+      "note": "overlap 00:56:31.860 to 00:56:37.700: speaker_a, speaker_b. Floor owner from turns_v3 is speaker_a. Speaker labels are not changed."
+    },
+    {
+      "start": "00:57:12.250",
+      "end": "00:57:16.000",
+      "duration_s": 3.75,
+      "reason": "OVERLAP",
+      "floor_owner": "speaker_a",
+      "note": "overlap 00:57:12.250 to 00:57:16.000: speaker_a, speaker_c. Floor owner from turns_v3 is speaker_a. Speaker labels are not changed."
+    },
+    {
+      "start": "00:58:37.750",
+      "end": "00:58:40.420",
+      "duration_s": 2.67,
+      "reason": "OVERLAP",
+      "floor_owner": "speaker_c",
+      "note": "overlap 00:58:37.750 to 00:58:40.420: speaker_a, speaker_c. Floor owner from turns_v3 is speaker_c. Speaker labels are not changed."
+    }
+  ],
+  "wide_timing_vs_overlap": [
+    {
+      "overlap_detected_start": "00:50:22.500",
+      "overlap_detected_end": "00:50:25.500",
+      "wide_start": "00:50:22.440",
+      "wide_end": "00:50:25.500",
+      "wide_begins_after_overlap_s": -0.06,
+      "returns_to": "FULL_A",
+      "return_after_overlap_end_s": 0.0,
+      "floor_owner_after": "speaker_a"
+    },
+    {
+      "overlap_detected_start": "00:51:45.500",
+      "overlap_detected_end": "00:51:52.000",
+      "wide_start": "00:51:45.500",
+      "wide_end": "00:51:52.000",
+      "wide_begins_after_overlap_s": 0.0,
+      "returns_to": "FULL_C",
+      "return_after_overlap_end_s": 0.0,
+      "floor_owner_after": "speaker_c"
+    },
+    {
+      "overlap_detected_start": "00:54:27.000",
+      "overlap_detected_end": "00:54:29.500",
+      "wide_start": "00:54:17.100",
+      "wide_end": "00:54:47.420",
+      "wide_begins_after_overlap_s": -9.9,
+      "returns_to": "FULL_C",
+      "return_after_overlap_end_s": 17.92,
+      "floor_owner_after": "speaker_c"
+    },
+    {
+      "overlap_detected_start": "00:56:32.250",
+      "overlap_detected_end": "00:56:37.500",
+      "wide_start": "00:56:31.860",
+      "wide_end": "00:56:37.700",
+      "wide_begins_after_overlap_s": -0.39,
+      "returns_to": "FULL_A",
+      "return_after_overlap_end_s": 0.2,
+      "floor_owner_after": "speaker_a"
+    },
+    {
+      "overlap_detected_start": "00:57:12.250",
+      "overlap_detected_end": "00:57:16.000",
+      "wide_start": "00:57:12.250",
+      "wide_end": "00:57:16.000",
+      "wide_begins_after_overlap_s": 0.0,
+      "returns_to": "FULL_A",
+      "return_after_overlap_end_s": 0.0,
+      "floor_owner_after": "speaker_a"
+    },
+    {
+      "overlap_detected_start": "00:58:37.750",
+      "overlap_detected_end": "00:58:40.250",
+      "wide_start": "00:58:37.750",
+      "wide_end": "00:58:40.420",
+      "wide_begins_after_overlap_s": 0.0,
+      "returns_to": "FULL_C",
+      "return_after_overlap_end_s": 0.17,
+      "floor_owner_after": "speaker_c"
+    }
+  ],
+  "probes": [
+    {
+      "time": "00:51:08.000",
+      "camera": "FULL_A"
+    },
+    {
+      "time": "00:51:10.000",
+      "camera": "FULL_C"
+    },
+    {
+      "time": "00:51:20.000",
+      "camera": "FULL_C"
+    },
+    {
+      "time": "00:51:48.000",
+      "camera": "ORIGINAL_WIDE"
+    },
+    {
+      "time": "00:51:50.000",
+      "camera": "ORIGINAL_WIDE"
+    },
+    {
+      "time": "00:52:30.000",
+      "camera": "FULL_B"
+    },
+    {
+      "time": "00:53:20.000",
+      "camera": "FULL_A"
+    }
+  ],
+  "reactions_not_inserted": [
+    "00:56:36.240 no speaker_a floor",
+    "00:57:48.320 would leave a stub"
+  ],
+  "problems": [],
+  "group_reaction_shots": []
+}

@@ -10,6 +10,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from .composition import stacked_three_geometry
+
 YUNET_URL = (
     "https://media.githubusercontent.com/media/opencv/opencv_zoo/main/"
     "models/face_detection_yunet/face_detection_yunet_2023mar.onnx"
@@ -63,10 +65,12 @@ class LayoutPlan:
     face_counts: list[int] = field(default_factory=list)
     avg_faces: float = 0.0
     top: BBox | None = None
+    middle: BBox | None = None
     bottom: BBox | None = None
     single: BBox | None = None
     panel_a: BBox | None = None
     panel_b: BBox | None = None
+    panel_c: BBox | None = None
     safety_margin: float = 0.0
 
 
@@ -554,6 +558,39 @@ def stacked_faces_filter(top: BBox, bottom: BBox, frame_w: int, frame_h: int, wi
         f"[b]{bot_crop},scale={width}:{half_h}:force_original_aspect_ratio=increase,"
         f"crop={width}:{half_h}[bot];"
         f"[top][bot]vstack=inputs=2,setsar=1,fps={fps}[v]"
+    )
+
+
+def stacked_three_tiles_filter(
+    top: BBox,
+    middle: BBox,
+    bottom: BBox,
+    frame_w: int,
+    frame_h: int,
+    width: int,
+    height: int,
+    fps: int,
+    *,
+    pad_color: str = "black",
+) -> str:
+    """Stack three full tiles at equal width. No face crop, no stretch-to-fill."""
+    geo = stacked_three_geometry(width, height)
+    top_crop = _ffmpeg_crop(top, frame_w, frame_h)
+    mid_crop = _ffmpeg_crop(middle, frame_w, frame_h)
+    bot_crop = _ffmpeg_crop(bottom, frame_w, frame_h)
+    tw, th = geo.tile_w, geo.tile_h
+    slot = (
+        f"scale={tw}:{th}:force_original_aspect_ratio=decrease:flags=lanczos,"
+        f"pad={tw}:{th}:(ow-iw)/2:(oh-ih)/2:color={pad_color}"
+    )
+    return (
+        f"[0:v]split=3[a][b][c];"
+        f"[a]{top_crop},{slot}[top];"
+        f"[b]{mid_crop},{slot}[mid];"
+        f"[c]{bot_crop},{slot}[bot];"
+        f"[top][mid][bot]vstack=inputs=3,"
+        f"pad={geo.canvas_w}:{geo.canvas_h}:0:{geo.pad_top}:color={pad_color},"
+        f"setsar=1,fps={fps}[v]"
     )
 
 

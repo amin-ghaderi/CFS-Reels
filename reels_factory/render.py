@@ -5,8 +5,9 @@ import tempfile
 from pathlib import Path
 
 from .faces import LayoutPlan, plan_clip_layout, plan_locked_layout
-from .framing import layout_from_framing_profile, resolve_framing_profile
+from .framing import is_stacked_three_profile, layout_from_framing_profile, resolve_framing_profile
 from .plan_validate import plan_has_segments, validate_semantic_plan
+from .stack_order import log_stack_decision, resolve_reel_stack_order
 from .subtitles import build_rebased_srt
 from .utils import parse_timestamp, read_json, require_binary, run
 
@@ -109,11 +110,17 @@ def choose_reel_layout(
     cfg: dict,
     rcfg: dict,
     clips: list[dict],
+    plan: dict | None = None,
 ) -> LayoutPlan | None:
     """Prefer a source-level framing profile over per-reel face detection."""
     profile = resolve_framing_profile(source, cfg)
     if profile is not None:
-        return layout_from_framing_profile(profile, rcfg)
+        stack_order = None
+        if is_stacked_three_profile(profile):
+            decision = resolve_reel_stack_order(source, cfg, plan, clips)
+            log_stack_decision(decision)
+            stack_order = tuple(decision["final_stack_order"])
+        return layout_from_framing_profile(profile, rcfg, stack_order=stack_order)
     if _lock_crops_for_reel(rcfg, clips):
         return plan_locked_layout(
             source,
@@ -125,11 +132,21 @@ def choose_reel_layout(
 
 def _lock_crops_for_reel(rcfg: dict, clips: list[dict]) -> bool:
     requested = str(rcfg.get("layout", "stacked_faces")).strip().lower()
-    if requested not in {"stacked_faces", "single_face"}:
+    if requested not in {"stacked_faces", "single_face", "stacked_three"}:
         return False
     if not bool(rcfg.get("lock_face_crops", True)):
         return False
     return len(clips) > 1
+
+
+def _accurate_cut_args(start: float, end: float, *, preroll: float = 1.25) -> tuple[list[str], list[str]]:
+    """Fast input seek, then decode-accurate trim so cuts land on whole words."""
+    duration = max(0.001, float(end) - float(start))
+    ss_in = max(0.0, float(start) - preroll)
+    ss_out = float(start) - ss_in
+    before_input = ["-ss", f"{ss_in:.3f}"]
+    after_input = ["-ss", f"{ss_out:.3f}", "-t", f"{duration:.3f}"]
+    return before_input, after_input
 
 
 def _print_locked_crops(layout: LayoutPlan) -> None:
@@ -152,6 +169,12 @@ def _print_locked_crops(layout: LayoutPlan) -> None:
         print(
             f"[layout] locked Person A/top crop "
             f"x={t.x:.1f} y={t.y:.1f} w={t.w:.1f} h={t.h:.1f}"
+        )
+    if layout.middle is not None:
+        m = layout.middle
+        print(
+            f"[layout] locked middle crop "
+            f"x={m.x:.1f} y={m.y:.1f} w={m.w:.1f} h={m.h:.1f}"
         )
     if layout.bottom is not None:
         b = layout.bottom
@@ -203,7 +226,7 @@ def render_reel(
         temp = Path(td)
         parts = []
         layouts: list[LayoutPlan] = []
-        locked_layout = choose_reel_layout(source, cfg, rcfg, clips)
+        locked_layout = choose_reel_layout(source, cfg, rcfg, clips, plan=plan)
         if locked_layout is not None:
             print(
                 f"[layout] locked crops for all {len(clips)} clips "
@@ -225,10 +248,12 @@ def render_reel(
                 f"locked={'yes' if locked_layout is not None else 'no'}"
             )
             part = temp / f"part_{idx:02d}.mp4"
+            before_input, after_input = _accurate_cut_args(clip["start"], clip["end"])
             run([
                 ffmpeg, "-y",
-                "-ss", str(clip["start"]), "-to", str(clip["end"]),
+                *before_input,
                 "-i", str(source),
+                *after_input,
                 "-filter_complex", layout.filter_complex,
                 "-map", "[v]", "-map", "0:a?",
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", crf,

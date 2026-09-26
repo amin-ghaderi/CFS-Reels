@@ -1,0 +1,85 @@
+{
+  "source_video": "data/inbox/Edited.mp4",
+  "duration_s": 9079.964399,
+  "sample_fps": 2,
+  "tiles": {
+    "speaker_a": [
+      52,
+      24,
+      896,
+      504
+    ],
+    "speaker_b": [
+      972,
+      24,
+      896,
+      504
+    ],
+    "speaker_c": [
+      512,
+      552,
+      896,
+      504
+    ]
+  },
+  "gate": "branded side panels match the program bed and each tile has a face; uncertain stays protected",
+  "enter_s": 1.5,
+  "exit": "first sample whose side panels leave the program bed",
+  "directable_duration_s": 9008.5,
+  "protected_duration_s": 71.464,
+  "directable": [
+    {
+      "start": 31.5,
+      "end": 3667.5,
+      "duration_s": 3636.0,
+      "state": "DIRECTABLE_PROGRAM"
+    },
+    {
+      "start": 3676.0,
+      "end": 6260.5,
+      "duration_s": 2584.5,
+      "state": "DIRECTABLE_PROGRAM"
+    },
+    {
+      "start": 6284.0,
+      "end": 9072.0,
+      "duration_s": 2788.0,
+      "state": "DIRECTABLE_PROGRAM"
+    }
+  ],
+  "protected": [
+    {
+      "start": 0.0,
+      "end": 31.5,
+      "duration_s": 31.5,
+      "state": "PROTECTED_MASTER",
+      "reason": "INTRO",
+      "full_frame_mean": 36.54
+    },
+    {
+      "start": 3667.5,
+      "end": 3676.0,
+      "duration_s": 8.5,
+      "state": "PROTECTED_MASTER",
+      "reason": "FULLSCREEN_TEXT",
+      "full_frame_mean": 8.64
+    },
+    {
+      "start": 6260.5,
+      "end": 6284.0,
+      "duration_s": 23.5,
+      "state": "PROTECTED_MASTER",
+      "reason": "NON_PROGRAM_LAYOUT",
+      "full_frame_mean": 76.08
+    },
+    {
+      "start": 9072.0,
+      "end": 9079.964,
+      "duration_s": 7.964,
+      "state": "PROTECTED_MASTER",
+      "reason": "ENDING",
+      "full_frame_mean": 153.61
+    }
+  ],
+  "raw_source_timestamps_used": false
+}

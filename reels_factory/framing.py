@@ -6,10 +6,23 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from .faces import BBox, LayoutPlan, bbox_inside, stacked_faces_filter
+from .composition import STACK_ORDER_916
+from .faces import BBox, LayoutPlan, bbox_inside, stacked_faces_filter, stacked_three_tiles_filter
 from .utils import read_json
 
 _CROP_RE = re.compile(r"crop=(\d+):(\d+):(\d+):(\d+)")
+_SPEAKER_KEYS = ("speaker_a", "speaker_b", "speaker_c")
+_PERSON_KEYS = ("person_a", "person_b")
+
+
+def _has_xywh(raw) -> bool:
+    return isinstance(raw, dict) and all(k in raw for k in ("x", "y", "w", "h"))
+
+
+def is_stacked_three_profile(profile: dict) -> bool:
+    if str(profile.get("layout") or "").strip().lower() == "stacked_three":
+        return True
+    return all(_has_xywh(profile.get(key)) for key in _SPEAKER_KEYS)
 
 
 def framing_profile_path(source: Path, cfg: dict) -> Path:
@@ -23,9 +36,14 @@ def framing_profile_path(source: Path, cfg: dict) -> Path:
 
 def load_framing_profile(path: Path) -> dict:
     data = read_json(path)
-    for key in ("person_a", "person_b"):
+    if is_stacked_three_profile(data):
+        for key in _SPEAKER_KEYS:
+            if not _has_xywh(data.get(key)):
+                raise ValueError(f"Framing profile {path.name} missing {key} x/y/w/h")
+        return data
+    for key in _PERSON_KEYS:
         box = data.get(key) or {}
-        if not all(k in box for k in ("x", "y", "w", "h")):
+        if not _has_xywh(box):
             raise ValueError(f"Framing profile {path.name} missing {key} x/y/w/h")
     return data
 
@@ -41,12 +59,46 @@ def _box(raw: dict) -> BBox:
     return BBox(float(raw["x"]), float(raw["y"]), float(raw["w"]), float(raw["h"]))
 
 
-def layout_from_framing_profile(profile: dict, rcfg: dict) -> LayoutPlan:
-    """Frozen stacked_faces layout. No detection, tracking, or smoothing."""
+def _stack_boxes(profile: dict, stack_order: tuple[str, ...] | list[str] | None = None) -> tuple[BBox, BBox, BBox]:
+    speakers = {key: _box(profile[key]) for key in _SPEAKER_KEYS}
+    order = tuple(stack_order or profile.get("stack_order") or STACK_ORDER_916)
+    if len(order) != 3 or any(name not in speakers for name in order):
+        raise ValueError("Framing profile stack_order must list speaker_a/b/c")
+    return speakers[order[0]], speakers[order[1]], speakers[order[2]]
+
+
+def layout_from_framing_profile(
+    profile: dict,
+    rcfg: dict,
+    *,
+    stack_order: tuple[str, ...] | list[str] | None = None,
+) -> LayoutPlan:
+    """Frozen crops. Optional in-memory stack_order remaps output slots only.
+
+    Does not write the framing profile. Does not recalculate crop coordinates.
+    """
     frame_w, frame_h = [int(v) for v in (profile.get("frame_size") or (1920, 1080))]
     width = int(rcfg.get("width", 1080))
     height = int(rcfg.get("height", 1920))
     fps = int(rcfg.get("fps", 30))
+    if is_stacked_three_profile(profile):
+        top, middle, bottom = _stack_boxes(profile, stack_order=stack_order)
+        return LayoutPlan(
+            mode="stacked_three",
+            filter_complex=stacked_three_tiles_filter(
+                top, middle, bottom, frame_w, frame_h, width, height, fps
+            ),
+            method="framing_profile",
+            face_counts=[3],
+            avg_faces=3.0,
+            top=top,
+            middle=middle,
+            bottom=bottom,
+            panel_a=_box(profile["speaker_a"]),
+            panel_b=_box(profile["speaker_b"]),
+            panel_c=_box(profile["speaker_c"]),
+            safety_margin=float(profile.get("safety_margin") or 0.0),
+        )
     top = _box(profile["person_a"])
     bottom = _box(profile["person_b"])
     panel_a = _box(profile["panel_a"]) if profile.get("panel_a") else None
@@ -121,29 +173,38 @@ def validate_fixed_framing(
     output_mp4: Path,
     clips: list[dict],
 ) -> dict:
-    expected_top = _box(profile["person_a"])
-    expected_bot = _box(profile["person_b"])
+    frame_w = int((profile.get("frame_size") or (1920, 1080))[0])
+    frame_h = int((profile.get("frame_size") or (1920, 1080))[1])
     framing_diffs = 0
-    if layout.top is None or layout.bottom is None:
-        framing_diffs += 1
-    else:
-        if not boxes_equal(layout.top, expected_top):
+    if is_stacked_three_profile(profile):
+        expected_top, expected_mid, expected_bot = _stack_boxes(profile)
+        if layout.top is None or layout.middle is None or layout.bottom is None:
             framing_diffs += 1
-        if not boxes_equal(layout.bottom, expected_bot):
-            framing_diffs += 1
-    crops = ffmpeg_crops(layout.filter_complex)
-    expected_crops = ffmpeg_crops(
-        stacked_faces_filter(
-            expected_top,
-            expected_bot,
-            int((profile.get("frame_size") or (1920, 1080))[0]),
-            int((profile.get("frame_size") or (1920, 1080))[1]),
-            1080,
-            1920,
-            30,
+        else:
+            if not boxes_equal(layout.top, expected_top):
+                framing_diffs += 1
+            if not boxes_equal(layout.middle, expected_mid):
+                framing_diffs += 1
+            if not boxes_equal(layout.bottom, expected_bot):
+                framing_diffs += 1
+        expected_filter = stacked_three_tiles_filter(
+            expected_top, expected_mid, expected_bot, frame_w, frame_h, 1080, 1920, 30
         )
-    )
-    if crops != expected_crops:
+    else:
+        expected_top = _box(profile["person_a"])
+        expected_bot = _box(profile["person_b"])
+        if layout.top is None or layout.bottom is None:
+            framing_diffs += 1
+        else:
+            if not boxes_equal(layout.top, expected_top):
+                framing_diffs += 1
+            if not boxes_equal(layout.bottom, expected_bot):
+                framing_diffs += 1
+        expected_filter = stacked_faces_filter(
+            expected_top, expected_bot, frame_w, frame_h, 1080, 1920, 30
+        )
+    crops = ffmpeg_crops(layout.filter_complex)
+    if crops != ffmpeg_crops(expected_filter):
         framing_diffs += 1
 
     duration = sum(float(c["end"]) - float(c["start"]) for c in clips)

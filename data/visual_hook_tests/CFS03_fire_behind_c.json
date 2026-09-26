@@ -1,0 +1,35 @@
+{
+  "kind": "visual_hook_poc",
+  "note": "Standalone proof of concept. Not attached to any Reel.",
+  "visual_hook": {
+    "enabled": true,
+    "preset": "fire_behind_subject",
+    "target_speaker": "speaker_c",
+    "start_time": 5064.1,
+    "duration": 1.8,
+    "intensity": 0.7,
+    "sfx_enabled": true
+  },
+  "render": {
+    "output": "C:\\Users\\Public\\Myapps\\CFS-Reels\\data\\visual_hook_tests\\CFS03_fire_behind_c.mp4",
+    "before_after": "C:\\Users\\Public\\Myapps\\CFS-Reels\\data\\visual_hook_tests\\CFS03_fire_behind_c_before_after.mp4",
+    "preset": "fire_behind_subject",
+    "target_speaker": "speaker_c",
+    "crop": {
+      "x": 512,
+      "y": 552,
+      "w": 896,
+      "h": 504
+    },
+    "duration_s": 1.8,
+    "frame_count": 54,
+    "segmentation": "rembg:u2net_human_seg",
+    "render_time_s": 43.05,
+    "source": "C:\\Users\\Public\\Myapps\\CFS-Reels\\data\\inbox\\CFS03.mp4",
+    "sfx_enabled": true
+  },
+  "source_video": "data/inbox/CFS03.mp4",
+  "framing_profile": "data/framing_profiles/CFS03.json",
+  "vfx_assets": "procedural (numpy/OpenCV fire, grain, heat shimmer); no generative faces",
+  "sfx_assets": "procedural ignition (no music)"
+}

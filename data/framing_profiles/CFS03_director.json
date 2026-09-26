@@ -1,0 +1,19 @@
+{
+  "source_stem": "CFS03",
+  "source_video_on_disk": "data/inbox/03.mp4",
+  "frame_size": [1920, 1080],
+  "layout": "director_portraits",
+  "notes": "Separate Virtual Director profile. Does not replace or modify data/framing_profiles/CFS03.json. Portrait crops are locked once from faces inside the frozen participant tiles. No live tracking. Wide stack reuses the frozen CFS03 tile boxes.",
+  "wide_stack_order": ["speaker_b", "speaker_c", "speaker_a"],
+  "wide_tiles": {
+    "speaker_a": {"x": 52, "y": 24, "w": 896, "h": 504},
+    "speaker_b": {"x": 972, "y": 24, "w": 896, "h": 504},
+    "speaker_c": {"x": 512, "y": 552, "w": 896, "h": 504}
+  },
+  "portraits": {
+    "speaker_a": {"x": 386, "y": 24, "w": 284, "h": 504},
+    "speaker_b": {"x": 1282, "y": 24, "w": 284, "h": 504},
+    "speaker_c": {"x": 878, "y": 552, "w": 296, "h": 528}
+  },
+  "output": {"width": 1080, "height": 1920}
+}

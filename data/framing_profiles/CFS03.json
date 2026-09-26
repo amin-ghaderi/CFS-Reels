@@ -1,0 +1,13 @@
+{
+  "source_stem": "CFS03",
+  "source_video": "data/inbox/CFS03.mp4",
+  "frame_size": [1920, 1080],
+  "layout": "stacked_three",
+  "safety_margin": 0.0,
+  "stack_order": ["speaker_b", "speaker_c", "speaker_a"],
+  "speaker_a": {"x": 52, "y": 24, "w": 896, "h": 504},
+  "speaker_b": {"x": 972, "y": 24, "w": 896, "h": 504},
+  "speaker_c": {"x": 512, "y": 552, "w": 896, "h": 504},
+  "duration_s": 10808.133,
+  "notes": "CFS03 three-person 16:9 tiles, stacked 9:16 as B / C / A with even top/bottom pad. Full tiles only: no face crop, no stretch-to-fill. Do not reuse 09-04 / 17-05 / 18-05 crops."
+}

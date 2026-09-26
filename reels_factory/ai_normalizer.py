@@ -6,7 +6,11 @@ import tempfile
 
 from .cursor_ai import CursorAIError, extract_json_payload, invoke_cursor_agent, resolve_model_id
 from .refine import resolve_video_path
+from .transcribe import flatten_words
 from .utils import read_json, ts, write_json
+from .word_align import align_raw_words_to_clean, words_for_segment
+
+CHUNK_SEGMENTS = 90
 
 
 def compact_segments_for_normalizer(transcript: dict) -> list[dict]:
@@ -42,6 +46,19 @@ def merge_corrections(segments: list[dict], corrections) -> list[dict]:
             "clean_text": patches.get(sid, raw),
         })
     return merged
+
+
+def attach_word_timing_links(segments: list[dict], transcript: dict) -> list[dict]:
+    """Preserve raw-word timestamps and attach aligned normalized tokens."""
+    word_rows = flatten_words(transcript)
+    linked_segments = []
+    for seg in segments:
+        raw_words = words_for_segment(word_rows, int(seg["segment_id"]))
+        aligned = align_raw_words_to_clean(raw_words, str(seg.get("clean_text") or seg.get("raw_text") or ""))
+        row = dict(seg)
+        row["words"] = aligned
+        linked_segments.append(row)
+    return linked_segments
 
 
 def timestamps_unchanged(original: list[dict], normalized: list[dict]) -> bool:
@@ -115,35 +132,36 @@ def normalize_transcript(
     mode = str(aicfg.get("mode") or "ask")
     if mode.lower() == "standard":
         mode = "ask"
-
-    user_payload = {
-        "source_video": str(raw.get("source_video") or video.name),
-        "language": raw.get("language"),
-        "duration": raw.get("duration"),
-        "segments": compact,
-    }
-    prompt = (
-        load_normalizer_prompt(root)
-        + "\n\n## Transcript\n\n"
-        + json.dumps(user_payload, ensure_ascii=False)
-    )
     caller = invoke or invoke_cursor_agent
-    print(f"[normalize-ai] calling {model} for {len(compact)} segments")
-    try:
-        with tempfile.TemporaryDirectory(prefix="reels_ai_norm_") as td:
-            output = caller(prompt, model=model, mode=mode, workspace=Path(td), timeout=600)
-        payload = extract_json_payload(output)
-    except CursorAIError:
-        raise
-    except Exception as exc:
-        raise CursorAIError(f"Normalization model call failed: {exc}") from exc
+    prompt_prefix = load_normalizer_prompt(root)
+    corrections: list[dict] = []
+    batches = [compact[i : i + CHUNK_SEGMENTS] for i in range(0, max(1, len(compact)), CHUNK_SEGMENTS)]
+    print(f"[normalize-ai] {len(compact)} segments in {len(batches)} batches model={model}", flush=True)
+    for b_idx, batch in enumerate(batches):
+        user_payload = {
+            "source_video": str(raw.get("source_video") or video.name),
+            "language": raw.get("language"),
+            "duration": raw.get("duration"),
+            "batch": b_idx + 1,
+            "batch_count": len(batches),
+            "segments": batch,
+        }
+        prompt = prompt_prefix + "\n\n## Transcript\n\n" + json.dumps(user_payload, ensure_ascii=False)
+        try:
+            with tempfile.TemporaryDirectory(prefix="reels_ai_norm_") as td:
+                output = caller(prompt, model=model, mode=mode, workspace=Path(td), timeout=600)
+            payload = extract_json_payload(output)
+            chunk = payload.get("corrections") if isinstance(payload, dict) else payload
+            if isinstance(chunk, list):
+                corrections.extend(chunk)
+            print(f"[normalize-ai] batch {b_idx+1}/{len(batches)} ok", flush=True)
+        except Exception as exc:
+            print(f"[normalize-ai] batch {b_idx+1}/{len(batches)} skipped ({exc})", flush=True)
 
-    corrections = payload.get("corrections") if isinstance(payload, dict) else None
-    if corrections is None and isinstance(payload, list):
-        corrections = payload
-    merged = merge_corrections(compact, corrections or [])
+    merged = merge_corrections(compact, corrections)
     if not timestamps_unchanged(compact, merged):
         raise CursorAIError("Normalization attempted to change timestamps; refusing to save")
+    merged = attach_word_timing_links(merged, raw)
 
     result = {
         "source_video": str(raw.get("source_video") or video),
@@ -152,6 +170,7 @@ def normalize_transcript(
         "duration": raw.get("duration"),
         "normalization_model": model,
         "correction_count": sum(1 for s in merged if s["clean_text"] != s["raw_text"]),
+        "word_timing_links": True,
         "segments": merged,
     }
     write_json(paths["json"], result)

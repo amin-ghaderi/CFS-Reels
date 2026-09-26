@@ -26,6 +26,9 @@ REQUIRED_FOLDERS = (
     "metadata",
     "portraits",
     "framing_profiles",
+    "speakers",
+    "conversation_maps",
+    "conversation_plans",
     "final",
 )
 WRITABLE_FOLDERS = (
@@ -44,6 +47,9 @@ WRITABLE_FOLDERS = (
     "metadata",
     "portraits",
     "framing_profiles",
+    "speakers",
+    "conversation_maps",
+    "conversation_plans",
     "final",
 )
 
