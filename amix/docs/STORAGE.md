@@ -82,6 +82,13 @@ They do not change `word.text` or `participant_assignment`. A correction whose
 word is absent from a transcript is reported as inapplicable. This phase does
 not guess a new target.
 
+## Processing jobs
+
+Alembic revision `0002_processing_job` adds `processing_job`. Progress is an
+integer basis-point column (`progress_bp`, 0–10000), not a media time and not
+a float. Job rows are execution history. Analysis rows remain the editorial
+result. See [ENGINE_SERVICE.md](ENGINE_SERVICE.md).
+
 ## Cascades
 
 Foreign keys are `ON DELETE RESTRICT`. A normal rerun is an insert plus an

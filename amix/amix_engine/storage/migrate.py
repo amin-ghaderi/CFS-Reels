@@ -13,20 +13,20 @@ from amix.amix_engine.storage.errors import SchemaMismatch
 
 AMIX_ROOT = Path(__file__).resolve().parents[2]
 ALEMBIC_INI = AMIX_ROOT / "alembic.ini"
-HEAD = "0001_project"
+HEAD = "0002_processing_job"
 
 
 def sqlite_url(database: Path) -> str:
     return "sqlite:///" + database.resolve().as_posix()
 
 
-def upgrade_database(database: Path) -> None:
+def upgrade_database(database: Path, revision: str = "head") -> None:
     database.parent.mkdir(parents=True, exist_ok=True)
     config = Config(str(ALEMBIC_INI))
     config.set_main_option("script_location", str(AMIX_ROOT / "alembic"))
     config.set_main_option("sqlalchemy.url", sqlite_url(database))
     try:
-        command.upgrade(config, "head")
+        command.upgrade(config, revision)
     except Exception as exc:
         raise SchemaMismatch(f"could not migrate {database}: {exc}") from exc
 

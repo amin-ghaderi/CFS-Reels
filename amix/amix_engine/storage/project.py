@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from amix.amix_engine import __version__
@@ -33,9 +33,27 @@ from amix.amix_engine.domain.types import (
 )
 from amix.amix_engine.storage.database import create_project_engine
 from amix.amix_engine.storage.errors import (
+    InvalidJobState,
     MediaMissing,
     ProjectDatabaseInvalid,
     SchemaMismatch,
+)
+from amix.amix_engine.storage.jobs import (
+    CANCEL_REQUESTED,
+    CANCELLED,
+    FAILED,
+    INTERRUPTED,
+    QUEUED,
+    RETRYABLE,
+    RUNNING,
+    SUCCEEDED,
+    StoredJob,
+    create_job,
+    get_job,
+    interrupt_stale,
+    list_jobs,
+    set_progress,
+    transition,
 )
 from amix.amix_engine.storage.kinds import (
     ANALYSIS_KINDS,
@@ -120,6 +138,8 @@ def open_project(path: str | Path, *, read_only: bool = False) -> ProjectStore:
     store = ProjectStore(root, lock=lock, read_only=read_only)
     try:
         store._load_identity()
+        if not read_only:
+            store.interrupt_stale_jobs()
     except Exception:
         store.close()
         raise
@@ -231,6 +251,193 @@ class ProjectStore:
     def alembic_revision(self) -> str | None:
         return current_revision(self.root / DATABASE_NAME)
 
+    def list_media_assets(self) -> list[StoredMedia]:
+        with self._session() as session:
+            rows = session.scalars(
+                select(MediaAssetRow)
+                .where(MediaAssetRow.project_id == self.project_id)
+                .order_by(MediaAssetRow.display_name, MediaAssetRow.id)
+            ).all()
+            return [_media(row) for row in rows]
+
+    def list_active_analyses(self) -> list[tuple[str, str, str]]:
+        with self._session() as session:
+            rows = session.scalars(select(ActiveAnalysisRow)).all()
+            return [(row.media_asset_id, row.kind, row.analysis_run_id) for row in rows]
+
+    def count_analysis_runs(self) -> int:
+        with self._session() as session:
+            return int(session.scalar(select(func.count()).select_from(AnalysisRunRow)) or 0)
+
+    def create_processing_job(
+        self,
+        *,
+        kind: str,
+        spec: dict | None = None,
+        media_asset_id: str | None = None,
+        attempt: int = 1,
+        resumed_from_job_id: str | None = None,
+    ) -> StoredJob:
+        self._require_write()
+        with self._session() as session:
+            job = create_job(
+                session,
+                project_id=self.project_id,
+                kind=kind,
+                spec=spec or {},
+                media_asset_id=media_asset_id,
+                attempt=attempt,
+                resumed_from_job_id=resumed_from_job_id,
+            )
+            session.commit()
+            return job
+
+    def get_processing_job(self, job_id: str) -> StoredJob:
+        with self._session() as session:
+            return get_job(session, job_id, self.project_id)
+
+    def list_processing_jobs(self) -> list[StoredJob]:
+        with self._session() as session:
+            return list_jobs(session, self.project_id)
+
+    def start_processing_job(self, job_id: str) -> bool:
+        self._require_write()
+        with self._session() as session:
+            try:
+                transition(
+                    session,
+                    job_id,
+                    self.project_id,
+                    RUNNING,
+                    started_at=_now(),
+                )
+            except InvalidJobState:
+                session.rollback()
+                return False
+            session.commit()
+            return True
+
+    def set_job_progress(self, job_id: str, progress_bp: int) -> StoredJob:
+        self._require_write()
+        with self._session() as session:
+            job = set_progress(session, job_id, self.project_id, progress_bp)
+            session.commit()
+            return job
+
+    def request_job_cancel(self, job_id: str) -> StoredJob:
+        """Queue cancels immediately. A running job becomes CANCEL_REQUESTED."""
+        self._require_write()
+        with self._session() as session:
+            current = get_job(session, job_id, self.project_id)
+            if current.status == QUEUED:
+                job = transition(
+                    session,
+                    job_id,
+                    self.project_id,
+                    CANCELLED,
+                    cancel_requested=1,
+                )
+            elif current.status in {RUNNING, CANCEL_REQUESTED}:
+                if current.status == RUNNING:
+                    job = transition(
+                        session,
+                        job_id,
+                        self.project_id,
+                        CANCEL_REQUESTED,
+                        cancel_requested=1,
+                    )
+                else:
+                    row_job = current
+                    job = row_job
+            else:
+                raise InvalidJobState(f"cannot cancel a job that is {current.status}")
+            session.commit()
+            return job
+
+    def finish_job_succeeded(self, job_id: str, result: dict) -> StoredJob:
+        self._require_write()
+        with self._session() as session:
+            current = get_job(session, job_id, self.project_id)
+            if current.status != RUNNING:
+                raise InvalidJobState(f"cannot complete a job that is {current.status}")
+            if current.progress_bp < 10000:
+                set_progress(session, job_id, self.project_id, 10000)
+            job = transition(
+                session,
+                job_id,
+                self.project_id,
+                SUCCEEDED,
+                result_json=json.dumps(result, sort_keys=True),
+            )
+            session.commit()
+            return job
+
+    def finish_job_failed(self, job_id: str, error_code: str, error_message: str) -> StoredJob:
+        self._require_write()
+        with self._session() as session:
+            job = transition(
+                session,
+                job_id,
+                self.project_id,
+                FAILED,
+                error_code=error_code,
+                error_message=error_message[:500],
+            )
+            session.commit()
+            return job
+
+    def finish_job_cancelled(self, job_id: str) -> StoredJob:
+        self._require_write()
+        with self._session() as session:
+            current = get_job(session, job_id, self.project_id)
+            if current.status == CANCELLED:
+                return current
+            if current.status == RUNNING:
+                transition(
+                    session,
+                    job_id,
+                    self.project_id,
+                    CANCEL_REQUESTED,
+                    cancel_requested=1,
+                )
+            elif current.status not in {QUEUED, CANCEL_REQUESTED}:
+                raise InvalidJobState(f"cannot cancel a job that is {current.status}")
+            job = transition(
+                session,
+                job_id,
+                self.project_id,
+                CANCELLED,
+                cancel_requested=1,
+            )
+            session.commit()
+            return job
+
+    def retry_processing_job(self, job_id: str) -> StoredJob:
+        """New attempt from the stored spec. This is not a checkpoint resume."""
+        self._require_write()
+        with self._session() as session:
+            previous = get_job(session, job_id, self.project_id)
+            if previous.status not in RETRYABLE:
+                raise InvalidJobState(f"cannot retry a job that is {previous.status}")
+            job = create_job(
+                session,
+                project_id=self.project_id,
+                kind=previous.kind,
+                spec=previous.spec,
+                media_asset_id=previous.media_asset_id,
+                attempt=previous.attempt + 1,
+                resumed_from_job_id=previous.job_id,
+            )
+            session.commit()
+            return job
+
+    def interrupt_stale_jobs(self) -> int:
+        self._require_write()
+        with self._session() as session:
+            count = interrupt_stale(session, self.project_id)
+            session.commit()
+            return count
+
     def add_participant(self, participant_id: str, display_name: str, *, sort_order: int = 0) -> str:
         self._require_write()
         with self._session() as session:
@@ -301,22 +508,7 @@ class ProjectStore:
     def get_media(self, asset_id: str) -> StoredMedia:
         with self._session() as session:
             row = self._asset(session, asset_id)
-            return StoredMedia(
-                row.id,
-                row.role,
-                row.display_name,
-                row.location_kind,
-                row.relative_path,
-                row.external_path,
-                row.byte_size,
-                row.content_id,
-                row.duration_us,
-                row.width,
-                row.height,
-                row.fps_num,
-                row.fps_den,
-                row.container_start_us,
-            )
+            return _media(row)
 
     def relink_media(
         self,
@@ -888,6 +1080,25 @@ class ProjectStore:
         if row is None or row.project_id != self.project_id:
             raise ProjectDatabaseInvalid(f"unknown media asset {asset_id}")
         return row
+
+
+def _media(row: MediaAssetRow) -> StoredMedia:
+    return StoredMedia(
+        row.id,
+        row.role,
+        row.display_name,
+        row.location_kind,
+        row.relative_path,
+        row.external_path,
+        row.byte_size,
+        row.content_id,
+        row.duration_us,
+        row.width,
+        row.height,
+        row.fps_num,
+        row.fps_den,
+        row.container_start_us,
+    )
 
 
 def _now() -> str:

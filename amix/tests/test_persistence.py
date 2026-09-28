@@ -50,7 +50,7 @@ class SchemaTests(unittest.TestCase):
             root = Path(tmp) / "Empty"
             store = create_project(root, "Empty")
             try:
-                self.assertEqual(store.alembic_revision(), "0001_project")
+                self.assertEqual(head_revision(), "0002_processing_job")
                 self.assertEqual(store.alembic_revision(), head_revision())
                 self.assertEqual(store.pragma("foreign_keys"), "1")
                 self.assertEqual(store.pragma("journal_mode"), "delete")
@@ -61,6 +61,7 @@ class SchemaTests(unittest.TestCase):
                 self.assertNotIn("BLOB", sql)
                 self.assertIn("ACTIVE_ANALYSIS", sql)
                 self.assertIn("MANUAL_CORRECTION", sql)
+                self.assertIn("PROCESSING_JOB", sql)
             finally:
                 store.close()
             with self.assertRaises(ProjectDatabaseInvalid):
@@ -80,12 +81,42 @@ class SchemaTests(unittest.TestCase):
                 }
             finally:
                 connection.close()
-            self.assertEqual(revision, "0001_project")
+            self.assertEqual(revision, "0002_processing_job")
             self.assertIn("project", tables)
             self.assertIn("word", tables)
             self.assertIn("shot", tables)
+            self.assertIn("processing_job", tables)
             self.assertNotIn("conversation_thread", tables)
             self.assertNotIn("render_job", tables)
+
+    def test_revision_0001_upgrades_to_processing_jobs(self) -> None:
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            database = Path(tmp) / "step.sqlite"
+            upgrade_database(database, "0001_project")
+            connection = sqlite3.connect(database)
+            try:
+                revision = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
+                names = {
+                    row[0]
+                    for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+                }
+            finally:
+                connection.close()
+            self.assertEqual(revision, "0001_project")
+            self.assertNotIn("processing_job", names)
+            upgrade_database(database)
+            connection = sqlite3.connect(database)
+            try:
+                revision = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
+                sql = connection.execute(
+                    "SELECT sql FROM sqlite_master WHERE name = 'processing_job'"
+                ).fetchone()[0]
+            finally:
+                connection.close()
+            self.assertEqual(revision, "0002_processing_job")
+            self.assertNotIn("REAL", sql.upper())
+            self.assertNotIn("BLOB", sql.upper())
 
     def test_read_only_refuses_an_unknown_revision(self) -> None:
         import tempfile

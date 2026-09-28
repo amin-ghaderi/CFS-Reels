@@ -9,6 +9,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     BigInteger,
+    CheckConstraint,
     Float,
     ForeignKey,
     ForeignKeyConstraint,
@@ -270,3 +271,48 @@ class ManualCorrectionRow(Base):
     scope_id: Mapped[str] = mapped_column(Text, nullable=False)
     value: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[str] = mapped_column(Text, nullable=False, default=lambda: datetime.utcnow().isoformat())
+
+
+_JOB_STATUSES = (
+    "QUEUED",
+    "RUNNING",
+    "SUCCEEDED",
+    "FAILED",
+    "CANCEL_REQUESTED",
+    "CANCELLED",
+    "INTERRUPTED",
+)
+
+
+class ProcessingJobRow(Base):
+    """Execution record. Domain results stay on analysis tables."""
+
+    __tablename__ = "processing_job"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN (" + ", ".join(f"'{status}'" for status in _JOB_STATUSES) + ")",
+            name="ck_job_status",
+        ),
+        CheckConstraint("progress_bp >= 0 AND progress_bp <= 10000", name="ck_job_progress"),
+        CheckConstraint("cancel_requested IN (0, 1)", name="ck_job_cancel"),
+        CheckConstraint("attempt >= 1", name="ck_job_attempt"),
+        Index("ix_processing_job_project", "project_id"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(ForeignKey("project.id", ondelete="RESTRICT"), nullable=False)
+    media_asset_id: Mapped[str | None] = mapped_column(ForeignKey("media_asset.id", ondelete="RESTRICT"))
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    progress_bp: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    spec_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    result_json: Mapped[str | None] = mapped_column(Text)
+    error_code: Mapped[str | None] = mapped_column(Text)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[str] = mapped_column(Text, nullable=False)
+    started_at: Mapped[str | None] = mapped_column(Text)
+    finished_at: Mapped[str | None] = mapped_column(Text)
+    cancel_requested: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    attempt: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    resumed_from_job_id: Mapped[str | None] = mapped_column(ForeignKey("processing_job.id", ondelete="RESTRICT"))
+    interrupt_reason: Mapped[str | None] = mapped_column(Text)

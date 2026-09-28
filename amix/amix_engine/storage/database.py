@@ -19,7 +19,13 @@ from amix.amix_engine.storage.migrate import sqlite_url
 
 
 def create_project_engine(database: Path, *, read_only: bool) -> Engine:
-    engine = create_engine(sqlite_url(database), future=True)
+    # Job orchestration runs on worker threads in this process. SQLite still
+    # has one writer; connections may be checked out on those threads.
+    engine = create_engine(
+        sqlite_url(database),
+        future=True,
+        connect_args={"check_same_thread": False},
+    )
 
     @event.listens_for(engine, "connect")
     def _pragmas(dbapi_connection, _connection_record) -> None:
