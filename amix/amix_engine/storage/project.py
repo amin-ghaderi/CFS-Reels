@@ -238,6 +238,7 @@ class StoredWord:
     start_us: int
     end_us: int
     confidence: float | None
+    segment_ref: str | None = None
 
 
 @dataclass(frozen=True)
@@ -452,11 +453,12 @@ class ProjectStore:
             session.commit()
             return job
 
-    def finish_job_succeeded(self, job_id: str, result: dict) -> StoredJob:
+    def finish_job_succeeded(self, job_id: str, result: dict, *, committed: bool = False) -> StoredJob:
         self._require_write()
         with self._session() as session:
             current = get_job(session, job_id, self.project_id)
-            if current.status != RUNNING:
+            allowed = {RUNNING, CANCEL_REQUESTED} if committed else {RUNNING}
+            if current.status not in allowed:
                 raise InvalidJobState(f"cannot complete a job that is {current.status}")
             if current.progress_bp < 10000:
                 set_progress(session, job_id, self.project_id, 10000)
@@ -893,7 +895,7 @@ class ProjectStore:
                 effective = corrections[word.id] if word.id in corrections and corrections[word.id] is not None else word.text
                 loaded.append(StoredWord(
                     word.id, word.sequence, word.text, effective,
-                    word.start_us, word.end_us, word.confidence,
+                    word.start_us, word.end_us, word.confidence, word.segment_ref,
                 ))
             return loaded
 
@@ -1308,6 +1310,86 @@ class ProjectStore:
                     for shot in shots
                 ),
             )
+
+    def publish_activated_transcript(
+        self,
+        *,
+        asset_id: str,
+        words: list[Word],
+        algorithm_id: str,
+        algorithm_version: str,
+        fingerprint: str,
+        window: TimeRange,
+        config: dict,
+        language: str | None,
+        confidences: dict[str, float | None],
+        segments: dict[str, str | None],
+    ) -> str:
+        """Store one transcript and make it active in the same commit.
+
+        An older transcript and its corrections stay on their own word ids.
+        """
+        self._require_write()
+        run_id = str(uuid.uuid4())
+        transcript_id = str(uuid.uuid4())
+        with self._session() as session:
+            self._asset(session, asset_id)
+            session.add(self._run(
+                run_id, asset_id, "transcript", algorithm_id, algorithm_version,
+                "local", config, window, fingerprint,
+            ))
+            session.flush()
+            session.add(TranscriptRow(
+                id=transcript_id,
+                analysis_run_id=run_id,
+                media_asset_id=asset_id,
+                language=language,
+            ))
+            session.flush()
+            for index, word in enumerate(words):
+                session.add(WordRow(
+                    id=word.word_id,
+                    transcript_id=transcript_id,
+                    sequence=index,
+                    text=word.text,
+                    start_us=word.start_us,
+                    end_us=word.end_us,
+                    confidence=confidences.get(word.word_id),
+                    segment_ref=segments.get(word.word_id),
+                ))
+            session.flush()
+            current = session.get(ActiveAnalysisRow, (asset_id, "transcript"))
+            if current is None:
+                session.add(ActiveAnalysisRow(
+                    media_asset_id=asset_id,
+                    kind="transcript",
+                    analysis_run_id=run_id,
+                    activated_at=_now(),
+                ))
+            else:
+                current.analysis_run_id = run_id
+                current.activated_at = _now()
+            session.commit()
+        return run_id
+
+    def analysis_record(self, run_id: str) -> dict:
+        with self._session() as session:
+            row = session.get(AnalysisRunRow, run_id)
+            if row is None:
+                raise ProjectDatabaseInvalid(run_id)
+            return {
+                "run_id": row.id,
+                "kind": row.kind,
+                "status": row.status,
+                "algorithm_id": row.algorithm_id,
+                "algorithm_version": row.algorithm_version,
+                "origin": row.origin,
+                "fingerprint": row.input_fingerprint,
+                "window_start_us": row.window_start_us,
+                "window_end_us": row.window_end_us,
+                "config": json.loads(row.config_json),
+                "created_at": row.created_at,
+            }
 
     def set_active(self, asset_id: str, kind: str, run_id: str) -> None:
         self._require_write()

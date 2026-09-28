@@ -1,7 +1,7 @@
 """Coordinates job handlers on a small thread pool.
 
-These threads orchestrate work. Future Whisper, FFmpeg, and model stages should
-run in subprocesses or specialized workers, not as long CPU tasks on this pool.
+These threads orchestrate work. FFmpeg and transcription run in subprocesses.
+This pool does not load speech models.
 """
 from __future__ import annotations
 
@@ -173,16 +173,20 @@ class JobManager:
                 store.finish_job_cancelled(job_id)
                 return
             result = self._handlers[kind].run(JobContext(store, job_id, spec, token, media_asset_id))
-            if token.is_cancelled():
+            committed = isinstance(result, dict) and result.get("activated") is True
+            if token.is_cancelled() and not committed:
                 store.finish_job_cancelled(job_id)
                 return
             if not isinstance(result, dict):
                 store.finish_job_failed(job_id, "handler_failed", "handler result must be an object")
                 return
+            if committed:
+                result = {key: value for key, value in result.items() if key != "activated"}
             try:
-                store.finish_job_succeeded(job_id, result)
+                store.finish_job_succeeded(job_id, result, committed=committed)
             except InvalidJobState:
-                store.finish_job_cancelled(job_id)
+                if not committed:
+                    store.finish_job_cancelled(job_id)
         except JobCancelled:
             self._stop_if_needed(store, job_id)
         except JobFailed as exc:

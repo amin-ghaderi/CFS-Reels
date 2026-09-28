@@ -75,5 +75,8 @@ export function jobTitle(kind: string): string {
   if (kind === "generate_proxy") {
     return "Generate proxy";
   }
+  if (kind === "transcribe") {
+    return "Transcribe";
+  }
   return "Background job";
 }

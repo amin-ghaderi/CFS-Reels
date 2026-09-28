@@ -30,7 +30,9 @@ from amix.amix_engine.service.schemas import (
     JobResponse,
     OpenProjectRequest,
     ProjectResponse,
+    SpeechModelStatusResponse,
 )
+from amix.amix_engine.stt.resolver import speech_model_status
 from amix.amix_engine.storage.errors import (
     InvalidJobState,
     JobSpecRejected,
@@ -74,6 +76,18 @@ def create_app(runtime: EngineRuntime) -> FastAPI:
     @app.get("/v1/health", response_model=HealthResponse)
     def health() -> HealthResponse:
         return HealthResponse(status="ok", service="amix-engine", version=__version__)
+
+    @app.get("/v1/runtime/speech-model", response_model=SpeechModelStatusResponse)
+    def speech_model(request: Request) -> SpeechModelStatusResponse:
+        _authorize(request)
+        status = speech_model_status()
+        return SpeechModelStatusResponse(
+            state=status.state,
+            model_id=status.model_id,
+            display_name=status.display_name,
+            runtime=status.runtime,
+            message=status.message,
+        )
 
     @app.post("/v1/projects/create", response_model=ProjectResponse)
     def create_project(body: CreateProjectRequest, request: Request) -> ProjectResponse:

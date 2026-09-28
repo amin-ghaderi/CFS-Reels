@@ -61,6 +61,16 @@ export interface JobInfo {
   interrupt_reason: string | null;
 }
 
+export type SpeechModelState = "READY" | "MODEL_MISSING" | "INVALID_MODEL" | "RUNTIME_UNAVAILABLE";
+
+export interface SpeechModelStatus {
+  state: SpeechModelState;
+  model_id: string | null;
+  display_name: string | null;
+  runtime: string | null;
+  message: string;
+}
+
 export interface EngineFailure {
   code: string;
   message: string;

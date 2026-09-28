@@ -297,6 +297,18 @@ dialog.dialog::backdrop {
   margin-top: var(--space-3);
 }
 
+.transcribe-panel {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 36rem;
+  margin: var(--space-3) 0;
+}
+
+.transcribe-panel label {
+  display: grid;
+  gap: var(--space-1);
+}
+
 .banner,
 .shell-notice {
   background: #3a2424;

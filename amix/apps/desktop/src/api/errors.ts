@@ -36,6 +36,14 @@ const MESSAGES: Record<string, string> = {
   invalid_proxy_profile: "That proxy profile is not available.",
   invalid_proxy_source: "A proxy can be generated for source media.",
   proxy_requires_video: "This media has no video to proxy.",
+  speech_model_missing: "Speech model not installed.",
+  invalid_speech_model: "The configured speech model cannot be used.",
+  speech_runtime_unavailable: "The speech runtime is not available.",
+  media_has_no_audio: "This media has no audio to transcribe.",
+  invalid_language: "That language code is not supported. Use Auto or a Whisper language code.",
+  invalid_transcription_profile: "That transcription profile is not available.",
+  transcription_requires_source: "Transcription uses the original source media.",
+  speech_transcription_failed: "Transcription did not finish.",
 };
 
 export function mapEngineFailure(status: number, body: string): EngineFailure {

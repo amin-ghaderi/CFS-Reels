@@ -1,6 +1,6 @@
 # Media and transcript workspace
 
-Phase 6 is the first editing workspace. It lists and links media, and it shows an active transcript when one already exists. It does not transcribe. Preview playback of the V1 proxy is described in [PLAYBACK.md](PLAYBACK.md). Probing and preview proxies are described in [MEDIA_RUNTIME.md](MEDIA_RUNTIME.md).
+Phase 6 is the first editing workspace. It lists and links media, and it shows an active transcript. Local transcription is described in [TRANSCRIPTION_RUNTIME.md](TRANSCRIPTION_RUNTIME.md). Preview playback of the V1 proxy is described in [PLAYBACK.md](PLAYBACK.md). Probing and preview proxies are described in [MEDIA_RUNTIME.md](MEDIA_RUNTIME.md).
 
 ## Workspace architecture
 
@@ -35,7 +35,11 @@ The desktop sends only a path the user picked in the native file dialog. There i
 
 ## Transcript authority
 
-The active transcript is the run stored on `(media asset, kind=transcript)` in `active_analysis`. The newest transcript file or run is not used. If that pointer is absent, the API returns `active: false` and the workspace says that no transcript is available. It does not offer a Transcribe action.
+The active transcript is the run stored on `(media asset, kind=transcript)` in `active_analysis`. The newest transcript file or run is not used. If that pointer is absent, the API returns `active: false` and the workspace says that no transcript is available.
+
+When the selected master is present and a local speech model is ready, that empty state offers Transcribe. The dialog shows the media name, the model name, and language set to Auto, with an optional Whisper language code. Re-transcribe is the same dialog when a transcript is already active. It warns that a new version becomes active only after successful completion, and that existing transcript history and corrections are kept. Corrections are not copied onto the new words.
+
+If the speech model is not configured, the workspace says "Speech model not installed." It does not offer a download. An invalid model or a missing speech runtime is stated the same way, without a path and without a shell command. A running transcription shows `Transcribing…` and, when the job has advanced, a percent taken from that job. Cancel uses the job API. The Activity panel is the progress list. Success reloads the active transcript and the first word page. A failed re-transcription leaves the current transcript on screen.
 
 Words are read in sequence order, `offset` + `limit`, with a maximum limit of 400. The workspace asks for 80 at a time and moves with Previous and Next. Times in the API are integer microseconds. The desktop formats them as `HH:MM:SS.mmm` and does not convert frames.
 
@@ -53,4 +57,4 @@ The application chrome stays LTR (`dir="ltr"` on the document). A transcript who
 
 ## Not in this phase
 
-Whisper, transcription jobs, waveforms, the timeline, multicam, reels, conversation analysis, and packaging.
+Diarization, waveforms, the timeline, multicam, reels, conversation analysis, model download, and packaging.

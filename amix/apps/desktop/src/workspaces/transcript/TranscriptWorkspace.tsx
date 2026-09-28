@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { activeTranscript, clearWordText, correctWordText, transcriptWords, wordAtTime } from "../../api/client";
+import { activeTranscript, cancelJob, clearWordText, correctWordText, createJob, listJobs, speechModelStatus, transcriptWords, wordAtTime } from "../../api/client";
 import { asFailure } from "../../api/errors";
-import type { ActiveTranscript, ProjectInfo, TranscriptWord } from "../../api/types";
+import { isTerminal } from "../../api/jobs";
+import type { ActiveTranscript, JobInfo, ProjectInfo, SpeechModelStatus, TranscriptWord } from "../../api/types";
 import { mediaAvailability } from "../../media/present";
 import { PreviewPlayer } from "../../playback/PreviewPlayer";
 import { usePlayback } from "../../playback/PlaybackSession";
@@ -10,6 +11,14 @@ import { pageOffsetForSequence, pageTimeBounds, playheadInsidePage, seekTargetUs
 import { useProjectData } from "../../project/ProjectData";
 import { SplitPane } from "../../shell/SplitPane";
 import { formatMicroseconds } from "../../time/format";
+import {
+  RETRANSCRIBE_WARNING,
+  activeTranscribeJob,
+  keepLoadedTranscript,
+  languageSelection,
+  transcribeOffer,
+  transcriptionJobSpec,
+} from "../../transcript/transcribe";
 import { EMPTY_TRANSCRIPT, transcriptDir } from "../../transcript/text";
 
 const PAGE = 80;
@@ -28,6 +37,96 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
   const followAsset = useRef<string | null>(null);
   const [followEpoch, setFollowEpoch] = useState(0);
   const playback = usePlayback();
+  const [model, setModel] = useState<SpeechModelStatus | null>(null);
+  const [jobs, setJobs] = useState<JobInfo[]>([]);
+  const [dialog, setDialog] = useState(false);
+  const [autoLanguage, setAutoLanguage] = useState(true);
+  const [languageCode, setLanguageCode] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const seenJobs = useRef(new Set<string>());
+
+  useEffect(() => {
+    let stop = false;
+    void speechModelStatus()
+      .then((status) => {
+        if (!stop) {
+          setModel(status);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!stop) {
+          data.setNotice(asFailure(error));
+        }
+      });
+    return () => {
+      stop = true;
+    };
+  }, [project.handle]);
+
+  useEffect(() => {
+    if (!asset) {
+      return;
+    }
+    let stop = false;
+    let timer = 0;
+    const tick = () => {
+      void listJobs(project.handle)
+        .then((listed) => {
+          if (stop) {
+            return;
+          }
+          setJobs(listed);
+          const active = listed.some((job) => job.kind === "transcribe" && job.media_asset_id === asset.asset_id && !isTerminal(job.status));
+          if (active && timer === 0) {
+            timer = window.setInterval(tick, 1000);
+          }
+          if (!active && timer !== 0) {
+            window.clearInterval(timer);
+            timer = 0;
+          }
+        })
+        .catch((error: unknown) => {
+          if (!stop) {
+            data.setNotice(asFailure(error));
+          }
+        });
+    };
+    tick();
+    return () => {
+      stop = true;
+      if (timer !== 0) {
+        window.clearInterval(timer);
+      }
+    };
+  }, [project.handle, asset?.asset_id]);
+
+  useEffect(() => {
+    if (!asset) {
+      return;
+    }
+    const assetId = asset.asset_id;
+    for (const job of jobs) {
+      if (job.kind !== "transcribe" || job.media_asset_id !== assetId || !isTerminal(job.status)) {
+        continue;
+      }
+      if (seenJobs.current.has(job.job_id)) {
+        continue;
+      }
+      seenJobs.current.add(job.job_id);
+      if (keepLoadedTranscript(Boolean(described?.active), job.status)) {
+        continue;
+      }
+      setOffset(0);
+      setPicked(null);
+      void activeTranscript(project.handle, assetId)
+        .then((next) => {
+          setDescribed(next);
+        })
+        .catch((error: unknown) => {
+          data.setNotice(asFailure(error));
+        });
+    }
+  }, [jobs, asset?.asset_id, project.handle, described?.active]);
 
   useEffect(() => {
     setDescribed(null);
@@ -139,6 +238,55 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
         setFollowEpoch((value) => value + 1);
       });
   }, [playback.playheadUs, playback.seekSerial, words, asset?.asset_id, described?.active, offset, project.handle, followEpoch]);
+
+  const runningJob = asset ? activeTranscribeJob(jobs, asset.asset_id) : null;
+  const offer = transcribeOffer({
+    readOnly: project.read_only,
+    hasAsset: Boolean(asset),
+    role: asset?.role ?? null,
+    mediaStatus: asset?.status ?? null,
+    hasTranscript: Boolean(described?.active),
+    modelState: model?.state ?? null,
+    activeJob: runningJob,
+  });
+  const running = offer.running;
+
+  async function startTranscription(event: FormEvent) {
+    event.preventDefault();
+    if (!asset) {
+      return;
+    }
+    const selected = languageSelection(autoLanguage, languageCode);
+    if ("error" in selected) {
+      setFormError(selected.error);
+      return;
+    }
+    setFormError(null);
+    data.setBusy(true);
+    data.setNotice(null);
+    try {
+      const created = await createJob(project.handle, "transcribe", {
+        mediaAssetId: asset.asset_id,
+        spec: transcriptionJobSpec(selected.language),
+      });
+      setJobs((current) => [created, ...current.filter((job) => job.job_id !== created.job_id)]);
+      setDialog(false);
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    } finally {
+      data.setBusy(false);
+    }
+  }
+
+  async function cancelTranscription(jobId: string) {
+    data.setNotice(null);
+    try {
+      const updated = await cancelJob(project.handle, jobId);
+      setJobs((current) => current.map((job) => (job.job_id === updated.job_id ? updated : job)));
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    }
+  }
 
   function choose(word: TranscriptWord) {
     setPicked(word);
@@ -272,15 +420,70 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
             <section className="workspace-main" aria-label="Transcript">
               <div className="toolbar">
                 <h1>Transcript</h1>
+                {described?.language ? <span className="muted" dir="ltr">{described.language}</span> : null}
                 {described?.active ? (
                   <span className="muted numeric" dir="ltr">
                     {offset + 1}–{Math.min(offset + words.length, total)} of {total}
                   </span>
                 ) : null}
+                {offer.start === "transcribe" ? (
+                  <button type="button" onClick={() => { setFormError(null); setDialog(true); }}>Transcribe</button>
+                ) : null}
+                {offer.start === "retranscribe" ? (
+                  <button type="button" onClick={() => { setFormError(null); setDialog(true); }}>Re-transcribe</button>
+                ) : null}
+                {running ? (
+                  <>
+                    <span className="muted">{running.label}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (running) {
+                          void cancelTranscription(running.jobId);
+                        }
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : null}
               </div>
               <PreviewPlayer project={project} />
               {!asset ? <p className="muted">Select a media file in Media.</p> : null}
               {asset && described && !described.active ? <p>{EMPTY_TRANSCRIPT}</p> : null}
+              {offer.blocked ? <p>{offer.blocked}</p> : null}
+              {dialog && asset && offer.start ? (
+                <form className="transcribe-panel" onSubmit={(event) => void startTranscription(event)}>
+                  <p>Selected media: <span dir="auto">{asset.display_name}</span></p>
+                  <p>Speech model: {model?.display_name ?? model?.message}</p>
+                  {offer.start === "retranscribe" ? <p>{RETRANSCRIBE_WARNING}</p> : null}
+                  <label>
+                    <span>
+                      <input
+                        type="checkbox"
+                        checked={autoLanguage}
+                        onChange={(event) => setAutoLanguage(event.target.checked)}
+                      />
+                      {" "}Auto
+                    </span>
+                  </label>
+                  <label>
+                    Language code
+                    <input
+                      value={languageCode}
+                      disabled={autoLanguage}
+                      onChange={(event) => setLanguageCode(event.target.value)}
+                      spellCheck={false}
+                      autoCapitalize="off"
+                    />
+                  </label>
+                  {formError ? <p>{formError}</p> : null}
+                  <div className="actions">
+                    <button type="submit" className="primary" disabled={data.busy}>Transcribe</button>
+                    <button type="button" onClick={() => setDialog(false)}>Cancel</button>
+                  </div>
+                </form>
+              ) : null}
               {described?.active ? (
                 <>
                   <div className="transcript" dir={direction} lang={described.language ?? undefined}>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canCancel, canRetry, isTerminal, orderJobs, progressPercent } from "./jobs";
+import { canCancel, canRetry, isTerminal, jobTitle, orderJobs, progressPercent } from "./jobs";
 import type { JobInfo } from "./types";
 
 describe("job display helpers", () => {
@@ -21,6 +21,10 @@ describe("job display helpers", () => {
     expect(canRetry("FAILED")).toBe(true);
     expect(canRetry("INTERRUPTED")).toBe(true);
     expect(isTerminal("QUEUED")).toBe(false);
+  });
+
+  it("names a transcription job for the activity list", () => {
+    expect(jobTitle("transcribe")).toBe("Transcribe");
   });
 
   it("lists active jobs before terminal history", () => {

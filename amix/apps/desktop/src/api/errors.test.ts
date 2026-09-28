@@ -27,6 +27,8 @@ describe("jobProblemMessage", () => {
     expect(message).not.toContain("Traceback");
     expect(jobProblemMessage(null)).toBe("The job did not finish.");
     expect(jobProblemMessage("media_tool_missing")).toBe("FFmpeg tools are not available.");
+    expect(jobProblemMessage("speech_model_missing")).toBe("Speech model not installed.");
+    expect(jobProblemMessage("speech_model_missing").toLowerCase()).not.toContain("download");
     expect(jobProblemMessage("media_tool_missing")).not.toContain("FileNotFoundError");
   });
 });

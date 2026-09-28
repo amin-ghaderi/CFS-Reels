@@ -150,6 +150,14 @@ class WordAtTimeResponse(_Model):
     end_us: int | None = None
 
 
+class SpeechModelStatusResponse(_Model):
+    state: str
+    model_id: str | None = None
+    display_name: str | None = None
+    runtime: str | None = None
+    message: str
+
+
 class PlaybackResponse(_Model):
     source_media_asset_id: str
     playable: bool

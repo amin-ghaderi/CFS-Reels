@@ -11,6 +11,7 @@ import type {
   TranscriptWordPage,
   WordAtTime,
   PreparedPlayback,
+  SpeechModelStatus,
 } from "./types";
 
 interface RawResponse {
@@ -36,6 +37,10 @@ export async function joinProjectPath(parent: string, name: string): Promise<str
 
 export async function health(): Promise<{ status: string; service: string; version: string }> {
   return request("GET", "/v1/health");
+}
+
+export async function speechModelStatus(): Promise<SpeechModelStatus> {
+  return request("GET", "/v1/runtime/speech-model");
 }
 
 export async function createProject(path: string, name: string): Promise<ProjectInfo> {

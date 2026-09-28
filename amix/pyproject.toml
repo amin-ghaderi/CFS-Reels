@@ -13,6 +13,7 @@ dependencies = [
     "fastapi>=0.115,<1",
     "pydantic>=2,<3",
     "uvicorn>=0.32,<1",
+    "faster-whisper>=1.1.0,<2",
 ]
 
 [project.optional-dependencies]
@@ -32,4 +33,9 @@ packages = [
     "amix.amix_engine.service",
     "amix.amix_engine.storage",
     "amix.amix_engine.time",
+    "amix.amix_engine.adapters",
+    "amix.amix_engine.adapters.media",
+    "amix.amix_engine.adapters.stt",
+    "amix.amix_engine.stt",
+    "amix.amix_engine.workers",
 ]
