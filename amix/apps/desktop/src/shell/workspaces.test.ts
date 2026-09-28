@@ -8,7 +8,7 @@ describe("workspace navigation", () => {
     expect(WORKSPACES).toContain("Transcript");
     expect(isPlaceholder("Media")).toBe(false);
     expect(isPlaceholder("Transcript")).toBe(false);
-    expect(isPlaceholder("Multicam")).toBe(true);
+    expect(isPlaceholder("Multicam")).toBe(false);
     expect(isPlaceholder("Reels")).toBe(true);
   });
 });

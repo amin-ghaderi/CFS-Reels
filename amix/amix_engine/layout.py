@@ -57,3 +57,34 @@ def _int(value: object, name: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise LayoutRejected(f"Layout {name} must be an integer.")
     return value
+
+
+def layout_fingerprint(records: list[dict]) -> str:
+    """Exact identity of the bindings overlap and plans were measured against."""
+    import hashlib
+    import json
+
+    payload = [
+        {
+            "coordinate_space": COORDINATE_SPACE,
+            "participant_id": row["participant_id"],
+            "start_us": row["start_us"],
+            "end_us": row["end_us"],
+            "x": row["x"],
+            "y": row["y"],
+            "w": row["w"],
+            "h": row["h"],
+        }
+        for row in sorted(records, key=lambda item: (
+            item["participant_id"], item["start_us"], item["end_us"], item["x"], item["y"], item["w"], item["h"],
+        ))
+    ]
+    return hashlib.sha256(json.dumps(payload, separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def protected_fingerprint(regions: list[tuple[int, int]]) -> str:
+    import hashlib
+    import json
+
+    payload = [{"start_us": start, "end_us": end} for start, end in sorted(regions)]
+    return hashlib.sha256(json.dumps(payload, separators=(",", ":")).encode("utf-8")).hexdigest()

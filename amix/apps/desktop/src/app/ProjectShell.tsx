@@ -11,6 +11,7 @@ import { PlaybackProvider } from "../playback/PlaybackSession";
 import type { WorkspaceId } from "../shell/workspaces";
 import { WORKSPACES, isPlaceholder } from "../shell/workspaces";
 import { MediaWorkspace } from "../workspaces/media/MediaWorkspace";
+import { MulticamWorkspace } from "../workspaces/multicam/MulticamWorkspace";
 import { PlaceholderWorkspace } from "../workspaces/PlaceholderWorkspace";
 import { TranscriptWorkspace } from "../workspaces/transcript/TranscriptWorkspace";
 
@@ -82,6 +83,7 @@ export function ProjectShell({
         <div className="workspace-slot">
           {workspace === "Media" ? <MediaWorkspace project={project} /> : null}
           {workspace === "Transcript" ? <TranscriptWorkspace project={project} /> : null}
+          {workspace === "Multicam" ? <MulticamWorkspace project={project} /> : null}
           {isPlaceholder(workspace) ? <PlaceholderWorkspace workspace={workspace} /> : null}
         </div>
         <ActivityBar project={project} onNotice={setNotice} />

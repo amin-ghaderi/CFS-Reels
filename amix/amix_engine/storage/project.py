@@ -60,7 +60,9 @@ from amix.amix_engine.storage.jobs import (
 from amix.amix_engine.storage.kinds import (
     ANALYSIS_KINDS,
     DIARIZATION,
+    OVERLAP,
     PARTICIPANT_ASSIGNMENT,
+    SHOT_PLAN,
     SPEAKER_OVERRIDE,
     TURNS,
     WORD_TEXT,
@@ -1495,6 +1497,102 @@ class ProjectStore:
                     end_us=segment.end_us,
                 ))
             self._point_active(session, asset_id, DIARIZATION, run_id)
+            session.commit()
+        return run_id
+
+    def publish_overlap(
+        self,
+        *,
+        asset_id: str,
+        regions: list[OverlapRegion],
+        algorithm_id: str,
+        algorithm_version: str,
+        fingerprint: str,
+        window: TimeRange,
+        config: dict,
+    ) -> str:
+        """Store overlap regions and switch the active overlap pointer.
+
+        This run has no transcript or turn dependency.
+        """
+        self._require_write()
+        run_id = str(uuid.uuid4())
+        with self._session() as session:
+            self._asset(session, asset_id)
+            session.add(self._run(
+                run_id, asset_id, OVERLAP, algorithm_id, algorithm_version,
+                "local", config, window, fingerprint,
+            ))
+            session.flush()
+            for region in regions:
+                region_id = str(uuid.uuid4())
+                session.add(OverlapRegionRow(
+                    id=region_id,
+                    analysis_run_id=run_id,
+                    start_us=region.start_us,
+                    end_us=region.end_us,
+                    confidence=region.confidence,
+                ))
+                session.flush()
+                for index, participant in enumerate(region.participant_ids):
+                    session.add(OverlapParticipantRow(
+                        region_id=region_id,
+                        participant_id=participant.value,
+                        sequence=index,
+                    ))
+            self._point_active(session, asset_id, OVERLAP, run_id)
+            session.commit()
+        return run_id
+
+    def publish_shot_plan(
+        self,
+        *,
+        asset_id: str,
+        plan: ShotPlan,
+        depends_on: list[str],
+        algorithm_id: str,
+        algorithm_version: str,
+        fingerprint: str,
+        config: dict,
+    ) -> str:
+        """Store one automatic plan and switch the active shot-plan pointer."""
+        self._require_write()
+        run_id = str(uuid.uuid4())
+        with self._session() as session:
+            self._asset(session, asset_id)
+            for dependency in depends_on:
+                if session.get(AnalysisRunRow, dependency) is None:
+                    raise ProjectDatabaseInvalid(f"unknown analysis dependency {dependency}")
+            session.add(self._run(
+                run_id, asset_id, SHOT_PLAN, algorithm_id, algorithm_version,
+                "local", config, plan.span, fingerprint,
+            ))
+            session.flush()
+            for dependency in depends_on:
+                session.add(AnalysisDependencyRow(
+                    run_id=run_id,
+                    depends_on_run_id=dependency,
+                ))
+            plan_id = str(uuid.uuid4())
+            session.add(ShotPlanRow(
+                id=plan_id,
+                analysis_run_id=run_id,
+                start_us=plan.span.start_us,
+                end_us=plan.span.end_us,
+            ))
+            session.flush()
+            for index, shot in enumerate(plan.shots):
+                session.add(ShotRow(
+                    shot_plan_id=plan_id,
+                    sequence=index,
+                    start_us=shot.start_us,
+                    end_us=shot.end_us,
+                    presentation=shot.presentation.value,
+                    participant_id=None if shot.participant_id is None else shot.participant_id.value,
+                    floor_participant_id=None if shot.floor_participant_id is None else shot.floor_participant_id.value,
+                    reason=shot.reason,
+                ))
+            self._point_active(session, asset_id, SHOT_PLAN, run_id)
             session.commit()
         return run_id
 

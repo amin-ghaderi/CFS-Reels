@@ -16,6 +16,7 @@ dependencies = [
     "faster-whisper>=1.1.0,<2",
     "numpy>=2,<3",
     "scipy>=1.13,<2",
+    "opencv-python-headless>=4.10,<5",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +40,7 @@ packages = [
     "amix.amix_engine.adapters.media",
     "amix.amix_engine.adapters.stt",
     "amix.amix_engine.adapters.diarize",
+    "amix.amix_engine.adapters.vision",
     "amix.amix_engine.stt",
     "amix.amix_engine.workers",
 ]

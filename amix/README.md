@@ -82,6 +82,11 @@ Speaker analysis uses the NumPy and SciPy packages installed with the engine.
 It does not download a diarization model. See
 [docs/DIARIZATION_RUNTIME.md](docs/DIARIZATION_RUNTIME.md).
 
+Overlap analysis uses OpenCV and a local YuNet file. AMIX does not download
+that file. Set `AMIX_YUNET_MODEL_PATH` to an existing model. See
+[docs/OVERLAP_RUNTIME.md](docs/OVERLAP_RUNTIME.md) and
+[docs/MULTICAM_FOUNDATION.md](docs/MULTICAM_FOUNDATION.md).
+
 ## Tests
 
 From the repository root:

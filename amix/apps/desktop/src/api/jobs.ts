@@ -81,5 +81,11 @@ export function jobTitle(kind: string): string {
   if (kind === "diarize_audio") {
     return "Analyze speakers";
   }
+  if (kind === "detect_overlap") {
+    return "Detect overlap";
+  }
+  if (kind === "build_multicam_plan") {
+    return "Build multicam plan";
+  }
   return "Background job";
 }

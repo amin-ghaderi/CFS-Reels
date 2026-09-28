@@ -10,6 +10,8 @@ from pathlib import Path
 from amix.amix_engine.jobs.handlers import ProjectIntegrityCheck
 from amix.amix_engine.jobs.media import GenerateProxyJob, MediaProbeJob
 from amix.amix_engine.jobs.diarize import DiarizeAudioJob
+from amix.amix_engine.jobs.multicam import BuildMulticamPlanJob
+from amix.amix_engine.jobs.overlap import DetectOverlapJob
 from amix.amix_engine.jobs.transcribe import TranscribeJob
 from amix.amix_engine.jobs.runner import JobManager
 from amix.amix_engine.service.config import ServiceConfig
@@ -63,6 +65,8 @@ class EngineRuntime:
             GenerateProxyJob.kind: GenerateProxyJob(),
             TranscribeJob.kind: TranscribeJob(),
             DiarizeAudioJob.kind: DiarizeAudioJob(),
+            DetectOverlapJob.kind: DetectOverlapJob(),
+            BuildMulticamPlanJob.kind: BuildMulticamPlanJob(),
         }
         for kind, handler in (extra_handlers or {}).items():
             if kind in handlers:

@@ -30,9 +30,15 @@ from amix.amix_engine.service.schemas import (
     TranscriptWordResponse,
     WordAtTimeResponse,
     WordTextRequest,
+    MulticamReadinessResponse,
+    OverlapRegionResponse,
+    OverlapStateResponse,
+    ShotPlanStateResponse,
+    ShotResponse,
 )
 from amix.amix_engine.speakers import SpeakerMapRejected, apply_cluster_map, speaker_status
 from amix.amix_engine.jobs.media import proxy_state
+from amix.amix_engine.multicam.apply import multicam_readiness
 from amix.amix_engine.storage.errors import NoActiveTranscript
 from amix.amix_engine.storage.kinds import DEFAULT_MEDIA_ROLE, MEDIA_ROLES, WORD_PAGE_LIMIT
 from amix.amix_engine.storage.project import ProjectStore, StoredMedia, TranscriptWordView
@@ -138,6 +144,21 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
     ) -> ApplySpeakerMapResponse:
         authorize(request)
         return call(lambda: _apply_map(runtime, handle, asset_id, body))
+
+    @app.get("/v1/projects/{handle}/media/{asset_id}/overlap", response_model=OverlapStateResponse)
+    def overlap_state(handle: str, asset_id: str, request: Request) -> OverlapStateResponse:
+        authorize(request)
+        return call(lambda: _overlap_state(runtime, handle, asset_id))
+
+    @app.get("/v1/projects/{handle}/media/{asset_id}/multicam", response_model=MulticamReadinessResponse)
+    def multicam_state(handle: str, asset_id: str, request: Request) -> MulticamReadinessResponse:
+        authorize(request)
+        return call(lambda: _multicam_state(runtime, handle, asset_id))
+
+    @app.get("/v1/projects/{handle}/media/{asset_id}/shot-plan", response_model=ShotPlanStateResponse)
+    def shot_plan_state(handle: str, asset_id: str, request: Request) -> ShotPlanStateResponse:
+        authorize(request)
+        return call(lambda: _shot_plan_state(runtime, handle, asset_id))
 
 
 def _store(runtime: EngineRuntime, handle: str) -> ProjectStore:
@@ -496,4 +517,74 @@ def _speaker_view(status: dict) -> SpeakerAnalysisResponse:
         profile_id=status["profile_id"],
         cluster_count=status["cluster_count"],
         limitation=_LIMITATION,
+    )
+
+
+def _multicam_state(runtime: EngineRuntime, handle: str, asset_id: str) -> MulticamReadinessResponse:
+    ready = multicam_readiness(_store(runtime, handle), asset_id)
+    return MulticamReadinessResponse(
+        turns_ready=ready["turns_ready"],
+        overlap_ready=ready["overlap_ready"],
+        overlap_stale=ready["overlap_stale"],
+        layout_ready=ready["layout_ready"],
+        plan_ready=ready["plan_ready"],
+        plan_present=ready["plan_present"],
+        plan_stale=ready["plan_stale"],
+        blocking_reason=ready["blocking_reason"],
+        vision_state=ready["vision_state"],
+        plan_start_us=ready["plan_start_us"],
+        plan_end_us=ready["plan_end_us"],
+    )
+
+
+def _overlap_state(runtime: EngineRuntime, handle: str, asset_id: str) -> OverlapStateResponse:
+    store = _store(runtime, handle)
+    ready = multicam_readiness(store, asset_id)
+    run_id = ready["overlap_run_id"]
+    if run_id is None:
+        return OverlapStateResponse(run_id=None, stale=False, regions=[])
+    record = store.analysis_record(run_id)
+    return OverlapStateResponse(
+        run_id=run_id,
+        stale=ready["overlap_stale"],
+        window_start_us=record["window_start_us"],
+        window_end_us=record["window_end_us"],
+        profile_id=record["config"].get("profile_id"),
+        regions=[
+            OverlapRegionResponse(
+                start_us=region.start_us,
+                end_us=region.end_us,
+                duration_us=region.end_us - region.start_us,
+                confidence=region.confidence,
+                participant_ids=[person.value for person in region.participant_ids],
+            )
+            for region in store.load_overlaps(run_id)
+        ],
+    )
+
+
+def _shot_plan_state(runtime: EngineRuntime, handle: str, asset_id: str) -> ShotPlanStateResponse:
+    store = _store(runtime, handle)
+    ready = multicam_readiness(store, asset_id)
+    run_id = ready["shot_plan_run_id"]
+    if run_id is None:
+        return ShotPlanStateResponse(run_id=None, stale=False, shots=[])
+    names = {participant_id: name for participant_id, name, _order in store.list_participants()}
+    plan = store.load_shot_plan(run_id)
+    return ShotPlanStateResponse(
+        run_id=run_id,
+        stale=ready["plan_stale"],
+        start_us=plan.span.start_us,
+        end_us=plan.span.end_us,
+        shots=[
+            ShotResponse(
+                start_us=shot.start_us,
+                end_us=shot.end_us,
+                presentation=shot.presentation.value,
+                participant_id=None if shot.participant_id is None else shot.participant_id.value,
+                participant_name=None if shot.participant_id is None else names.get(shot.participant_id.value),
+                reason=shot.reason,
+            )
+            for shot in plan.shots
+        ],
     )

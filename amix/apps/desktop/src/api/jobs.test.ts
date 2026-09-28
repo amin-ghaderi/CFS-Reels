@@ -26,6 +26,8 @@ describe("job display helpers", () => {
   it("names a transcription job for the activity list", () => {
     expect(jobTitle("transcribe")).toBe("Transcribe");
     expect(jobTitle("diarize_audio")).toBe("Analyze speakers");
+    expect(jobTitle("detect_overlap")).toBe("Detect overlap");
+    expect(jobTitle("build_multicam_plan")).toBe("Build multicam plan");
   });
 
   it("lists active jobs before terminal history", () => {

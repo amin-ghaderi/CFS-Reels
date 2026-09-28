@@ -253,3 +253,51 @@ class ApplySpeakerMapResponse(_Model):
     assignment_run_id: str
     turns_run_id: str
     state: str
+
+
+class OverlapRegionResponse(_Model):
+    start_us: int
+    end_us: int
+    duration_us: int
+    confidence: float
+    participant_ids: list[str]
+
+
+class OverlapStateResponse(_Model):
+    run_id: str | None
+    stale: bool
+    window_start_us: int | None = None
+    window_end_us: int | None = None
+    profile_id: str | None = None
+    regions: list[OverlapRegionResponse]
+
+
+class MulticamReadinessResponse(_Model):
+    turns_ready: bool
+    overlap_ready: bool
+    overlap_stale: bool
+    layout_ready: bool
+    plan_ready: bool
+    plan_present: bool
+    plan_stale: bool
+    blocking_reason: str | None
+    vision_state: str
+    plan_start_us: int | None = None
+    plan_end_us: int | None = None
+
+
+class ShotResponse(_Model):
+    start_us: int
+    end_us: int
+    presentation: str
+    participant_id: str | None = None
+    participant_name: str | None = None
+    reason: str
+
+
+class ShotPlanStateResponse(_Model):
+    run_id: str | None
+    stale: bool
+    start_us: int | None = None
+    end_us: int | None = None
+    shots: list[ShotResponse]

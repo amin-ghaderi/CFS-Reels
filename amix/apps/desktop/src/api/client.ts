@@ -15,6 +15,9 @@ import type {
   PreparedPlayback,
   SpeakerAnalysis,
   SpeechModelStatus,
+  MulticamReadiness,
+  OverlapState,
+  ShotPlanState,
 } from "./types";
 
 interface RawResponse {
@@ -178,6 +181,18 @@ export async function applySpeakerMap(
     diarization_run_id: diarizationRunId,
     mappings,
   });
+}
+
+export function overlapState(handle: string, assetId: string): Promise<OverlapState> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/overlap`);
+}
+
+export function multicamReadiness(handle: string, assetId: string): Promise<MulticamReadiness> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/multicam`);
+}
+
+export function shotPlanState(handle: string, assetId: string): Promise<ShotPlanState> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/shot-plan`);
 }
 
 export function preparePlayback(sourceMediaAssetId: string, requestId: number): Promise<PreparedPlayback> {

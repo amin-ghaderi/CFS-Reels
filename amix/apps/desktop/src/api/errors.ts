@@ -52,6 +52,22 @@ const MESSAGES: Record<string, string> = {
   diarization_failed: "Speaker analysis did not finish.",
   incomplete_cluster_map: "Map every cluster, including Unknown.",
   unknown_diarization: "That speaker analysis is not available.",
+  vision_model_missing: "Face model not installed.",
+  invalid_vision_model: "The configured face model cannot be used.",
+  vision_runtime_unavailable: "The vision runtime is not available.",
+  insufficient_layout: "At least two participant regions are required.",
+  overlap_requires_source: "Overlap analysis uses the original source media.",
+  overlap_requires_probe: "Probe this media before overlap analysis.",
+  overlap_requires_video: "This media has no video to analyze.",
+  invalid_analysis_window: "The analysis window is not valid.",
+  invalid_overlap_profile: "That overlap profile is not available.",
+  overlap_failed: "Overlap analysis did not finish.",
+  overlap_stale: "Overlap analysis is out of date for the current layout.",
+  overlap_required: "Overlap analysis is not ready for this media.",
+  turns_required: "Speaker turns are not ready for this media.",
+  transcript_required: "No transcript is available for this media yet.",
+  analysis_not_covering: "Turns and overlap do not cover a shared plan range.",
+  invalid_plan_profile: "That multicam profile is not available.",
 };
 
 export function mapEngineFailure(status: number, body: string): EngineFailure {

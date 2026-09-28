@@ -503,6 +503,40 @@ details {
   display: none;
 }
 
+.multicam {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+.multicam-main,
+.multicam-inspector {
+  min-width: 0;
+}
+
+.shot-indicator {
+  margin: 0;
+  font-weight: 600;
+}
+
+.review-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 28vh;
+  overflow: auto;
+}
+
+.review-list button {
+  width: 100%;
+  text-align: left;
+}
+
+.review-list .is-current button {
+  outline: 2px solid var(--accent, #3b6);
+}
+
 .transport {
   display: flex;
   align-items: center;

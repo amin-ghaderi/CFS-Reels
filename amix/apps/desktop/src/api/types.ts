@@ -204,3 +204,51 @@ export interface PreparedPlayback {
   file_mtime_ns: number | null;
   stale: boolean;
 }
+
+export interface OverlapRegionView {
+  start_us: number;
+  end_us: number;
+  duration_us: number;
+  confidence: number;
+  participant_ids: string[];
+}
+
+export interface OverlapState {
+  run_id: string | null;
+  stale: boolean;
+  window_start_us: number | null;
+  window_end_us: number | null;
+  profile_id: string | null;
+  regions: OverlapRegionView[];
+}
+
+export interface MulticamReadiness {
+  turns_ready: boolean;
+  overlap_ready: boolean;
+  overlap_stale: boolean;
+  layout_ready: boolean;
+  plan_ready: boolean;
+  plan_present: boolean;
+  plan_stale: boolean;
+  blocking_reason: string | null;
+  vision_state: string;
+  plan_start_us: number | null;
+  plan_end_us: number | null;
+}
+
+export interface ShotView {
+  start_us: number;
+  end_us: number;
+  presentation: string;
+  participant_id: string | null;
+  participant_name: string | null;
+  reason: string;
+}
+
+export interface ShotPlanState {
+  run_id: string | null;
+  stale: boolean;
+  start_us: number | null;
+  end_us: number | null;
+  shots: ShotView[];
+}
