@@ -133,6 +133,52 @@ export interface TranscriptWordPage {
   words: TranscriptWord[];
 }
 
+export interface Participant {
+  participant_id: string;
+  display_name: string;
+}
+
+export interface LayoutBindingRecord {
+  binding_id: string;
+  participant_id: string;
+  start_us: number;
+  end_us: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  coordinate_space: string;
+}
+
+export interface ClusterSample {
+  start_us: number;
+  end_us: number;
+}
+
+export interface ClusterSummary {
+  cluster_key: string;
+  segment_count: number;
+  voiced_us: number;
+  samples: ClusterSample[];
+}
+
+export interface SpeakerAnalysis {
+  state: string;
+  participant_count: number;
+  transcript_run_id: string | null;
+  diarization_run_id: string | null;
+  assignment_run_id: string | null;
+  assignment_compatible: boolean;
+  turns_run_id: string | null;
+  turns_match_assignment: boolean;
+  source_present: boolean;
+  clusters: ClusterSummary[];
+  previous_map: Record<string, string | null> | null;
+  profile_id: string;
+  cluster_count: number;
+  limitation: string;
+}
+
 export interface WordAtTime {
   found: boolean;
   word_id: string | null;

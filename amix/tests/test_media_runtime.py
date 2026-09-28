@@ -456,7 +456,7 @@ class MigrationTests(unittest.TestCase):
                 types = {row[1]: row[2] for row in connection.execute("PRAGMA table_info(media_asset)")}
             finally:
                 connection.close()
-            self.assertEqual(revision, "0003_media_runtime")
+            self.assertEqual(revision, "0004_diarization")
             self.assertIn("source_media_asset_id", columns)
             self.assertIn("fps_num", columns)
             self.assertNotIn("REAL", types["fps_num"].upper())
@@ -464,7 +464,7 @@ class MigrationTests(unittest.TestCase):
             root = Path(tmp) / "Fresh"
             store = create_project(root, "Fresh")
             try:
-                self.assertEqual(store.alembic_revision(), "0003_media_runtime")
+                self.assertEqual(store.alembic_revision(), "0004_diarization")
             finally:
                 store.close()
 

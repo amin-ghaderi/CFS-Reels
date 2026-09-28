@@ -7,6 +7,8 @@ import { mediaAvailability, mediaFacts, proxyLabel, roleLabel, sourceAssets } fr
 import { PreviewPlayer } from "../../playback/PreviewPlayer";
 import { useProjectData } from "../../project/ProjectData";
 import { SplitPane } from "../../shell/SplitPane";
+import { LayoutForm } from "./LayoutForm";
+import { ParticipantsPanel } from "./ParticipantsPanel";
 
 export function MediaWorkspace({ project }: { project: ProjectInfo }) {
   const data = useProjectData();
@@ -137,6 +139,7 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
           </button>
         </div>
       ) : null}
+      {selected.role === "master" ? <LayoutForm project={project} asset={selected} /> : null}
     </aside>
   ) : null;
 
@@ -175,7 +178,12 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
     <SplitPane
       sideFirst
       sideWidth={280}
-      side={list}
+      side={
+        <div className="setup-column">
+          {list}
+          <ParticipantsPanel project={project} />
+        </div>
+      }
       main={
         <SplitPane
           sideWidth={280}

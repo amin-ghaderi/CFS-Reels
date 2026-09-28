@@ -4,6 +4,7 @@ These are data values, not filenames. ``latest`` and ``v3`` are not kinds.
 """
 
 TRANSCRIPT = "transcript"
+DIARIZATION = "diarization"
 PARTICIPANT_ASSIGNMENT = "participant_assignment"
 TURNS = "turns"
 OVERLAP = "overlap"
@@ -11,6 +12,7 @@ SHOT_PLAN = "shot_plan"
 
 ANALYSIS_KINDS = frozenset({
     TRANSCRIPT,
+    DIARIZATION,
     PARTICIPANT_ASSIGNMENT,
     TURNS,
     OVERLAP,

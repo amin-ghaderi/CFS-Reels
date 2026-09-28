@@ -177,3 +177,79 @@ class PlaybackResponse(_Model):
     container: str | None = None
     mime: str | None = None
     source_present: bool
+
+
+class ParticipantResponse(_Model):
+    participant_id: str
+    display_name: str
+
+
+class ParticipantNameRequest(_Model):
+    display_name: str = Field(min_length=1)
+
+
+class LayoutBindingResponse(_Model):
+    binding_id: str
+    participant_id: str
+    start_us: int
+    end_us: int
+    x: int
+    y: int
+    w: int
+    h: int
+    coordinate_space: str
+
+
+class LayoutBindingRequest(_Model):
+    participant_id: str
+    start_us: int
+    end_us: int
+    x: int
+    y: int
+    w: int
+    h: int
+
+
+class ClusterSampleResponse(_Model):
+    start_us: int
+    end_us: int
+
+
+class ClusterSummaryResponse(_Model):
+    cluster_key: str
+    segment_count: int
+    voiced_us: int
+    samples: list[ClusterSampleResponse]
+
+
+class SpeakerAnalysisResponse(_Model):
+    state: str
+    participant_count: int
+    transcript_run_id: str | None = None
+    diarization_run_id: str | None = None
+    assignment_run_id: str | None = None
+    assignment_compatible: bool
+    turns_run_id: str | None = None
+    turns_match_assignment: bool
+    source_present: bool
+    clusters: list[ClusterSummaryResponse]
+    previous_map: dict[str, str | None] | None = None
+    profile_id: str
+    cluster_count: int
+    limitation: str
+
+
+class ClusterMappingRequest(_Model):
+    cluster_key: str
+    participant_id: str | None = None
+
+
+class ApplySpeakerMapRequest(_Model):
+    diarization_run_id: str
+    mappings: list[ClusterMappingRequest]
+
+
+class ApplySpeakerMapResponse(_Model):
+    assignment_run_id: str
+    turns_run_id: str
+    state: str

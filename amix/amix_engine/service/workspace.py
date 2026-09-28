@@ -1,25 +1,37 @@
 """Media and transcript routes. Probe and proxy work runs as jobs, not in the request."""
 from __future__ import annotations
 
+import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 
+from amix.amix_engine.layout import COORDINATE_SPACE, LayoutRejected, validate_layout
 from amix.amix_engine.playback import PlaybackDescriptor, resolve_playback
 from amix.amix_engine.service.errors import ApiError
 from amix.amix_engine.service.runtime import EngineRuntime
 from amix.amix_engine.service.schemas import (
+    ApplySpeakerMapRequest,
+    ApplySpeakerMapResponse,
+    ClusterSampleResponse,
+    ClusterSummaryResponse,
+    LayoutBindingRequest,
+    LayoutBindingResponse,
     LinkMediaRequest,
     MediaResponse,
     MediaStatusResponse,
+    ParticipantNameRequest,
+    ParticipantResponse,
     PlaybackResponse,
     RelinkMediaRequest,
+    SpeakerAnalysisResponse,
     TranscriptResponse,
     TranscriptWordPage,
     TranscriptWordResponse,
     WordAtTimeResponse,
     WordTextRequest,
 )
+from amix.amix_engine.speakers import SpeakerMapRejected, apply_cluster_map, speaker_status
 from amix.amix_engine.jobs.media import proxy_state
 from amix.amix_engine.storage.errors import NoActiveTranscript
 from amix.amix_engine.storage.kinds import DEFAULT_MEDIA_ROLE, MEDIA_ROLES, WORD_PAGE_LIMIT
@@ -87,6 +99,45 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
     def clear_word(handle: str, asset_id: str, word_id: str, request: Request) -> TranscriptWordResponse:
         authorize(request)
         return call(lambda: _clear(runtime, handle, asset_id, word_id))
+
+    @app.get("/v1/projects/{handle}/participants", response_model=list[ParticipantResponse])
+    def list_participants(handle: str, request: Request) -> list[ParticipantResponse]:
+        authorize(request)
+        return call(lambda: _participants(runtime, handle))
+
+    @app.post("/v1/projects/{handle}/participants", response_model=ParticipantResponse)
+    def create_participant(handle: str, body: ParticipantNameRequest, request: Request) -> ParticipantResponse:
+        authorize(request)
+        return call(lambda: _create_participant(runtime, handle, body.display_name))
+
+    @app.post("/v1/projects/{handle}/participants/{participant_id}/rename", response_model=ParticipantResponse)
+    def rename_participant(
+        handle: str, participant_id: str, body: ParticipantNameRequest, request: Request,
+    ) -> ParticipantResponse:
+        authorize(request)
+        return call(lambda: _rename_participant(runtime, handle, participant_id, body.display_name))
+
+    @app.get("/v1/projects/{handle}/media/{asset_id}/layout", response_model=list[LayoutBindingResponse])
+    def list_layout(handle: str, asset_id: str, request: Request) -> list[LayoutBindingResponse]:
+        authorize(request)
+        return call(lambda: _layout(runtime, handle, asset_id))
+
+    @app.post("/v1/projects/{handle}/media/{asset_id}/layout", response_model=LayoutBindingResponse)
+    def add_layout(handle: str, asset_id: str, body: LayoutBindingRequest, request: Request) -> LayoutBindingResponse:
+        authorize(request)
+        return call(lambda: _add_layout(runtime, handle, asset_id, body))
+
+    @app.get("/v1/projects/{handle}/media/{asset_id}/speaker-analysis", response_model=SpeakerAnalysisResponse)
+    def describe_speakers(handle: str, asset_id: str, request: Request) -> SpeakerAnalysisResponse:
+        authorize(request)
+        return call(lambda: _describe_speakers(runtime, handle, asset_id))
+
+    @app.post("/v1/projects/{handle}/media/{asset_id}/speaker-map", response_model=ApplySpeakerMapResponse)
+    def apply_speaker_map(
+        handle: str, asset_id: str, body: ApplySpeakerMapRequest, request: Request,
+    ) -> ApplySpeakerMapResponse:
+        authorize(request)
+        return call(lambda: _apply_map(runtime, handle, asset_id, body))
 
 
 def _store(runtime: EngineRuntime, handle: str) -> ProjectStore:
@@ -297,4 +348,152 @@ def _word_view(word: TranscriptWordView) -> TranscriptWordResponse:
         text_corrected=word.text_corrected,
         participant_id=word.participant_id,
         participant_name=word.participant_name,
+    )
+
+
+_LIMITATION = (
+    "This profile separates exactly three anonymous clusters. "
+    "It does not identify people, and it does not support another speaker count."
+)
+
+
+def _display_name(value: str) -> str:
+    text = value.strip()
+    if not text or len(text) > 80:
+        raise ApiError(400, "invalid_participant_name", "Enter a participant name.")
+    return text
+
+
+def _participants(runtime: EngineRuntime, handle: str) -> list[ParticipantResponse]:
+    store = _store(runtime, handle)
+    return [
+        ParticipantResponse(participant_id=item_id, display_name=name)
+        for item_id, name, _order in store.list_participants()
+    ]
+
+
+def _create_participant(runtime: EngineRuntime, handle: str, display_name: str) -> ParticipantResponse:
+    store = _store(runtime, handle)
+    name = _display_name(display_name)
+    participant_id = str(uuid.uuid4())
+    order = len(store.list_participants())
+    store.add_participant(participant_id, name, sort_order=order)
+    return ParticipantResponse(participant_id=participant_id, display_name=name)
+
+
+def _rename_participant(
+    runtime: EngineRuntime, handle: str, participant_id: str, display_name: str,
+) -> ParticipantResponse:
+    store = _store(runtime, handle)
+    name = _display_name(display_name)
+    try:
+        store.rename_participant(participant_id, name)
+    except Exception as exc:
+        message = str(exc)
+        if message.startswith("unknown participant"):
+            raise ApiError(404, "unknown_participant", "That participant is not in this project.") from exc
+        raise
+    return ParticipantResponse(participant_id=participant_id, display_name=name)
+
+
+def _layout(runtime: EngineRuntime, handle: str, asset_id: str) -> list[LayoutBindingResponse]:
+    store = _store(runtime, handle)
+    names = {item_id: name for item_id, name, _order in store.list_participants()}
+    rows = []
+    for record in store.list_layout_records(asset_id):
+        if record["participant_id"] not in names:
+            continue
+        rows.append(_layout_view(record))
+    return rows
+
+
+def _add_layout(runtime: EngineRuntime, handle: str, asset_id: str, body: LayoutBindingRequest) -> LayoutBindingResponse:
+    store = _store(runtime, handle)
+    asset = store.get_media(asset_id)
+    known = {item_id for item_id, _name, _order in store.list_participants()}
+    if body.participant_id not in known:
+        raise ApiError(404, "unknown_participant", "That participant is not in this project.")
+    try:
+        binding = validate_layout(
+            participant_id=body.participant_id,
+            start_us=body.start_us,
+            end_us=body.end_us,
+            x=body.x,
+            y=body.y,
+            w=body.w,
+            h=body.h,
+            picture_width=asset.width,
+            picture_height=asset.height,
+        )
+    except LayoutRejected as exc:
+        raise ApiError(400, exc.code, str(exc)) from exc
+    binding_id = store.add_layout_binding(asset_id, binding)
+    saved = next(row for row in store.list_layout_records(asset_id) if row["binding_id"] == binding_id)
+    return _layout_view(saved)
+
+
+def _layout_view(record: dict) -> LayoutBindingResponse:
+    return LayoutBindingResponse(
+        binding_id=record["binding_id"],
+        participant_id=record["participant_id"],
+        start_us=record["start_us"],
+        end_us=record["end_us"],
+        x=record["x"],
+        y=record["y"],
+        w=record["w"],
+        h=record["h"],
+        coordinate_space=COORDINATE_SPACE,
+    )
+
+
+def _describe_speakers(runtime: EngineRuntime, handle: str, asset_id: str) -> SpeakerAnalysisResponse:
+    store = _store(runtime, handle)
+    store.get_media(asset_id)
+    status = speaker_status(store, asset_id)
+    return _speaker_view(status)
+
+
+def _apply_map(runtime: EngineRuntime, handle: str, asset_id: str, body: ApplySpeakerMapRequest) -> ApplySpeakerMapResponse:
+    store = _store(runtime, handle)
+    store.get_media(asset_id)
+    mapping = {item.cluster_key: item.participant_id for item in body.mappings}
+    if len(mapping) != len(body.mappings):
+        raise ApiError(400, "incomplete_cluster_map", "Map every cluster, including Unknown.")
+    try:
+        assignment_id, turn_id = apply_cluster_map(store, asset_id, body.diarization_run_id, mapping)
+    except SpeakerMapRejected as exc:
+        status = 404 if exc.code in {"no_active_transcript", "unknown_diarization", "unknown_participant"} else 400
+        raise ApiError(status, exc.code, exc.message) from exc
+    status = speaker_status(store, asset_id)
+    return ApplySpeakerMapResponse(
+        assignment_run_id=assignment_id,
+        turns_run_id=turn_id,
+        state=status["state"],
+    )
+
+
+def _speaker_view(status: dict) -> SpeakerAnalysisResponse:
+    return SpeakerAnalysisResponse(
+        state=status["state"],
+        participant_count=status["participant_count"],
+        transcript_run_id=status["transcript_run_id"],
+        diarization_run_id=status["diarization_run_id"],
+        assignment_run_id=status["assignment_run_id"],
+        assignment_compatible=status["assignment_compatible"],
+        turns_run_id=status["turns_run_id"],
+        turns_match_assignment=status["turns_match_assignment"],
+        source_present=status["source_present"],
+        clusters=[
+            ClusterSummaryResponse(
+                cluster_key=item["cluster_key"],
+                segment_count=item["segment_count"],
+                voiced_us=item["voiced_us"],
+                samples=[ClusterSampleResponse(**sample) for sample in item["samples"]],
+            )
+            for item in status["clusters"]
+        ],
+        previous_map=status["previous_map"],
+        profile_id=status["profile_id"],
+        cluster_count=status["cluster_count"],
+        limitation=_LIMITATION,
     )

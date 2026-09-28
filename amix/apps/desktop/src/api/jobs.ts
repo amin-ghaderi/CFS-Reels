@@ -78,5 +78,8 @@ export function jobTitle(kind: string): string {
   if (kind === "transcribe") {
     return "Transcribe";
   }
+  if (kind === "diarize_audio") {
+    return "Analyze speakers";
+  }
   return "Background job";
 }

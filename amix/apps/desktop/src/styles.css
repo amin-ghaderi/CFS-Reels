@@ -448,6 +448,24 @@ label {
   margin: var(--space-2) 0 var(--space-1);
 }
 
+.setup-column {
+  min-height: 0;
+  overflow: auto;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.speaker-analysis fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  margin: 0;
+}
+
+select,
 input[type="text"],
 input:not([type]) {
   width: 100%;

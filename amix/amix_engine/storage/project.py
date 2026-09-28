@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from amix.amix_engine import __version__
 from amix.amix_engine.domain.types import (
+    DiarizationSegment,
     LayoutBinding,
     OverlapRegion,
     ParticipantId,
@@ -58,8 +59,10 @@ from amix.amix_engine.storage.jobs import (
 )
 from amix.amix_engine.storage.kinds import (
     ANALYSIS_KINDS,
+    DIARIZATION,
     PARTICIPANT_ASSIGNMENT,
     SPEAKER_OVERRIDE,
+    TURNS,
     WORD_TEXT,
 )
 from amix.amix_engine.storage.lock import ProjectWriteLock
@@ -68,6 +71,7 @@ from amix.amix_engine.storage.models import (
     ActiveAnalysisRow,
     AnalysisDependencyRow,
     AnalysisRunRow,
+    DiarizationSegmentRow,
     LayoutBindingRow,
     ManualCorrectionRow,
     MediaAssetRow,
@@ -550,6 +554,24 @@ class ProjectStore:
             session.commit()
         return participant_id
 
+    def list_participants(self) -> list[tuple[str, str, int]]:
+        with self._session() as session:
+            rows = session.scalars(
+                select(ParticipantRow)
+                .where(ParticipantRow.project_id == self.project_id)
+                .order_by(ParticipantRow.sort_order, ParticipantRow.display_name, ParticipantRow.id)
+            ).all()
+            return [(row.id, row.display_name, int(row.sort_order)) for row in rows]
+
+    def rename_participant(self, participant_id: str, display_name: str) -> None:
+        self._require_write()
+        with self._session() as session:
+            row = session.get(ParticipantRow, participant_id)
+            if row is None or row.project_id != self.project_id:
+                raise ProjectDatabaseInvalid(f"unknown participant {participant_id}")
+            row.display_name = display_name
+            session.commit()
+
     def add_media_asset(
         self,
         *,
@@ -799,6 +821,28 @@ class ProjectStore:
                 for row in rows
             ]
 
+    def list_layout_records(self, asset_id: str) -> list[dict]:
+        with self._session() as session:
+            self._asset(session, asset_id)
+            rows = session.scalars(
+                select(LayoutBindingRow)
+                .where(LayoutBindingRow.media_asset_id == asset_id)
+                .order_by(LayoutBindingRow.start_us, LayoutBindingRow.id)
+            ).all()
+            return [
+                {
+                    "binding_id": row.id,
+                    "participant_id": row.participant_id,
+                    "start_us": int(row.start_us),
+                    "end_us": int(row.end_us),
+                    "x": int(row.x),
+                    "y": int(row.y),
+                    "w": int(row.w),
+                    "h": int(row.h),
+                }
+                for row in rows
+            ]
+
     def add_protected_region(self, asset_id: str, region: ProtectedRegion, *, note: str | None = None) -> str:
         self._require_write()
         region_id = str(uuid.uuid4())
@@ -957,7 +1001,7 @@ class ProjectStore:
                 .offset(offset)
                 .limit(limit)
             ).all()
-            return described, self._word_views(session, asset_id, words)
+            return described, self._word_views(session, asset_id, words, described.analysis_run_id)
 
     def word_at_time(self, asset_id: str, time_us: int) -> WordHit | None:
         """Active transcript word containing time_us, using [start_us, end_us)."""
@@ -989,9 +1033,15 @@ class ProjectStore:
             word = session.get(WordRow, word_id)
             if word is None or word.transcript_id != described.transcript_id:
                 raise ProjectDatabaseInvalid(f"unknown word {word_id}")
-            return self._word_views(session, asset_id, [word])[0]
+            return self._word_views(session, asset_id, [word], described.analysis_run_id)[0]
 
-    def _word_views(self, session: Session, asset_id: str, words: list[WordRow]) -> list[TranscriptWordView]:
+    def _word_views(
+        self,
+        session: Session,
+        asset_id: str,
+        words: list[WordRow],
+        transcript_run_id: str,
+    ) -> list[TranscriptWordView]:
         ids = [word.id for word in words]
         if not ids:
             return []
@@ -1004,15 +1054,24 @@ class ProjectStore:
                 )
             )
         }
-        assignment_run = session.get(ActiveAnalysisRow, (asset_id, PARTICIPANT_ASSIGNMENT))
+        assignment_row = session.get(ActiveAnalysisRow, (asset_id, PARTICIPANT_ASSIGNMENT))
+        assignment_run_id = None
+        if assignment_row is not None:
+            depends = set(session.scalars(
+                select(AnalysisDependencyRow.depends_on_run_id).where(
+                    AnalysisDependencyRow.run_id == assignment_row.analysis_run_id,
+                )
+            ))
+            if transcript_run_id in depends:
+                assignment_run_id = assignment_row.analysis_run_id
         assigned: dict[str, str | None] = {}
         overrides: dict[str, str | None] = {}
-        if assignment_run is not None:
+        if assignment_run_id is not None:
             assigned = {
                 row.word_id: row.participant_id
                 for row in session.scalars(
                     select(SpeakerAssignmentRow).where(
-                        SpeakerAssignmentRow.analysis_run_id == assignment_run.analysis_run_id,
+                        SpeakerAssignmentRow.analysis_run_id == assignment_run_id,
                         SpeakerAssignmentRow.word_id.in_(ids),
                     )
                 )
@@ -1044,8 +1103,19 @@ class ProjectStore:
             corrected = word.id in text_overrides and text_overrides[word.id] is not None
             effective = text_overrides[word.id] if corrected else word.text
             participant_id = None
-            if assignment_run is not None:
-                participant_id = overrides[word.id] if word.id in overrides else assigned.get(word.id)
+            labeled = False
+            if assignment_run_id is not None and word.id in overrides:
+                participant_id = overrides[word.id]
+                labeled = True
+            elif assignment_run_id is not None and word.id in assigned:
+                participant_id = assigned[word.id]
+                labeled = True
+            if labeled and not participant_id:
+                participant_name = "Unknown"
+            elif participant_id:
+                participant_name = names.get(participant_id)
+            else:
+                participant_name = None
             views.append(TranscriptWordView(
                 word.id,
                 word.sequence,
@@ -1056,7 +1126,7 @@ class ProjectStore:
                 word.confidence,
                 corrected,
                 participant_id,
-                None if not participant_id else names.get(participant_id),
+                participant_name,
             ))
         return views
 
@@ -1390,6 +1460,128 @@ class ProjectStore:
                 "config": json.loads(row.config_json),
                 "created_at": row.created_at,
             }
+
+    def publish_diarization(
+        self,
+        *,
+        asset_id: str,
+        segments: list[DiarizationSegment],
+        algorithm_id: str,
+        algorithm_version: str,
+        fingerprint: str,
+        window: TimeRange | None,
+        config: dict | None = None,
+        origin: str = "local",
+    ) -> str:
+        """Store anonymous segments and switch the active diarization pointer.
+
+        Assignment and turn pointers are left unchanged.
+        """
+        self._require_write()
+        run_id = str(uuid.uuid4())
+        with self._session() as session:
+            self._asset(session, asset_id)
+            session.add(self._run(
+                run_id, asset_id, DIARIZATION, algorithm_id, algorithm_version,
+                origin, config, window, fingerprint,
+            ))
+            session.flush()
+            for index, segment in enumerate(segments):
+                session.add(DiarizationSegmentRow(
+                    analysis_run_id=run_id,
+                    sequence=index,
+                    cluster_key=segment.cluster_id,
+                    start_us=segment.start_us,
+                    end_us=segment.end_us,
+                ))
+            self._point_active(session, asset_id, DIARIZATION, run_id)
+            session.commit()
+        return run_id
+
+    def load_diarization_segments(self, run_id: str) -> list[DiarizationSegment]:
+        with self._session() as session:
+            rows = session.scalars(
+                select(DiarizationSegmentRow)
+                .where(DiarizationSegmentRow.analysis_run_id == run_id)
+                .order_by(DiarizationSegmentRow.sequence)
+            ).all()
+            return [
+                DiarizationSegment(int(row.start_us), int(row.end_us), row.cluster_key)
+                for row in rows
+            ]
+
+    def publish_assignment_and_turns(
+        self,
+        *,
+        asset_id: str,
+        assignments: list[SpeakerAssignment],
+        turns: list[Turn],
+        transcript_run_id: str,
+        diarization_run_id: str,
+        fingerprint: str,
+        window: TimeRange | None,
+        assignment_config: dict,
+        turn_config: dict,
+        assignment_algorithm: str,
+        turn_algorithm: str,
+    ) -> tuple[str, str]:
+        """Insert assignment and turns, then switch both active pointers in one commit."""
+        self._require_write()
+        assignment_id = str(uuid.uuid4())
+        turn_id = str(uuid.uuid4())
+        with self._session() as session:
+            self._asset(session, asset_id)
+            session.add(self._run(
+                assignment_id, asset_id, PARTICIPANT_ASSIGNMENT, assignment_algorithm, "1",
+                "local", assignment_config, window, fingerprint,
+            ))
+            session.flush()
+            session.add(AnalysisDependencyRow(run_id=assignment_id, depends_on_run_id=transcript_run_id))
+            session.add(AnalysisDependencyRow(run_id=assignment_id, depends_on_run_id=diarization_run_id))
+            session.flush()
+            for row in assignments:
+                session.add(SpeakerAssignmentRow(
+                    analysis_run_id=assignment_id,
+                    word_id=row.word_id,
+                    participant_id=None if row.participant_id is None else row.participant_id.value,
+                ))
+            session.add(self._run(
+                turn_id, asset_id, TURNS, turn_algorithm, "1",
+                "local", turn_config, window, fingerprint,
+            ))
+            session.flush()
+            session.add(AnalysisDependencyRow(run_id=turn_id, depends_on_run_id=assignment_id))
+            session.flush()
+            for turn in turns:
+                stored_turn = str(uuid.uuid4())
+                session.add(TurnRow(
+                    id=stored_turn,
+                    analysis_run_id=turn_id,
+                    turn_key=turn.turn_id,
+                    participant_id=None if turn.participant_id is None else turn.participant_id.value,
+                    start_us=turn.start_us,
+                    end_us=turn.end_us,
+                ))
+                session.flush()
+                for index, word_id in enumerate(turn.word_ids):
+                    session.add(TurnWordRow(turn_id=stored_turn, word_id=word_id, sequence=index))
+            self._point_active(session, asset_id, PARTICIPANT_ASSIGNMENT, assignment_id)
+            self._point_active(session, asset_id, TURNS, turn_id)
+            session.commit()
+        return assignment_id, turn_id
+
+    def _point_active(self, session: Session, asset_id: str, kind: str, run_id: str) -> None:
+        current = session.get(ActiveAnalysisRow, (asset_id, kind))
+        if current is None:
+            session.add(ActiveAnalysisRow(
+                media_asset_id=asset_id,
+                kind=kind,
+                analysis_run_id=run_id,
+                activated_at=_now(),
+            ))
+        else:
+            current.analysis_run_id = run_id
+            current.activated_at = _now()
 
     def set_active(self, asset_id: str, kind: str, run_id: str) -> None:
         self._require_write()

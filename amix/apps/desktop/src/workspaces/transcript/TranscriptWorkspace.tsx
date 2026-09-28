@@ -19,7 +19,9 @@ import {
   transcribeOffer,
   transcriptionJobSpec,
 } from "../../transcript/transcribe";
+import { transcriptSpeakerLabel } from "../../transcript/speakers";
 import { EMPTY_TRANSCRIPT, transcriptDir } from "../../transcript/text";
+import { SpeakerPanel } from "./SpeakerPanel";
 
 const PAGE = 80;
 
@@ -40,6 +42,7 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
   const [model, setModel] = useState<SpeechModelStatus | null>(null);
   const [jobs, setJobs] = useState<JobInfo[]>([]);
   const [dialog, setDialog] = useState(false);
+  const [speakerEpoch, setSpeakerEpoch] = useState(0);
   const [autoLanguage, setAutoLanguage] = useState(true);
   const [languageCode, setLanguageCode] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -76,7 +79,11 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
             return;
           }
           setJobs(listed);
-          const active = listed.some((job) => job.kind === "transcribe" && job.media_asset_id === asset.asset_id && !isTerminal(job.status));
+          const active = listed.some((job) => (
+            (job.kind === "transcribe" || job.kind === "diarize_audio")
+            && job.media_asset_id === asset.asset_id
+            && !isTerminal(job.status)
+          ));
           if (active && timer === 0) {
             timer = window.setInterval(tick, 1000);
           }
@@ -176,7 +183,7 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
     return () => {
       stop = true;
     };
-  }, [project.handle, asset?.asset_id, described?.active, described?.analysis_run_id, offset]);
+  }, [project.handle, asset?.asset_id, described?.active, described?.analysis_run_id, offset, speakerEpoch]);
 
   useEffect(() => {
     followHeld.current = false;
@@ -374,10 +381,12 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
             <dd className="numeric" dir="ltr">{picked.confidence.toFixed(2)}</dd>
           </div>
         ) : null}
-        <div>
-          <dt>Participant</dt>
-          <dd dir="auto">{picked.participant_name ?? (picked.participant_id ? picked.participant_id : "Unknown")}</dd>
-        </div>
+        {transcriptSpeakerLabel(picked) ? (
+          <div>
+            <dt>Participant</dt>
+            <dd dir="auto">{transcriptSpeakerLabel(picked)}</dd>
+          </div>
+        ) : null}
         <div>
           <dt>Correction</dt>
           <dd>{picked.text_corrected ? "Manual text" : "Machine text"}</dd>
@@ -449,6 +458,16 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
                 ) : null}
               </div>
               <PreviewPlayer project={project} />
+              {asset ? (
+                <SpeakerPanel
+                  project={project}
+                  asset={asset}
+                  hasTranscript={Boolean(described?.active)}
+                  jobs={jobs}
+                  onSeek={(canonicalUs) => playback.requestSeek(canonicalUs)}
+                  onApplied={() => setSpeakerEpoch((value) => value + 1)}
+                />
+              ) : null}
               {!asset ? <p className="muted">Select a media file in Media.</p> : null}
               {asset && described && !described.active ? <p>{EMPTY_TRANSCRIPT}</p> : null}
               {offer.blocked ? <p>{offer.blocked}</p> : null}

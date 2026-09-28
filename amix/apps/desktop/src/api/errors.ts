@@ -39,11 +39,19 @@ const MESSAGES: Record<string, string> = {
   speech_model_missing: "Speech model not installed.",
   invalid_speech_model: "The configured speech model cannot be used.",
   speech_runtime_unavailable: "The speech runtime is not available.",
-  media_has_no_audio: "This media has no audio to transcribe.",
+  media_has_no_audio: "This media has no audio.",
   invalid_language: "That language code is not supported. Use Auto or a Whisper language code.",
   invalid_transcription_profile: "That transcription profile is not available.",
   transcription_requires_source: "Transcription uses the original source media.",
   speech_transcription_failed: "Transcription did not finish.",
+  invalid_participant_name: "Enter a participant name.",
+  unknown_participant: "That participant is not in this project.",
+  invalid_layout: "That layout rectangle is not valid.",
+  invalid_diarization_profile: "That speaker-analysis profile is not available.",
+  diarization_requires_source: "Speaker analysis uses the original source media.",
+  diarization_failed: "Speaker analysis did not finish.",
+  incomplete_cluster_map: "Map every cluster, including Unknown.",
+  unknown_diarization: "That speaker analysis is not available.",
 };
 
 export function mapEngineFailure(status: number, body: string): EngineFailure {

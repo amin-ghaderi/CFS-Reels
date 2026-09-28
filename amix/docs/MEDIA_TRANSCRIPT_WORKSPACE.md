@@ -1,6 +1,6 @@
 # Media and transcript workspace
 
-Phase 6 is the first editing workspace. It lists and links media, and it shows an active transcript. Local transcription is described in [TRANSCRIPTION_RUNTIME.md](TRANSCRIPTION_RUNTIME.md). Preview playback of the V1 proxy is described in [PLAYBACK.md](PLAYBACK.md). Probing and preview proxies are described in [MEDIA_RUNTIME.md](MEDIA_RUNTIME.md).
+Phase 6 is the first editing workspace. It lists and links media, and it shows an active transcript. Local transcription is described in [TRANSCRIPTION_RUNTIME.md](TRANSCRIPTION_RUNTIME.md). Participants, layout, and speaker analysis are described in [DIARIZATION_RUNTIME.md](DIARIZATION_RUNTIME.md). Preview playback of the V1 proxy is described in [PLAYBACK.md](PLAYBACK.md). Probing and preview proxies are described in [MEDIA_RUNTIME.md](MEDIA_RUNTIME.md).
 
 ## Workspace architecture
 
@@ -33,6 +33,10 @@ Relink updates the path, display name, and size on the same asset id. Analysis r
 
 The desktop sends only a path the user picked in the native file dialog. There is no API that lists a directory.
 
+Participants sit under the media list. Add and rename change the display name only. The participant id stays stable and is not shown as the name. There is no delete control.
+
+Layout sits in the media inspector for the selected master. A binding is one participant, one half-open source time range, and a rectangle in probed display pixels. When a probe duration exists, the form starts from `[container start, container start + duration)`. The stored times are those canonical microseconds, not a range rebased to zero. The form rejects a non-positive size, a negative position, a reversed range, and a rectangle that misses the picture entirely. It does not stretch the rectangle. This is not automatic layout detection, and it is not a crop editor.
+
 ## Transcript authority
 
 The active transcript is the run stored on `(media asset, kind=transcript)` in `active_analysis`. The newest transcript file or run is not used. If that pointer is absent, the API returns `active: false` and the workspace says that no transcript is available.
@@ -45,7 +49,15 @@ Words are read in sequence order, `offset` + `limit`, with a maximum limit of 40
 
 A manual word correction is a `word_text` overlay. The machine `word.text` is not rewritten. Clearing the overlay restores the machine text.
 
-If an active `participant_assignment` run exists, each word includes that assignment, with a `speaker_override` correction when one is stored. The name comes from the participant row. Unknown stays unknown. Without an active assignment, the transcript is shown without speaker labels. Speaker correction is not a control in this phase.
+Speaker analysis is a section on the transcript workspace. Analyze speakers is enabled only when the selected master is present, a transcript is active, and at least one participant exists. The section states that this profile finds exactly three anonymous clusters and does not identify people.
+
+While a diarization job is running, the section says so and Cancel uses the existing job API. The Activity panel remains the progress list. After a successful run, each cluster shows a key, a segment count, voiced duration, and a few representative times. Choosing a time seeks the shared player to that canonical source time.
+
+The mapping control assigns each cluster to a participant or to Unknown. The same participant may be chosen more than once. Apply speaker mapping builds assignments and turns for the current transcript. If the active transcript changes later, old names disappear and the section says the analysis is stale. Apply speaker mapping to current transcript is an explicit action. It is not automatic.
+
+When the active assignment matches the current transcript, each word shows the participant display name, or Unknown. Cluster keys are not shown as the speaker. Without a compatible assignment, the transcript stays readable and shows no speaker label.
+
+Per-word speaker correction is still not a control. A one-word override can disagree with the generated turns, so that editing stays deferred.
 
 A missing source file does not hide the transcript. The workspace warns that relink is required before media-dependent work. A valid project proxy can still preview, with that limitation stated on the player.
 
@@ -57,4 +69,4 @@ The application chrome stays LTR (`dir="ltr"` on the document). A transcript who
 
 ## Not in this phase
 
-Diarization, waveforms, the timeline, multicam, reels, conversation analysis, model download, and packaging.
+Waveforms, the timeline, multicam, reels, conversation analysis, automatic visual speaker mapping, overlap detection, model download, and packaging.

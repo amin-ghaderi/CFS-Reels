@@ -10,7 +10,10 @@ import type {
   TranscriptWord,
   TranscriptWordPage,
   WordAtTime,
+  LayoutBindingRecord,
+  Participant,
   PreparedPlayback,
+  SpeakerAnalysis,
   SpeechModelStatus,
 } from "./types";
 
@@ -127,6 +130,54 @@ export async function clearWordText(handle: string, assetId: string, wordId: str
 
 export async function wordAtTime(handle: string, assetId: string, timeUs: number): Promise<WordAtTime> {
   return request("GET", `/v1/projects/${handle}/media/${assetId}/transcript/word-at/${timeUs}`);
+}
+
+export async function listParticipants(handle: string): Promise<Participant[]> {
+  return request("GET", `/v1/projects/${handle}/participants`);
+}
+
+export async function createParticipant(handle: string, displayName: string): Promise<Participant> {
+  return request("POST", `/v1/projects/${handle}/participants`, { display_name: displayName });
+}
+
+export async function renameParticipant(handle: string, participantId: string, displayName: string): Promise<Participant> {
+  return request("POST", `/v1/projects/${handle}/participants/${participantId}/rename`, { display_name: displayName });
+}
+
+export async function listLayout(handle: string, assetId: string): Promise<LayoutBindingRecord[]> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/layout`);
+}
+
+export async function addLayout(
+  handle: string,
+  assetId: string,
+  body: {
+    participant_id: string;
+    start_us: number;
+    end_us: number;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  },
+): Promise<LayoutBindingRecord> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/layout`, body);
+}
+
+export async function speakerAnalysis(handle: string, assetId: string): Promise<SpeakerAnalysis> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/speaker-analysis`);
+}
+
+export async function applySpeakerMap(
+  handle: string,
+  assetId: string,
+  diarizationRunId: string,
+  mappings: { cluster_key: string; participant_id: string | null }[],
+): Promise<{ assignment_run_id: string; turns_run_id: string; state: string }> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/speaker-map`, {
+    diarization_run_id: diarizationRunId,
+    mappings,
+  });
 }
 
 export function preparePlayback(sourceMediaAssetId: string, requestId: number): Promise<PreparedPlayback> {

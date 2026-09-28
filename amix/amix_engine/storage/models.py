@@ -173,6 +173,21 @@ class WordRow(Base):
     segment_ref: Mapped[str | None] = mapped_column(Text)
 
 
+class DiarizationSegmentRow(Base):
+    __tablename__ = "diarization_segment"
+    __table_args__ = (
+        UniqueConstraint("analysis_run_id", "sequence", name="uq_diarization_sequence"),
+        Index("ix_diarization_segment_run", "analysis_run_id", "sequence"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
+    analysis_run_id: Mapped[str] = mapped_column(ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    cluster_key: Mapped[str] = mapped_column(Text, nullable=False)
+    start_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    end_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+
 class SpeakerAssignmentRow(Base):
     __tablename__ = "participant_assignment"
     __table_args__ = (

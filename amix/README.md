@@ -78,6 +78,10 @@ when set), and `AMIX_STT_COMPUTE_TYPE` (`int8` by default). A missing or
 invalid path fails the job. It does not fall back to a remote model. See
 [docs/TRANSCRIPTION_RUNTIME.md](docs/TRANSCRIPTION_RUNTIME.md).
 
+Speaker analysis uses the NumPy and SciPy packages installed with the engine.
+It does not download a diarization model. See
+[docs/DIARIZATION_RUNTIME.md](docs/DIARIZATION_RUNTIME.md).
+
 ## Tests
 
 From the repository root:
