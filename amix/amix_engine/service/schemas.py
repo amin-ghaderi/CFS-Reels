@@ -334,3 +334,53 @@ class ExportResponse(_Model):
     preset_id: str | None = None
     created_at: str | None = None
     status: str
+
+
+class TimelineClipResponse(_Model):
+    clip_id: str
+    order_index: int
+    source_start_us: int
+    source_end_us: int
+    sequence_start_us: int | None = None
+
+
+class TimelineRangeResponse(_Model):
+    source_start_us: int
+    source_end_us: int
+
+
+class TimelineCameraResponse(_Model):
+    shot_id: str
+    source_start_us: int
+    source_end_us: int
+    presentation: str
+    participant_name: str | None = None
+    locked: bool
+
+
+class TimelineResponse(_Model):
+    sequence_id: str | None
+    revision: int | None
+    fingerprint: str | None
+    source_start_us: int | None
+    source_end_us: int | None
+    duration_us: int | None
+    clips: list[TimelineClipResponse]
+    removed: list[TimelineRangeResponse]
+    camera: list[TimelineCameraResponse]
+    protected: list[TimelineRangeResponse]
+
+
+class SplitClipRequest(_Model):
+    sequence_id: str
+    clip_id: str
+    source_time_us: int
+
+
+class ClipRequest(_Model):
+    sequence_id: str
+    clip_id: str
+
+
+class ResetSequenceRequest(_Model):
+    sequence_id: str

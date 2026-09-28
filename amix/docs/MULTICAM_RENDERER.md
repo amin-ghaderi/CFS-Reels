@@ -53,7 +53,7 @@ The arithmetic is integer. Ties round away from zero. A segment's frame count is
 
 ## Audio and encode
 
-Program audio is one trim of the source over the render range, then one encode. It is not cut on camera changes. A source with no audio produces a video-only file. Silence is not invented.
+Program audio is not cut on camera changes. With no editorial sequence, or with one clip that is the whole plan range, audio is one trim of that range. When the sequence keeps several source ranges, audio is one trim per kept clip, concatenated in sequence order, on the same source boundaries as the picture. There is no crossfade. A source with no audio produces a video-only file. Silence is not invented.
 
 The developer encode is MP4, H.264 (`libx264`, `veryfast`, CRF 20), `yuv420p`, `+faststart`, and AAC at 128 kbps / 48 kHz when the source has audio. FFmpeg is an external development tool. This build is not a statement that `libx264` or the installed FFmpeg may be redistributed. That choice belongs to packaging.
 
@@ -63,18 +63,26 @@ The filter graph is one constant-frame-rate conversion, then per-segment frame t
 
 ## Job, cancellation, export
 
-The job kind is `render_multicam`. The request is the source media id, the active shot-plan id, and a preset id. Encoding starts only when the source is present, probed, and the plan belongs to it and is not stale. FFmpeg must be available.
+The job kind is `render_multicam`. The request is the source media id, the active shot-plan id, and a preset id. If an editorial sequence exists for that source, the render uses its kept clips. Optional `sequence_id` and `sequence_revision` must match that sequence or the job fails `sequence_changed`. Encoding starts only when the source is present, probed, and the plan belongs to it and is not stale. FFmpeg must be available.
 
 Progress is FFmpeg `-progress` mapped to 0..10000 of the render range. It stays under 10000 until the file has been checked with ffprobe, moved into place, and stored as an export asset. 10000 means that export exists.
 
 The file is written under `exports/.tmp/` and moved to `exports/<job id>.mp4` only after that check. The project folder is the only destination. Cancel stops the FFmpeg process tree, deletes the temp file, and does not add an export. The shot plan and the overrides stay. Shutdown cancels the same way before the project lock is released. A crash leaves the job `INTERRUPTED` on the next writable open. There is no resume. A retry is a new job.
 
-The job result records the source, the shot-plan run, the override fingerprint, the effective-plan fingerprint, the profile and preset, the canvas, the frame-rate rational, the framing policy, the FFmpeg version, a lightweight source identity, and the export media id. The export asset stores the probed file, not the requested numbers alone.
+The job result records the source, the shot-plan run, the override fingerprint, the effective-plan fingerprint, the editorial sequence id, revision, and fingerprint when a sequence exists, the profile and preset, the canvas, the frame-rate rational, the framing policy, the FFmpeg version, a lightweight source identity, and the export media id. The export asset stores the probed file, not the requested numbers alone. A later sequence edit does not delete an older export.
 
 Completed exports are listed on the Multicam workspace. Playback of those files is not part of this phase. The proxy player is unchanged.
 
-Switching 16:9 and 9:16 does not rebuild turns, overlap, or the shot plan.
+Switching 16:9 and 9:16 does not rebuild turns, overlap, the shot plan, or the editorial sequence.
+
+## Sequence cuts
+
+When a sequence is present, the compiler intersects each kept source clip with the effective shots and with layout boundaries. Removed source time produces no segment. Stored shots are not split or rewritten. A shot that crosses a cut is drawn only where it overlaps a kept clip.
+
+One full-range clip uses the same continuous filter and frame count as a render with no sequence. Several clips use a different graph: each visual fragment is trimmed from source time, concatenated, then converted with one `fps` filter. Frame indexes are still computed in sequence time before FFmpeg runs. Sequence time is the cumulative duration of kept clips, starting at 0. Every boundary uses `frame_index(sequence_time_us, 0)`. The output frame count is `frame_index(kept_duration_us, 0)`. Clip durations and shot durations are not rounded separately and then added.
+
+Camera changes still do not cut audio. Editorial clip boundaries do.
 
 ## Not in this phase
 
-Reels, a stacked portrait layout, reaction inserts, crossfades, manual cut editing, face-tracked framing, and publication are not implemented. A later timeline can move cuts. A later framing policy can replace center-fill. This renderer does not have to change its job shape for a different canvas size.
+Reels, a stacked portrait layout, reaction inserts, crossfades, clip reordering, multiple sources, face-tracked framing, and publication are not implemented. A later framing policy can replace center-fill. This renderer does not have to change its job shape for a different canvas size.

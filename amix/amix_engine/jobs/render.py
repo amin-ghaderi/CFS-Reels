@@ -12,7 +12,8 @@ from amix.amix_engine.adapters.media.proxy import progress_basis_points, progres
 from amix.amix_engine.jobs.media import _record
 from amix.amix_engine.jobs.runner import JobCancelled, JobContext, JobFailed
 from amix.amix_engine.multicam.apply import multicam_readiness
-from amix.amix_engine.multicam.compile import compile_render, ffmpeg_args, filter_script
+from amix.amix_engine.editorial.sequence import sequence_fingerprint
+from amix.amix_engine.multicam.compile import compile_kept_render, compile_render, ffmpeg_args, filter_script
 from amix.amix_engine.multicam.effective import (
     effective_fingerprint,
     override_fingerprint,
@@ -23,7 +24,7 @@ from amix.amix_engine.multicam.profile import FRAMING_POLICY, PROFILE_ID, Invali
 from amix.amix_engine.storage.errors import MediaMissing
 
 RENDER_MULTICAM = "render_multicam"
-_SPEC_KEYS = frozenset({"preset", "shot_plan_run_id"})
+_SPEC_KEYS = frozenset({"preset", "shot_plan_run_id", "sequence_id", "sequence_revision"})
 _TEST_WORKER = "AMIX_RENDER_TEST_WORKER"
 
 
@@ -56,8 +57,18 @@ class RenderMulticamJob:
         overrides = ctx.store.list_shot_overrides(plan_id)
         effective = resolve_effective(records, overrides)
         rate = output_frame_rate(asset.fps_num, asset.fps_den)
+        sequence = ctx.store.load_editorial_sequence(asset_id)
+        requested_sequence, requested_revision = _sequence_spec(ctx.spec)
+        if sequence is not None:
+            if requested_sequence is not None and requested_sequence != sequence["sequence_id"]:
+                raise JobFailed("sequence_changed", "That edit is no longer current.")
+            if requested_revision is not None and requested_revision != sequence["revision"]:
+                raise JobFailed("sequence_changed", "That edit changed before rendering.")
+            if sequence["source_start_us"] != plan.span.start_us or sequence["source_end_us"] != plan.span.end_us:
+                raise JobFailed("sequence_changed", "That edit was built for a different plan range.")
         try:
-            compiled = compile_render(
+            compiler = compile_kept_render if sequence is not None else compile_render
+            compiled = compiler(
                 shots=effective,
                 bindings=ctx.store.load_layout_bindings(asset_id),
                 preset=preset,
@@ -69,6 +80,10 @@ class RenderMulticamJob:
                 source_width=asset.width,
                 source_height=asset.height,
                 has_audio=bool(asset.audio_codec),
+                **(
+                    {"clips": [(clip["source_start_us"], clip["source_end_us"]) for clip in sequence["clips"]]}
+                    if sequence is not None else {}
+                ),
             )
         except FramingError as exc:
             raise JobFailed(exc.code, exc.message) from exc
@@ -140,6 +155,13 @@ class RenderMulticamJob:
                 "shot_plan_run_id": plan_id,
                 "override_fingerprint": override_fingerprint(overrides),
                 "effective_fingerprint": effective_fingerprint(effective),
+                "sequence_id": None if sequence is None else sequence["sequence_id"],
+                "sequence_revision": None if sequence is None else sequence["revision"],
+                "sequence_fingerprint": None if sequence is None else sequence_fingerprint(
+                    sequence["source_start_us"],
+                    sequence["source_end_us"],
+                    [(clip["source_start_us"], clip["source_end_us"]) for clip in sequence["clips"]],
+                ),
                 "profile_id": PROFILE_ID,
                 "preset_id": preset.preset_id,
                 "width": compiled.output_width,
@@ -170,6 +192,16 @@ def _spec(spec: dict) -> tuple[str, str | None]:
     if plan_id is not None and not isinstance(plan_id, str):
         raise JobFailed("job_spec_rejected", "The job request was rejected.")
     return preset, plan_id
+
+
+def _sequence_spec(spec: dict) -> tuple[str | None, int | None]:
+    sequence_id = spec.get("sequence_id")
+    if sequence_id is not None and not isinstance(sequence_id, str):
+        raise JobFailed("job_spec_rejected", "The job request was rejected.")
+    revision = spec.get("sequence_revision")
+    if revision is not None and (isinstance(revision, bool) or not isinstance(revision, int)):
+        raise JobFailed("job_spec_rejected", "The job request was rejected.")
+    return sequence_id, revision
 
 
 def _preset(preset_id: str):

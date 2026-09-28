@@ -457,8 +457,10 @@ class MigrationTests(unittest.TestCase):
                 tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             finally:
                 connection.close()
-            self.assertEqual(revision, "0005_shot_override")
+            self.assertEqual(revision, "0006_editorial_sequence")
             self.assertIn("shot_override", tables)
+            self.assertIn("editorial_sequence", tables)
+            self.assertIn("sequence_clip", tables)
             self.assertIn("source_media_asset_id", columns)
             self.assertIn("fps_num", columns)
             self.assertNotIn("REAL", types["fps_num"].upper())
@@ -466,7 +468,7 @@ class MigrationTests(unittest.TestCase):
             root = Path(tmp) / "Fresh"
             store = create_project(root, "Fresh")
             try:
-                self.assertEqual(store.alembic_revision(), "0005_shot_override")
+                self.assertEqual(store.alembic_revision(), "0006_editorial_sequence")
             finally:
                 store.close()
 

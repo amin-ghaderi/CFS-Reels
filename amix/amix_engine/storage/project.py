@@ -83,6 +83,8 @@ from amix.amix_engine.storage.models import (
     ProjectRow,
     ProtectedRegionRow,
     ShotPlanRow,
+    EditorialSequenceRow,
+    SequenceClipRow,
     ShotOverrideRow,
     ShotRow,
     SpeakerAssignmentRow,
@@ -1476,6 +1478,71 @@ class ProjectStore:
                 session.delete(current)
                 session.commit()
 
+    def load_editorial_sequence(self, asset_id: str) -> dict | None:
+        with self._session() as session:
+            row = session.scalar(
+                select(EditorialSequenceRow).where(EditorialSequenceRow.media_asset_id == asset_id)
+            )
+            if row is None:
+                return None
+            return _sequence_view(session, row)
+
+    def load_editorial_sequence_by_id(self, sequence_id: str) -> dict:
+        with self._session() as session:
+            row = session.get(EditorialSequenceRow, sequence_id)
+            if row is None or row.project_id != self.project_id:
+                raise ProjectDatabaseInvalid(f"unknown sequence {sequence_id}")
+            return _sequence_view(session, row)
+
+    def insert_editorial_sequence(
+        self,
+        *,
+        asset_id: str,
+        display_name: str,
+        source_start_us: int,
+        source_end_us: int,
+        clips: list[tuple[int, int]],
+    ) -> str:
+        self._require_write()
+        from amix.amix_engine.editorial.sequence import validate_clips
+
+        validate_clips(clips, source_start_us, source_end_us)
+        sequence_id = str(uuid.uuid4())
+        now = _now()
+        with self._session() as session:
+            self._asset(session, asset_id)
+            session.add(EditorialSequenceRow(
+                id=sequence_id,
+                project_id=self.project_id,
+                media_asset_id=asset_id,
+                display_name=display_name,
+                source_start_us=source_start_us,
+                source_end_us=source_end_us,
+                revision=1,
+                created_at=now,
+                updated_at=now,
+            ))
+            session.flush()
+            _replace_clip_rows(session, sequence_id, clips)
+            session.commit()
+        return sequence_id
+
+    def replace_sequence_clips(self, sequence_id: str, clips: list[tuple[int, int]]) -> int:
+        """Replace kept ranges and bump the editorial revision. The sequence id stays."""
+        self._require_write()
+        with self._session() as session:
+            row = session.get(EditorialSequenceRow, sequence_id)
+            if row is None or row.project_id != self.project_id:
+                raise ProjectDatabaseInvalid(f"unknown sequence {sequence_id}")
+            from amix.amix_engine.editorial.sequence import validate_clips
+
+            validate_clips(clips, int(row.source_start_us), int(row.source_end_us))
+            _replace_clip_rows(session, sequence_id, clips)
+            row.revision = int(row.revision) + 1
+            row.updated_at = _now()
+            session.commit()
+            return int(row.revision)
+
     def publish_export(
         self,
         source_asset_id: str,
@@ -2060,6 +2127,50 @@ def _clear_probe(row: MediaAssetRow) -> None:
     row.probed_at = None
     row.probe_tool = None
     row.probe_config = None
+
+
+def _sequence_view(session, row: EditorialSequenceRow) -> dict:
+    clips = session.scalars(
+        select(SequenceClipRow)
+        .where(SequenceClipRow.sequence_id == row.id)
+        .order_by(SequenceClipRow.order_index)
+    ).all()
+    return {
+        "sequence_id": row.id,
+        "media_asset_id": row.media_asset_id,
+        "display_name": row.display_name,
+        "source_start_us": int(row.source_start_us),
+        "source_end_us": int(row.source_end_us),
+        "revision": int(row.revision),
+        "created_at": row.created_at,
+        "updated_at": row.updated_at,
+        "clips": [
+            {
+                "clip_id": clip.id,
+                "order_index": int(clip.order_index),
+                "source_start_us": int(clip.source_start_us),
+                "source_end_us": int(clip.source_end_us),
+            }
+            for clip in clips
+        ],
+    }
+
+
+def _replace_clip_rows(session, sequence_id: str, clips: list[tuple[int, int]]) -> None:
+    existing = session.scalars(
+        select(SequenceClipRow).where(SequenceClipRow.sequence_id == sequence_id)
+    ).all()
+    for clip in existing:
+        session.delete(clip)
+    session.flush()
+    for index, (start_us, end_us) in enumerate(clips):
+        session.add(SequenceClipRow(
+            id=str(uuid.uuid4()),
+            sequence_id=sequence_id,
+            order_index=index,
+            source_start_us=start_us,
+            source_end_us=end_us,
+        ))
 
 
 def _now() -> str:

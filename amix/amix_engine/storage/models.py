@@ -305,6 +305,44 @@ class ShotOverrideRow(Base):
     updated_at: Mapped[str] = mapped_column(Text, nullable=False)
 
 
+class EditorialSequenceRow(Base):
+    """Manual kept ranges for one source. Not an analysis run."""
+
+    __tablename__ = "editorial_sequence"
+    __table_args__ = (
+        UniqueConstraint("media_asset_id", name="uq_sequence_media"),
+        CheckConstraint("source_end_us > source_start_us", name="ck_sequence_source_range"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(ForeignKey("project.id", ondelete="RESTRICT"), nullable=False)
+    media_asset_id: Mapped[str] = mapped_column(ForeignKey("media_asset.id", ondelete="RESTRICT"), nullable=False)
+    display_name: Mapped[str] = mapped_column(Text, nullable=False)
+    source_start_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    source_end_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class SequenceClipRow(Base):
+    """One kept source range, in source order."""
+
+    __tablename__ = "sequence_clip"
+    __table_args__ = (
+        UniqueConstraint("sequence_id", "order_index", name="uq_sequence_clip_order"),
+        CheckConstraint("source_end_us > source_start_us", name="ck_sequence_clip_range"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
+    sequence_id: Mapped[str] = mapped_column(
+        ForeignKey("editorial_sequence.id", ondelete="RESTRICT"), nullable=False,
+    )
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_start_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    source_end_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+
 class ActiveAnalysisRow(Base):
     __tablename__ = "active_analysis"
     __table_args__ = (

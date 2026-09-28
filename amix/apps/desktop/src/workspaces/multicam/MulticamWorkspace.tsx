@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { createJob, listExports, listJobs, multicamReadiness, overlapState, saveShotOverride, shotPlanState } from "../../api/client";
+import { createEdit, createJob, listExports, listJobs, multicamReadiness, overlapState, removeEditClip, resetEdit, saveShotOverride, shotPlanState, splitEdit, timelineState } from "../../api/client";
 import { asFailure, jobProblemMessage } from "../../api/errors";
 import { isTerminal } from "../../api/jobs";
-import type { ExportRecord, JobInfo, MulticamReadiness, OverlapState, ProjectInfo, ShotPlanState, ShotView } from "../../api/types";
+import type { ExportRecord, JobInfo, MulticamReadiness, OverlapState, ProjectInfo, ShotPlanState, ShotView, TimelineState } from "../../api/types";
 import { PreviewPlayer } from "../../playback/PreviewPlayer";
 import { usePlayback } from "../../playback/PlaybackSession";
 import { useProjectData } from "../../project/ProjectData";
@@ -25,6 +25,8 @@ import {
   type OutputFormat,
   type OutputResolution,
 } from "../../multicam/multicam";
+import { TimelineCanvas } from "../../timeline/TimelineCanvas";
+import { requestReset, splitAllowed } from "../../timeline/timeline";
 
 const EMPTY_OVERLAP: OverlapState = {
   run_id: null,
@@ -33,6 +35,19 @@ const EMPTY_OVERLAP: OverlapState = {
   window_end_us: null,
   profile_id: null,
   regions: [],
+};
+
+const EMPTY_TIMELINE: TimelineState = {
+  sequence_id: null,
+  revision: null,
+  fingerprint: null,
+  source_start_us: null,
+  source_end_us: null,
+  duration_us: null,
+  clips: [],
+  removed: [],
+  camera: [],
+  protected: [],
 };
 
 const EMPTY_PLAN: ShotPlanState = {
@@ -53,6 +68,9 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
   const [plan, setPlan] = useState<ShotPlanState>(EMPTY_PLAN);
   const [picked, setPicked] = useState<ShotView | null>(null);
   const [exports, setExports] = useState<ExportRecord[]>([]);
+  const [timeline, setTimeline] = useState<TimelineState>(EMPTY_TIMELINE);
+  const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [format, setFormat] = useState<OutputFormat>("16:9");
   const [resolution, setResolution] = useState<OutputResolution>("1080");
 
@@ -62,6 +80,7 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
       setOverlap(EMPTY_OVERLAP);
       setPlan(EMPTY_PLAN);
       setExports([]);
+      setTimeline(EMPTY_TIMELINE);
       return;
     }
     let stop = false;
@@ -72,7 +91,8 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
         overlapState(project.handle, asset.asset_id),
         shotPlanState(project.handle, asset.asset_id),
         listExports(project.handle, asset.asset_id),
-      ]).then(([listed, nextReady, nextOverlap, nextPlan, nextExports]) => {
+        timelineState(project.handle, asset.asset_id),
+      ]).then(([listed, nextReady, nextOverlap, nextPlan, nextExports, nextTimeline]) => {
         if (stop) {
           return;
         }
@@ -81,6 +101,7 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
         setOverlap(nextOverlap);
         setPlan(nextPlan);
         setExports(nextExports);
+        setTimeline(nextTimeline);
       }).catch((error: unknown) => {
         if (!stop) {
           data.setNotice(asFailure(error));
@@ -163,9 +184,105 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
       return;
     }
     data.setNotice(null);
-    const request = renderJobSpec(format, resolution, plan.run_id);
+    const request = renderJobSpec(
+      format,
+      resolution,
+      plan.run_id,
+      timeline.sequence_id !== null && timeline.revision !== null
+        ? { sequenceId: timeline.sequence_id, revision: timeline.revision }
+        : undefined,
+    );
     try {
       await createJob(project.handle, request.kind, { mediaAssetId: asset.asset_id, spec: request.spec });
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    }
+  }
+
+  const selectedClip = timeline.clips.find((clip) => clip.clip_id === selectedClipId) ?? null;
+  const canSplit = splitAllowed(selectedClip, playback.playheadUs);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const typing = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable);
+      if (typing || !asset || !timeline.sequence_id || !selectedClip) {
+        return;
+      }
+      if (event.key === "s" || event.key === "S") {
+        if (!canSplit) {
+          return;
+        }
+        event.preventDefault();
+        void splitEdit(project.handle, asset.asset_id, timeline.sequence_id, selectedClip.clip_id, playback.playheadUs)
+          .then(setTimeline)
+          .catch((error: unknown) => data.setNotice(asFailure(error)));
+      }
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        void removeEditClip(project.handle, asset.asset_id, timeline.sequence_id, selectedClip.clip_id)
+          .then((next) => {
+            setSelectedClipId(null);
+            setTimeline(next);
+          })
+          .catch((error: unknown) => data.setNotice(asFailure(error)));
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [asset, timeline.sequence_id, selectedClip, canSplit, playback.playheadUs, project.handle]);
+
+  async function makeEdit() {
+    if (!asset) {
+      return;
+    }
+    data.setNotice(null);
+    try {
+      setTimeline(await createEdit(project.handle, asset.asset_id));
+      setConfirmReset(false);
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    }
+  }
+
+  async function splitSelected() {
+    if (!asset || !timeline.sequence_id || !selectedClip || !canSplit) {
+      return;
+    }
+    data.setNotice(null);
+    try {
+      setTimeline(await splitEdit(project.handle, asset.asset_id, timeline.sequence_id, selectedClip.clip_id, playback.playheadUs));
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    }
+  }
+
+  async function removeSelected() {
+    if (!asset || !timeline.sequence_id || !selectedClip) {
+      return;
+    }
+    data.setNotice(null);
+    try {
+      setSelectedClipId(null);
+      setTimeline(await removeEditClip(project.handle, asset.asset_id, timeline.sequence_id, selectedClip.clip_id));
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    }
+  }
+
+  async function resetSelected() {
+    if (!asset || !timeline.sequence_id) {
+      return;
+    }
+    const step = requestReset(confirmReset);
+    setConfirmReset(step.confirming);
+    if (!step.commit) {
+      return;
+    }
+    data.setNotice(null);
+    try {
+      setSelectedClipId(null);
+      setTimeline(await resetEdit(project.handle, asset.asset_id, timeline.sequence_id));
     } catch (error) {
       data.setNotice(asFailure(error));
     }
@@ -220,6 +337,34 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
               })}
             </ul>
           )}
+        </section>
+        <section aria-label="Timeline">
+          <h2>Timeline</h2>
+          <p>Source preview. Removed ranges stay out of the export and are not skipped during playback.</p>
+          <div className="row">
+            <button type="button" onClick={() => void makeEdit()} disabled={!plan.run_id || plan.stale}>Create edit</button>
+            <button type="button" onClick={() => void splitSelected()} disabled={!canSplit}>Split at playhead</button>
+            <button type="button" onClick={() => void removeSelected()} disabled={!selectedClip}>Remove clip</button>
+            <button type="button" onClick={() => void resetSelected()} disabled={!timeline.sequence_id}>
+              {confirmReset ? "Confirm reset" : "Reset edit"}
+            </button>
+            {confirmReset ? <button type="button" onClick={() => setConfirmReset(false)}>Cancel reset</button> : null}
+          </div>
+          <p>
+            {selectedClip
+              ? `Selected ${formatMicroseconds(selectedClip.source_start_us)} – ${formatMicroseconds(selectedClip.source_end_us)}`
+              : "No clip selected"}
+            {timeline.duration_us !== null ? ` · Edit length ${formatMicroseconds(timeline.duration_us)}` : ""}
+          </p>
+          {timeline.source_start_us !== null && timeline.source_end_us !== null ? (
+            <TimelineCanvas
+              timeline={timeline}
+              playheadUs={playback.playheadUs}
+              selectedClipId={selectedClipId}
+              onSeek={(sourceUs) => playback.requestSeek(sourceUs)}
+              onSelect={setSelectedClipId}
+            />
+          ) : <p>No source range yet.</p>}
         </section>
         <section aria-label="Render">
           <h2>Render</h2>

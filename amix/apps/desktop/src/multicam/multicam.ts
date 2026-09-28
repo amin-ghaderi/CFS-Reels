@@ -158,10 +158,23 @@ export function presetId(format: OutputFormat, resolution: OutputResolution): st
 }
 
 /** Output choice only. The shot plan run stays the one already built. */
-export function renderJobSpec(format: OutputFormat, resolution: OutputResolution, shotPlanRunId: string) {
+export function renderJobSpec(
+  format: OutputFormat,
+  resolution: OutputResolution,
+  shotPlanRunId: string,
+  sequence?: { sequenceId: string; revision: number },
+) {
+  const spec: Record<string, unknown> = {
+    preset: presetId(format, resolution),
+    shot_plan_run_id: shotPlanRunId,
+  };
+  if (sequence) {
+    spec.sequence_id = sequence.sequenceId;
+    spec.sequence_revision = sequence.revision;
+  }
   return {
     kind: "render_multicam" as const,
-    spec: { preset: presetId(format, resolution), shot_plan_run_id: shotPlanRunId },
+    spec,
   };
 }
 

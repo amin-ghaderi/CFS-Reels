@@ -6,6 +6,14 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 
+from amix.amix_engine.editorial.sequence import (
+    SequenceRejected,
+    create_sequence,
+    remove_clip,
+    reset_sequence,
+    split_clip,
+    timeline_snapshot,
+)
 from amix.amix_engine.layout import COORDINATE_SPACE, LayoutRejected, validate_layout
 from amix.amix_engine.multicam.effective import OverrideRejected, describe_shots, set_shot_override
 from amix.amix_engine.multicam.profile import PRESETS
@@ -39,6 +47,10 @@ from amix.amix_engine.service.schemas import (
     ShotOverrideRequest,
     ShotPlanStateResponse,
     ShotResponse,
+    SplitClipRequest,
+    ClipRequest,
+    ResetSequenceRequest,
+    TimelineResponse,
 )
 from amix.amix_engine.speakers import SpeakerMapRejected, apply_cluster_map, speaker_status
 from amix.amix_engine.jobs.media import proxy_state
@@ -173,6 +185,31 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
     def list_exports(handle: str, asset_id: str, request: Request) -> list[ExportResponse]:
         authorize(request)
         return call(lambda: _exports(runtime, handle, asset_id))
+
+    @app.get("/v1/projects/{handle}/media/{asset_id}/timeline", response_model=TimelineResponse)
+    def timeline_state(handle: str, asset_id: str, request: Request) -> TimelineResponse:
+        authorize(request)
+        return call(lambda: _timeline(runtime, handle, asset_id))
+
+    @app.post("/v1/projects/{handle}/media/{asset_id}/sequence", response_model=TimelineResponse)
+    def create_edit(handle: str, asset_id: str, request: Request) -> TimelineResponse:
+        authorize(request)
+        return call(lambda: _create_edit(runtime, handle, asset_id))
+
+    @app.post("/v1/projects/{handle}/media/{asset_id}/sequence/split", response_model=TimelineResponse)
+    def split_sequence_clip(handle: str, asset_id: str, body: SplitClipRequest, request: Request) -> TimelineResponse:
+        authorize(request)
+        return call(lambda: _split_edit(runtime, handle, asset_id, body))
+
+    @app.post("/v1/projects/{handle}/media/{asset_id}/sequence/remove", response_model=TimelineResponse)
+    def remove_sequence_clip(handle: str, asset_id: str, body: ClipRequest, request: Request) -> TimelineResponse:
+        authorize(request)
+        return call(lambda: _remove_edit(runtime, handle, asset_id, body))
+
+    @app.post("/v1/projects/{handle}/media/{asset_id}/sequence/reset", response_model=TimelineResponse)
+    def reset_edit(handle: str, asset_id: str, body: ResetSequenceRequest, request: Request) -> TimelineResponse:
+        authorize(request)
+        return call(lambda: _reset_edit(runtime, handle, asset_id, body))
 
 
 def _store(runtime: EngineRuntime, handle: str) -> ProjectStore:
@@ -649,3 +686,57 @@ def _exports(runtime: EngineRuntime, handle: str, asset_id: str) -> list[ExportR
             status=job.status,
         ))
     return rows
+
+
+def _timeline(runtime: EngineRuntime, handle: str, asset_id: str) -> TimelineResponse:
+    store = _store(runtime, handle)
+    store.get_media(asset_id)
+    return TimelineResponse.model_validate(timeline_snapshot(store, asset_id))
+
+
+def _create_edit(runtime: EngineRuntime, handle: str, asset_id: str) -> TimelineResponse:
+    store = _store(runtime, handle)
+    try:
+        create_sequence(store, asset_id)
+    except SequenceRejected as exc:
+        raise ApiError(400, exc.code, exc.message) from exc
+    return _timeline(runtime, handle, asset_id)
+
+
+def _split_edit(runtime: EngineRuntime, handle: str, asset_id: str, body: SplitClipRequest) -> TimelineResponse:
+    store = _store(runtime, handle)
+    _sequence_asset(store, asset_id, body.sequence_id)
+    try:
+        split_clip(store, body.sequence_id, body.clip_id, body.source_time_us)
+    except SequenceRejected as exc:
+        status = 404 if exc.code in {"unknown_clip", "unknown_sequence"} else 400
+        raise ApiError(status, exc.code, exc.message) from exc
+    return _timeline(runtime, handle, asset_id)
+
+
+def _remove_edit(runtime: EngineRuntime, handle: str, asset_id: str, body: ClipRequest) -> TimelineResponse:
+    store = _store(runtime, handle)
+    _sequence_asset(store, asset_id, body.sequence_id)
+    try:
+        remove_clip(store, body.sequence_id, body.clip_id)
+    except SequenceRejected as exc:
+        status = 404 if exc.code in {"unknown_clip", "unknown_sequence"} else 400
+        raise ApiError(status, exc.code, exc.message) from exc
+    return _timeline(runtime, handle, asset_id)
+
+
+def _reset_edit(runtime: EngineRuntime, handle: str, asset_id: str, body: ResetSequenceRequest) -> TimelineResponse:
+    store = _store(runtime, handle)
+    _sequence_asset(store, asset_id, body.sequence_id)
+    try:
+        reset_sequence(store, body.sequence_id)
+    except SequenceRejected as exc:
+        raise ApiError(400, exc.code, exc.message) from exc
+    return _timeline(runtime, handle, asset_id)
+
+
+def _sequence_asset(store, asset_id: str, sequence_id: str) -> None:
+    current = store.load_editorial_sequence(asset_id)
+    if current is None or current["sequence_id"] != sequence_id:
+        raise ApiError(404, "unknown_sequence", "That sequence is not in this project.")
+

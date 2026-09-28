@@ -144,10 +144,15 @@ describe("multicam review", () => {
   it("treats 16:9 and 9:16 as output presets on the same shot plan", () => {
     expect(OUTPUT_PRESETS.map((preset) => preset.format)).toEqual(["16:9", "16:9", "9:16", "9:16"]);
     expect(OUTPUT_PRESETS.map((preset) => preset.resolution)).toEqual(["1080", "720", "1080", "720"]);
-    const landscape = renderJobSpec("16:9", "1080", "plan-1");
-    const portrait = renderJobSpec("9:16", "720", "plan-1");
+    const sequence = { sequenceId: "seq-1", revision: 4 };
+    const landscape = renderJobSpec("16:9", "1080", "plan-1", sequence);
+    const portrait = renderJobSpec("9:16", "720", "plan-1", sequence);
     expect(landscape.kind).toBe("render_multicam");
     expect(portrait.kind).toBe("render_multicam");
+    expect(landscape.spec.sequence_id).toBe("seq-1");
+    expect(portrait.spec.sequence_id).toBe(landscape.spec.sequence_id);
+    expect(portrait.spec.sequence_revision).toBe(4);
+    expect(landscape.spec.sequence_revision).toBe(portrait.spec.sequence_revision);
     expect(landscape.spec.shot_plan_run_id).toBe(portrait.spec.shot_plan_run_id);
     expect(landscape.spec.preset).toBe("landscape_1080");
     expect(portrait.spec.preset).toBe("portrait_720");

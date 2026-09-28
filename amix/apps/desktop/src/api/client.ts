@@ -19,6 +19,7 @@ import type {
   OverlapState,
   ShotPlanState,
   ExportRecord,
+  TimelineState,
 } from "./types";
 
 interface RawResponse {
@@ -206,6 +207,35 @@ export function saveShotOverride(
 
 export function listExports(handle: string, assetId: string): Promise<ExportRecord[]> {
   return request("GET", `/v1/projects/${handle}/media/${assetId}/exports`);
+}
+
+export function timelineState(handle: string, assetId: string): Promise<TimelineState> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/timeline`);
+}
+
+export function createEdit(handle: string, assetId: string): Promise<TimelineState> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/sequence`);
+}
+
+export function splitEdit(handle: string, assetId: string, sequenceId: string, clipId: string, sourceTimeUs: number): Promise<TimelineState> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/sequence/split`, {
+    sequence_id: sequenceId,
+    clip_id: clipId,
+    source_time_us: sourceTimeUs,
+  });
+}
+
+export function removeEditClip(handle: string, assetId: string, sequenceId: string, clipId: string): Promise<TimelineState> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/sequence/remove`, {
+    sequence_id: sequenceId,
+    clip_id: clipId,
+  });
+}
+
+export function resetEdit(handle: string, assetId: string, sequenceId: string): Promise<TimelineState> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/sequence/reset`, {
+    sequence_id: sequenceId,
+  });
 }
 
 export function preparePlayback(sourceMediaAssetId: string, requestId: number): Promise<PreparedPlayback> {

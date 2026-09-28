@@ -82,6 +82,14 @@ const MESSAGES: Record<string, string> = {
   render_requires_source: "Rendering uses the original source media.",
   render_requires_probe: "Probe this media before rendering.",
   render_failed: "The render did not finish.",
+  invalid_sequence: "The sequence source range is empty.",
+  invalid_clip: "A clip range is empty.",
+  clip_out_of_range: "A clip is outside the sequence source range.",
+  clip_overlap: "Clips must stay in source order without overlap.",
+  unknown_clip: "That clip is not in this sequence.",
+  unknown_sequence: "That sequence is not in this project.",
+  split_out_of_range: "Split inside the selected clip.",
+  sequence_changed: "That edit changed before rendering.",
 };
 
 export function mapEngineFailure(status: number, body: string): EngineFailure {

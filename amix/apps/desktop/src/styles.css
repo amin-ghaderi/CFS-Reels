@@ -528,6 +528,13 @@ details {
   overflow: auto;
 }
 
+.timeline-canvas {
+  display: block;
+  width: 100%;
+  background: #1b1d22;
+  border-radius: 4px;
+}
+
 .review-list button {
   width: 100%;
   text-align: left;

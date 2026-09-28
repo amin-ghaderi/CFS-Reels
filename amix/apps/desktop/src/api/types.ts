@@ -267,6 +267,41 @@ export interface ShotPlanState {
   shots: ShotView[];
 }
 
+export interface TimelineClip {
+  clip_id: string;
+  order_index: number;
+  source_start_us: number;
+  source_end_us: number;
+  sequence_start_us: number | null;
+}
+
+export interface TimelineRange {
+  source_start_us: number;
+  source_end_us: number;
+}
+
+export interface TimelineCamera {
+  shot_id: string;
+  source_start_us: number;
+  source_end_us: number;
+  presentation: string;
+  participant_name: string | null;
+  locked: boolean;
+}
+
+export interface TimelineState {
+  sequence_id: string | null;
+  revision: number | null;
+  fingerprint: string | null;
+  source_start_us: number | null;
+  source_end_us: number | null;
+  duration_us: number | null;
+  clips: TimelineClip[];
+  removed: TimelineRange[];
+  camera: TimelineCamera[];
+  protected: TimelineRange[];
+}
+
 export interface ExportRecord {
   job_id: string;
   filename: string;
