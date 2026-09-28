@@ -140,3 +140,32 @@ class TranscriptWordPage(_Model):
     limit: int
     word_count: int
     words: list[TranscriptWordResponse]
+
+
+class WordAtTimeResponse(_Model):
+    found: bool
+    word_id: str | None = None
+    sequence: int | None = None
+    start_us: int | None = None
+    end_us: int | None = None
+
+
+class PlaybackResponse(_Model):
+    source_media_asset_id: str
+    playable: bool
+    status: str
+    warning: str | None = None
+    playback_media_asset_id: str | None = None
+    profile: str | None = None
+    resolved_path: str | None = None
+    playback_duration_us: int | None = None
+    source_duration_us: int | None = None
+    source_container_start_us: int | None = None
+    proxy_container_start_us: int | None = None
+    canonical_origin_us: int | None = None
+    timestamp_policy: str | None = None
+    byte_size: int | None = None
+    file_mtime_ns: int | None = None
+    container: str | None = None
+    mime: str | None = None
+    source_present: bool

@@ -9,6 +9,8 @@ import type {
   ProjectInfo,
   TranscriptWord,
   TranscriptWordPage,
+  WordAtTime,
+  PreparedPlayback,
 } from "./types";
 
 interface RawResponse {
@@ -116,6 +118,18 @@ export async function correctWordText(
 
 export async function clearWordText(handle: string, assetId: string, wordId: string): Promise<TranscriptWord> {
   return request("POST", `/v1/projects/${handle}/media/${assetId}/words/${wordId}/text/clear`);
+}
+
+export async function wordAtTime(handle: string, assetId: string, timeUs: number): Promise<WordAtTime> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/transcript/word-at/${timeUs}`);
+}
+
+export function preparePlayback(sourceMediaAssetId: string, requestId: number): Promise<PreparedPlayback> {
+  return invoke<PreparedPlayback>("prepare_playback", { sourceMediaAssetId, requestId });
+}
+
+export function releasePlayback(requestId: number): Promise<void> {
+  return invoke("release_playback", { requestId });
 }
 
 async function request<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {

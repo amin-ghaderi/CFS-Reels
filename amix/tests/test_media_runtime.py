@@ -19,6 +19,7 @@ from amix.amix_engine.adapters.media.proxy import preview_size, progress_basis_p
 from amix.amix_engine.adapters.media.timeparse import seconds_text_to_us
 from amix.amix_engine.jobs.media import GENERATE_PROXY, GenerateProxyJob, proxy_state
 from amix.amix_engine.jobs.runner import CancellationToken, JobContext, JobFailed
+from amix.amix_engine.playback import resolve_playback
 from amix.amix_engine.service.config import ServiceConfig
 from amix.amix_engine.service.runtime import EngineRuntime
 from amix.amix_engine.storage.migrate import upgrade_database
@@ -518,6 +519,12 @@ class FfmpegIntegrationTests(unittest.TestCase):
                 self.assertNotEqual((tall_proxy.width, tall_proxy.height), (1280, 720))
                 self.assertTrue((root / "proxy" / f"{landscape_id}.mp4").is_file())
                 self.assertFalse((landscape.parent / "proxy").exists())
+                described = resolve_playback(session.store, landscape_id)
+                self.assertTrue(described.playable)
+                self.assertEqual(described.playback_media_asset_id, wide_proxy.asset_id)
+                self.assertEqual(described.profile, "amix.proxy.v1")
+                self.assertIsInstance(described.canonical_origin_us, int)
+                self.assertTrue((described.resolved_path or "").endswith(f"{landscape_id}.mp4"))
                 project_id = session.store.project_id
             finally:
                 runtime.shutdown()

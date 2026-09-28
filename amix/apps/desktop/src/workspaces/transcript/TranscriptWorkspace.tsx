@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { activeTranscript, clearWordText, correctWordText, transcriptWords } from "../../api/client";
+import { activeTranscript, clearWordText, correctWordText, transcriptWords, wordAtTime } from "../../api/client";
 import { asFailure } from "../../api/errors";
 import type { ActiveTranscript, ProjectInfo, TranscriptWord } from "../../api/types";
 import { mediaAvailability } from "../../media/present";
+import { PreviewPlayer } from "../../playback/PreviewPlayer";
+import { usePlayback } from "../../playback/PlaybackSession";
+import { pageOffsetForSequence, pageTimeBounds, playheadInsidePage, seekTargetUs, shouldRequestFollow, wordAtPlayhead } from "../../playback/sync";
 import { useProjectData } from "../../project/ProjectData";
 import { SplitPane } from "../../shell/SplitPane";
 import { formatMicroseconds } from "../../time/format";
@@ -20,6 +23,11 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
   const [total, setTotal] = useState(0);
   const [picked, setPicked] = useState<TranscriptWord | null>(null);
   const [draft, setDraft] = useState("");
+  const followPending = useRef(false);
+  const followHeld = useRef(false);
+  const followAsset = useRef<string | null>(null);
+  const [followEpoch, setFollowEpoch] = useState(0);
+  const playback = usePlayback();
 
   useEffect(() => {
     setDescribed(null);
@@ -71,9 +79,71 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
     };
   }, [project.handle, asset?.asset_id, described?.active, described?.analysis_run_id, offset]);
 
+  useEffect(() => {
+    followHeld.current = false;
+    followPending.current = false;
+  }, [asset?.asset_id, playback.seekSerial]);
+
+  useEffect(() => {
+    if (!asset || !described?.active) {
+      return;
+    }
+    const assetId = asset.asset_id;
+    followAsset.current = assetId;
+    const timed = words.map((word) => ({
+      word_id: word.word_id,
+      sequence: word.sequence,
+      start_us: word.start_us,
+      end_us: word.end_us,
+    }));
+    const bounds = pageTimeBounds(timed);
+    if (playheadInsidePage(playback.playheadUs, bounds)) {
+      followHeld.current = false;
+      return;
+    }
+    if (!shouldRequestFollow({
+      playheadUs: playback.playheadUs,
+      bounds,
+      pending: followPending.current,
+      held: followHeld.current,
+    })) {
+      return;
+    }
+    const time = playback.playheadUs;
+    followPending.current = true;
+    void wordAtTime(project.handle, assetId, time)
+      .then((hit) => {
+        if (followAsset.current !== assetId) {
+          return;
+        }
+        if (hit.found && hit.sequence != null) {
+          const next = pageOffsetForSequence(hit.sequence, PAGE);
+          if (next === offset) {
+            followHeld.current = true;
+          } else {
+            setOffset(next);
+          }
+        } else {
+          followHeld.current = true;
+        }
+      })
+      .catch((error: unknown) => {
+        if (followAsset.current !== assetId) {
+          return;
+        }
+        followHeld.current = true;
+        data.setNotice(asFailure(error));
+      })
+      .finally(() => {
+        followPending.current = false;
+        setFollowEpoch((value) => value + 1);
+      });
+  }, [playback.playheadUs, playback.seekSerial, words, asset?.asset_id, described?.active, offset, project.handle, followEpoch]);
+
   function choose(word: TranscriptWord) {
     setPicked(word);
     setDraft(word.effective_text);
+    playback.requestSeek(seekTargetUs(word));
   }
 
   async function save() {
@@ -112,6 +182,7 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
   }
 
   const direction = transcriptDir(described?.language ?? null);
+  const activeWordId = wordAtPlayhead(words, playback.playheadUs);
   const context = (
     <aside className="context" aria-label="Media context">
       <h2>Media</h2>
@@ -207,23 +278,29 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
                   </span>
                 ) : null}
               </div>
+              <PreviewPlayer project={project} />
               {!asset ? <p className="muted">Select a media file in Media.</p> : null}
               {asset && described && !described.active ? <p>{EMPTY_TRANSCRIPT}</p> : null}
               {described?.active ? (
                 <>
                   <div className="transcript" dir={direction} lang={described.language ?? undefined}>
-                    {words.map((word) => (
-                      <button
-                        key={word.word_id}
-                        type="button"
-                        className={picked?.word_id === word.word_id ? "word selected" : "word"}
-                        aria-pressed={picked?.word_id === word.word_id}
-                        onClick={() => choose(word)}
-                      >
-                        <bdi dir="auto">{word.effective_text}</bdi>
-                        {word.participant_name ? <span className="speaker" dir="auto">{word.participant_name}</span> : null}
-                      </button>
-                    ))}
+                    {words.map((word) => {
+                      const current = word.word_id === activeWordId;
+                      const selectedWord = picked?.word_id === word.word_id;
+                      return (
+                        <button
+                          key={word.word_id}
+                          type="button"
+                          className={["word", selectedWord ? "selected" : "", current ? "current" : ""].filter(Boolean).join(" ")}
+                          aria-pressed={selectedWord}
+                          aria-current={current ? "true" : undefined}
+                          onClick={() => choose(word)}
+                        >
+                          <bdi dir="auto">{word.effective_text}</bdi>
+                          {word.participant_name ? <span className="speaker" dir="auto">{word.participant_name}</span> : null}
+                        </button>
+                      );
+                    })}
                   </div>
                   <div className="actions">
                     <button type="button" disabled={offset === 0} onClick={() => setOffset((value) => Math.max(0, value - PAGE))}>

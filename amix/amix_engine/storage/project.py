@@ -250,6 +250,16 @@ class ActiveTranscript:
 
 
 @dataclass(frozen=True)
+class WordHit:
+    """Active-transcript word that contains one canonical source time. No text."""
+
+    word_id: str
+    sequence: int
+    start_us: int
+    end_us: int
+
+
+@dataclass(frozen=True)
 class TranscriptWordView:
     word_id: str
     sequence: int
@@ -946,6 +956,28 @@ class ProjectStore:
                 .limit(limit)
             ).all()
             return described, self._word_views(session, asset_id, words)
+
+    def word_at_time(self, asset_id: str, time_us: int) -> WordHit | None:
+        """Active transcript word containing time_us, using [start_us, end_us)."""
+        if time_us < 0:
+            raise ValueError("invalid word time")
+        described = self.active_transcript(asset_id)
+        if described is None:
+            raise NoActiveTranscript(asset_id)
+        with self._session() as session:
+            word = session.scalar(
+                select(WordRow)
+                .where(
+                    WordRow.transcript_id == described.transcript_id,
+                    WordRow.start_us <= time_us,
+                    WordRow.end_us > time_us,
+                )
+                .order_by(WordRow.sequence, WordRow.id)
+                .limit(1)
+            )
+            if word is None:
+                return None
+            return WordHit(word.id, int(word.sequence), int(word.start_us), int(word.end_us))
 
     def active_word_view(self, asset_id: str, word_id: str) -> TranscriptWordView:
         described = self.active_transcript(asset_id)

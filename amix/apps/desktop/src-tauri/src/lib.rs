@@ -1,4 +1,5 @@
 mod engine;
+mod playback;
 pub mod launch;
 pub mod paths;
 pub mod ready;
@@ -46,6 +47,8 @@ pub fn run() {
             engine::engine_retry,
             engine::engine_request,
             engine::join_project_path,
+            playback::prepare_playback,
+            playback::release_playback,
         ])
         .build(tauri::generate_context!())
         .expect("AMIX desktop failed to start")

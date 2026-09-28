@@ -111,6 +111,7 @@ export function EngineGate() {
     <ProjectShell
       project={project}
       folder={folder}
+      generation={engine.generation}
       notice={notice}
       setNotice={setNotice}
       applySession={applySession}

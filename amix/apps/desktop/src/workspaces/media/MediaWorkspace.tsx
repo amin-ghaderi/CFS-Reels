@@ -4,6 +4,7 @@ import { createJob, linkMedia, relinkMedia } from "../../api/client";
 import { asFailure } from "../../api/errors";
 import type { ProjectInfo } from "../../api/types";
 import { mediaAvailability, mediaFacts, proxyLabel, roleLabel, sourceAssets } from "../../media/present";
+import { PreviewPlayer } from "../../playback/PreviewPlayer";
 import { useProjectData } from "../../project/ProjectData";
 import { SplitPane } from "../../shell/SplitPane";
 
@@ -139,39 +140,55 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
     </aside>
   ) : null;
 
+  const list = (
+    <section className="context" aria-label="Media">
+      <div className="toolbar">
+        <h2>Media</h2>
+        <button type="button" className="primary" onClick={() => void link()} disabled={data.busy || project.read_only}>
+          Link file
+        </button>
+      </div>
+      {sourceAssets(data.assets).length === 0 ? <p className="muted">No media is linked to this project yet.</p> : null}
+      <ul className="asset-list">
+        {sourceAssets(data.assets).map((asset) => (
+          <li key={asset.asset_id}>
+            <button
+              type="button"
+              className={asset.asset_id === data.selectedId ? "selected" : undefined}
+              aria-current={asset.asset_id === data.selectedId ? "true" : undefined}
+              onClick={() => data.select(asset.asset_id)}
+            >
+              <span>{asset.display_name}</span>
+              <span className={asset.status === "missing" ? "status missing" : "status"}>
+                {mediaAvailability(asset.status)}
+              </span>
+              <span className="muted">{roleLabel(asset.role)}</span>
+              {asset.role === "master" ? <span className="muted">Proxy {proxyLabel(asset.proxy_state)}</span> : null}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+
   return (
     <SplitPane
-      side={inspector}
+      sideFirst
       sideWidth={280}
+      side={list}
       main={
-        <section className="workspace-main" aria-label="Media">
-          <div className="toolbar">
-            <h1>Media</h1>
-            <button type="button" className="primary" onClick={() => void link()} disabled={data.busy || project.read_only}>
-              Link file
-            </button>
-          </div>
-          {sourceAssets(data.assets).length === 0 ? <p className="muted">No media is linked to this project yet.</p> : null}
-          <ul className="asset-list">
-            {sourceAssets(data.assets).map((asset) => (
-              <li key={asset.asset_id}>
-                <button
-                  type="button"
-                  className={asset.asset_id === data.selectedId ? "selected" : undefined}
-                  aria-current={asset.asset_id === data.selectedId ? "true" : undefined}
-                  onClick={() => data.select(asset.asset_id)}
-                >
-                  <span>{asset.display_name}</span>
-                  <span className={asset.status === "missing" ? "status missing" : "status"}>
-                    {mediaAvailability(asset.status)}
-                  </span>
-                  <span className="muted">{roleLabel(asset.role)}</span>
-                  {asset.role === "master" ? <span className="muted">Proxy {proxyLabel(asset.proxy_state)}</span> : null}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <SplitPane
+          sideWidth={280}
+          side={inspector}
+          main={
+            <section className="workspace-main" aria-label="Preview">
+              <div className="toolbar">
+                <h1>Preview</h1>
+              </div>
+              <PreviewPlayer project={project} />
+            </section>
+          }
+        />
       }
     />
   );

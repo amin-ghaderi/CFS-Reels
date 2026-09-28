@@ -8,6 +8,7 @@ use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::launch::{self, EngineChild};
+use crate::playback::{self, PlaybackBook};
 use crate::transport::{self, timeouts_for, HttpTimeouts};
 
 pub const RESTART_NOTICE: &str = "The engine restarted. Reopen your project to continue.";
@@ -66,6 +67,7 @@ struct Shared {
     inner: Mutex<Inner>,
     changed: Condvar,
     app: Mutex<Option<AppHandle>>,
+    playback: Mutex<PlaybackBook>,
 }
 
 #[derive(Clone)]
@@ -91,8 +93,27 @@ impl EngineState {
                 }),
                 changed: Condvar::new(),
                 app: Mutex::new(None),
+                playback: Mutex::new(PlaybackBook::default()),
             }),
         }
+    }
+
+    pub(crate) fn app_handle(&self) -> Option<AppHandle> {
+        self.shared.app.lock().expect("app handle").clone()
+    }
+
+    pub(crate) fn with_playback<T>(&self, f: impl FnOnce(&mut PlaybackBook) -> T) -> T {
+        let mut book = self.shared.playback.lock().expect("playback");
+        f(&mut book)
+    }
+
+    /// Project close, engine restart, crash, and shutdown all drop playback files.
+    pub(crate) fn revoke_playback_grants(&self) {
+        let app = self.app_handle();
+        self.with_playback(|book| {
+            let paths = book.clear_all();
+            playback::forbid_exposed(app.as_ref(), &paths);
+        });
     }
 
     pub fn attach_app(&self, app: AppHandle) {
@@ -168,6 +189,7 @@ impl EngineState {
             let engine = inner.engine.take();
             (engine, token, port, project.map(|project| project.handle))
         };
+        self.revoke_playback_grants();
         // Generation already moved on, so the process watcher will not report this as a crash.
         self.notify();
         if let (Some(token), Some(port), Some(handle)) = (token, port, handle) {
@@ -196,6 +218,7 @@ impl EngineState {
         }
         let previous = inner.engine.take();
         drop(inner);
+        self.revoke_playback_grants();
         self.publish();
         (generation, previous)
     }
@@ -278,6 +301,7 @@ impl EngineState {
         inner.project = None;
         inner.engine = None;
         drop(inner);
+        self.revoke_playback_grants();
         self.publish();
     }
 
@@ -298,6 +322,7 @@ impl EngineState {
             inner.engine.take()
         };
         drop(engine);
+        self.revoke_playback_grants();
         self.publish();
     }
 
@@ -320,12 +345,14 @@ impl EngineState {
                 inner.project = Some(project);
                 inner.notice = None;
                 drop(inner);
+                self.revoke_playback_grants();
                 self.publish();
             }
         } else if method == "POST" && path.starts_with("/v1/projects/") && path.ends_with("/close") && status < 400
         {
             inner.project = None;
             drop(inner);
+            self.revoke_playback_grants();
             self.publish();
         }
     }
@@ -668,6 +695,68 @@ mod tests {
         });
         port
     }
+
+    #[test]
+    fn playback_files_are_removed_on_close_crash_restart_and_shutdown() {
+        let dir = std::env::temp_dir().join(format!("amix-playback-session-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let close_file = dir.join("close.mp4");
+        let crash_file = dir.join("crash.mp4");
+        let restart_file = dir.join("restart.mp4");
+        let shutdown_file = dir.join("shutdown.mp4");
+        for path in [&close_file, &crash_file, &restart_file, &shutdown_file] {
+            std::fs::write(path, b"preview").unwrap();
+        }
+
+        let state = EngineState::new();
+        state.testing_ready(9);
+        state.apply_response(
+            1,
+            "POST",
+            "/v1/projects/create",
+            200,
+            r#"{"handle":"h1","project_id":"p1","name":"Smoke","read_only":false,"schema_revision":"0003"}"#,
+            Some(r#"{"path":"C:\\work\\Smoke","name":"Smoke"}"#),
+        );
+        plant_playback(&state, &close_file, 1);
+        state.apply_response(1, "POST", "/v1/projects/h1/close", 200, "{}", None);
+        assert!(!close_file.exists());
+        assert!(state.with_playback(|book| book.exposed().is_empty()));
+
+        state.testing_ready(9);
+        plant_playback(&state, &crash_file, 2);
+        state.on_process_exit(1);
+        assert!(!crash_file.exists());
+        assert!(state.with_playback(|book| book.exposed().is_empty()));
+
+        let restarted = EngineState::new();
+        restarted.testing_ready(9);
+        plant_playback(&restarted, &restart_file, 3);
+        let _ = restarted.prepare_restart();
+        assert!(!restart_file.exists());
+
+        let stopped = EngineState::new();
+        stopped.testing_ready(9);
+        plant_playback(&stopped, &shutdown_file, 4);
+        stopped.shutdown();
+        assert!(!shutdown_file.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
+fn plant_playback(state: &EngineState, path: &std::path::Path, request: u64) {
+    state.with_playback(|book| {
+        let _ = book.begin(request);
+        book.install(crate::playback::Grant {
+            generation: 1,
+            project_id: "p1".into(),
+            source_id: "11111111-1111-4111-8111-111111111111".into(),
+            request_id: request,
+            exposed: path.to_path_buf(),
+        });
+    });
 }
 
 #[cfg(test)]

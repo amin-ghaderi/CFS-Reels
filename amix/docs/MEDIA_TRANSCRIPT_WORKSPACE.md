@@ -1,6 +1,6 @@
 # Media and transcript workspace
 
-Phase 6 is the first editing workspace. It lists and links media, and it shows an active transcript when one already exists. It does not transcribe or play video. Probing and preview proxies are described in [MEDIA_RUNTIME.md](MEDIA_RUNTIME.md).
+Phase 6 is the first editing workspace. It lists and links media, and it shows an active transcript when one already exists. It does not transcribe. Preview playback of the V1 proxy is described in [PLAYBACK.md](PLAYBACK.md). Probing and preview proxies are described in [MEDIA_RUNTIME.md](MEDIA_RUNTIME.md).
 
 ## Workspace architecture
 
@@ -25,7 +25,7 @@ Linking records an external `MediaAsset`. The file is not copied into the projec
 
 The engine stores the display filename, the external path, the file size, and a modification time from a stat of that one path. Duration, frame rate, and picture size stay empty until Analyze media runs. The desktop does not invent them. After a probe, the inspector shows the stored duration, display size, codecs, rational frame rate, and container start time.
 
-Generate proxy is available for a present master. The proxy is a derivative of that asset, not another row in the source list. Its state is Not generated, Queued, Generating, Ready, Stale, Failed, or Missing. There is still no video player.
+Generate proxy is available for a present master. The proxy is a derivative of that asset, not another row in the source list. Its state is Not generated, Queued, Generating, Ready, Stale, Failed, or Missing. The preview pane plays a ready V1 proxy through the desktop asset protocol. It does not play the linked source file. See [PLAYBACK.md](PLAYBACK.md).
 
 Availability is `present` or `missing`, from whether that path is a file. The Media list shows Missing without an integrity job.
 
@@ -43,7 +43,9 @@ A manual word correction is a `word_text` overlay. The machine `word.text` is no
 
 If an active `participant_assignment` run exists, each word includes that assignment, with a `speaker_override` correction when one is stored. The name comes from the participant row. Unknown stays unknown. Without an active assignment, the transcript is shown without speaker labels. Speaker correction is not a control in this phase.
 
-A missing source file does not hide the transcript. The workspace warns that relink is required before media-dependent work.
+A missing source file does not hide the transcript. The workspace warns that relink is required before media-dependent work. A valid project proxy can still preview, with that limitation stated on the player.
+
+Words are buttons. Clicking one selects it and, when a proxy is playable, seeks the shared player to that word's `start_us`. The playhead highlights the loaded word whose half-open range contains the canonical time. If playback moves off the loaded page, the workspace asks for the word at that time once and loads the page that contains the returned sequence.
 
 ## Direction and chrome
 
@@ -51,4 +53,4 @@ The application chrome stays LTR (`dir="ltr"` on the document). A transcript who
 
 ## Not in this phase
 
-Whisper, transcription jobs, FFmpeg probing, playback, waveforms, the timeline, multicam, reels, conversation analysis, and packaging.
+Whisper, transcription jobs, waveforms, the timeline, multicam, reels, conversation analysis, and packaging.

@@ -3,8 +3,8 @@
 AMIX is a local-first, cross-platform intelligent video editing platform for
 long-form conversational video.
 
-Current status: Phase 7 media runtime, on top of the Phase 6 media and transcript
-workspace, the Phase 5
+Current status: Phase 8 proxy playback and transcript sync, on top of the Phase 7
+media runtime, the Phase 6 media and transcript workspace, the Phase 5
 desktop shell, the Phase 4 local engine service, the Phase 3 project store,
 and the Phase 2 deterministic engine.
 
@@ -26,6 +26,8 @@ The Media and Transcript workspaces are described in
 [docs/MEDIA_TRANSCRIPT_WORKSPACE.md](docs/MEDIA_TRANSCRIPT_WORKSPACE.md).
 Probe and preview proxies are described in
 [docs/MEDIA_RUNTIME.md](docs/MEDIA_RUNTIME.md).
+Proxy playback and transcript sync are described in
+[docs/PLAYBACK.md](docs/PLAYBACK.md).
 
 ```
 amix/.venv/Scripts/python -m amix.amix_engine.service

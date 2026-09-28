@@ -5,16 +5,19 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 
+from amix.amix_engine.playback import PlaybackDescriptor, resolve_playback
 from amix.amix_engine.service.errors import ApiError
 from amix.amix_engine.service.runtime import EngineRuntime
 from amix.amix_engine.service.schemas import (
     LinkMediaRequest,
     MediaResponse,
     MediaStatusResponse,
+    PlaybackResponse,
     RelinkMediaRequest,
     TranscriptResponse,
     TranscriptWordPage,
     TranscriptWordResponse,
+    WordAtTimeResponse,
     WordTextRequest,
 )
 from amix.amix_engine.jobs.media import proxy_state
@@ -61,6 +64,19 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
     def transcript_words(handle: str, asset_id: str, offset: int, limit: int, request: Request) -> TranscriptWordPage:
         authorize(request)
         return call(lambda: _words(runtime, handle, asset_id, offset, limit))
+
+    @app.get(
+        "/v1/projects/{handle}/media/{asset_id}/transcript/word-at/{time_us}",
+        response_model=WordAtTimeResponse,
+    )
+    def word_at_time(handle: str, asset_id: str, time_us: str, request: Request) -> WordAtTimeResponse:
+        authorize(request)
+        return call(lambda: _word_at(runtime, handle, asset_id, time_us))
+
+    @app.get("/v1/projects/{handle}/media/{asset_id}/playback", response_model=PlaybackResponse)
+    def playback(handle: str, asset_id: str, request: Request) -> PlaybackResponse:
+        authorize(request)
+        return call(lambda: _playback(runtime, handle, asset_id))
 
     @app.post("/v1/projects/{handle}/media/{asset_id}/words/{word_id}/text", response_model=TranscriptWordResponse)
     def correct_word(handle: str, asset_id: str, word_id: str, body: WordTextRequest, request: Request) -> TranscriptWordResponse:
@@ -142,6 +158,51 @@ def _words(runtime: EngineRuntime, handle: str, asset_id: str, offset: int, limi
         limit=limit,
         word_count=described.word_count,
         words=[_word_view(word) for word in words],
+    )
+
+
+def _word_at(runtime: EngineRuntime, handle: str, asset_id: str, time_us: str) -> WordAtTimeResponse:
+    if not time_us.isdigit():
+        raise ApiError(400, "invalid_time", "time is out of range")
+    value = int(time_us)
+    if value > 2**63 - 1:
+        raise ApiError(400, "invalid_time", "time is out of range")
+    hit = _store(runtime, handle).word_at_time(asset_id, value)
+    if hit is None:
+        return WordAtTimeResponse(found=False)
+    return WordAtTimeResponse(
+        found=True,
+        word_id=hit.word_id,
+        sequence=hit.sequence,
+        start_us=hit.start_us,
+        end_us=hit.end_us,
+    )
+
+
+def _playback(runtime: EngineRuntime, handle: str, asset_id: str) -> PlaybackResponse:
+    return _playback_view(resolve_playback(_store(runtime, handle), asset_id))
+
+
+def _playback_view(described: PlaybackDescriptor) -> PlaybackResponse:
+    return PlaybackResponse(
+        source_media_asset_id=described.source_media_asset_id,
+        playable=described.playable,
+        status=described.status,
+        warning=described.warning,
+        playback_media_asset_id=described.playback_media_asset_id,
+        profile=described.profile,
+        resolved_path=described.resolved_path,
+        playback_duration_us=described.playback_duration_us,
+        source_duration_us=described.source_duration_us,
+        source_container_start_us=described.source_container_start_us,
+        proxy_container_start_us=described.proxy_container_start_us,
+        canonical_origin_us=described.canonical_origin_us,
+        timestamp_policy=described.timestamp_policy,
+        byte_size=described.byte_size,
+        file_mtime_ns=described.file_mtime_ns,
+        container=described.container,
+        mime=described.mime,
+        source_present=described.source_present,
     )
 
 

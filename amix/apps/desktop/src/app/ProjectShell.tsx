@@ -7,6 +7,7 @@ import type { EngineFailure, EngineStatus, ProjectInfo } from "../api/types";
 import { Alert } from "../components/Alert";
 import { ActivityBar } from "../jobs/ActivityBar";
 import { ProjectDataProvider, useProjectData } from "../project/ProjectData";
+import { PlaybackProvider } from "../playback/PlaybackSession";
 import type { WorkspaceId } from "../shell/workspaces";
 import { WORKSPACES, isPlaceholder } from "../shell/workspaces";
 import { MediaWorkspace } from "../workspaces/media/MediaWorkspace";
@@ -16,12 +17,14 @@ import { TranscriptWorkspace } from "../workspaces/transcript/TranscriptWorkspac
 export function ProjectShell({
   project,
   folder,
+  generation,
   notice,
   setNotice,
   applySession,
 }: {
   project: ProjectInfo;
   folder: string | null;
+  generation: number;
   notice: EngineFailure | null;
   setNotice: (notice: EngineFailure | null) => void;
   applySession: (session: EngineStatus) => void;
@@ -51,6 +54,7 @@ export function ProjectShell({
 
   return (
     <ProjectDataProvider project={project}>
+      <PlaybackProvider generation={generation}>
       <div className="app-shell">
         <header className="topbar">
           <div className="brand">AMIX</div>
@@ -82,6 +86,7 @@ export function ProjectShell({
         </div>
         <ActivityBar project={project} onNotice={setNotice} />
       </div>
+      </PlaybackProvider>
     </ProjectDataProvider>
   );
 }

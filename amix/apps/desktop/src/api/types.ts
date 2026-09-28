@@ -122,3 +122,29 @@ export interface TranscriptWordPage {
   word_count: number;
   words: TranscriptWord[];
 }
+
+export interface WordAtTime {
+  found: boolean;
+  word_id: string | null;
+  sequence: number | null;
+  start_us: number | null;
+  end_us: number | null;
+}
+
+/** Safe playback view. The filesystem path is not included. */
+export interface PreparedPlayback {
+  playable: boolean;
+  status: string;
+  warning: string | null;
+  message: string | null;
+  source_media_asset_id: string;
+  playback_media_asset_id: string | null;
+  canonical_origin_us: number;
+  playback_duration_us: number | null;
+  source_duration_us: number | null;
+  asset_url: string | null;
+  request_id: number;
+  byte_size: number | null;
+  file_mtime_ns: number | null;
+  stale: boolean;
+}
