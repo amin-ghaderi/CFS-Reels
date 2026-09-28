@@ -44,6 +44,7 @@ Cloud models have `local_path` empty, `download_on_demand` false, and `size_byte
 - User action or a task that needs a missing local model opens the manager. No background download of multi-gigabyte files on first launch without a prompt.
 - Verify hash before the model is marked installed.
 - Jobs that need a missing model fail with `model_missing`, not a cloud substitute, unless the active mode and task fallback already allow a different provider.
+- Offline mode never opens that download. A missing Whisper weight, YuNet file, or other runtime asset is `resource_missing` and the job stops. The manager is not implemented in this phase; the rule is.
 
 ## What is not selected here
 

@@ -33,7 +33,7 @@ Defined in [PRODUCT_ARCHITECTURE.md](PRODUCT_ARCHITECTURE.md): private/offline, 
 
 Routing:
 
-- Offline: only adapters with `execution = local`. If none qualify, the task status is `skipped_no_provider`, not a hidden cloud call.
+- Offline: no network call at all. A missing local model is `resource_missing`, not a download and not a cloud fallback. Semantic tasks with no local adapter are `skipped_no_provider`.
 - Hybrid: local generative work by default; a configured decision provider may score; individual tasks may opt into cloud.
 - Best quality: the user-selected frontier adapter may run the semantic tasks that list it as allowed.
 - Custom: a map `task_id → provider_config_id` overrides the mode defaults.

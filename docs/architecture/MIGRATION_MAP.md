@@ -11,11 +11,11 @@ AMIX does not copy `legacy/` wholesale. Status labels match [LEGACY_INVENTORY.md
 | Word-time preservation while cleaning text | `word_align.py` | CURRENT | `TextRevision` + deterministic aligner | PRESERVE BEHAVIOR |
 | Historical speaker blocks | `speakers.py` | LEGACY | — | DO NOT MIGRATE |
 | Speaker resolver v2 (mouth motion, mixed-audio correlation, continuity) | `speaker_resolver_v2.py` | LEGACY | — | DO NOT MIGRATE as the product speaker system. Pieces of mouth measurement may inform overlap; they are not a second attribution stack. |
-| Audio diarization | `cfs_audio_diarize_poc.py` | PROVEN / EXPERIMENTAL | Diarize stage | ADAPT (anonymous clusters, then map to participants). Do not treat the POC filename or three-speaker assumption as the domain model. |
+| Audio diarization | `cfs_audio_diarize_poc.py` | Clustering PROVEN on CFS03 windows with fixed k=3. Mapping HAND-ANCHORED (solo frames at CFS03 times, mouth votes). Not a generic N-speaker diarizer. | Diarize stage | ADAPT the anonymous-cluster then map shape. Domain stays N-participant. The migrated proof does not discover k. Phase 2 pins the known map as fixture input. Do not describe this POC as production diarization. |
 | Word-to-speaker alignment | `assign_word` | PROVEN | Align stage | PRESERVE BEHAVIOR |
 | Turns | `build_turns` | PROVEN | Turn builder | PRESERVE BEHAVIOR |
 | Overlap | `cfs_overlap.py` | PROVEN / EXPERIMENTAL | Overlap stage | ADAPT (thresholds and YuNet lip logic; regions must not rewrite turns). Tile constants `speaker_a/b/c` become layout regions. |
-| Conversation mapping | `conversation_map.py`, `prompts/conversation_mapper.md` | CURRENT | `conversation_mapping` | ADAPT |
+| Conversation mapping | `conversation_map.py`, `prompts/conversation_mapper.md` | CURRENT | `conversation_mapping` | ADAPT. Its legacy input is silence-gap `speakers.json`. AMIX must feed diarized turn ids, not that file. |
 | Program mapping | `program_map.py` | CURRENT | Same thread model if still useful | ADAPT or fold into conversation mapping. Do not keep two LLM mappers with two schemas without a single `ConversationThread` output. |
 | Heuristic Reel candidates | `candidates.py` | CURRENT | Local candidate stage | ADAPT (anchors become word/turn ids) |
 | Conversation Reel mining | `conversation_reels.py` | CURRENT | Reel candidate stage | ADAPT |
@@ -27,7 +27,7 @@ AMIX does not copy `legacy/` wholesale. Status labels match [LEGACY_INVENTORY.md
 | Earlier 16:9 live-style helper | `cfs_multicam_16x9.py` tile table | PROVEN as geometry used by the offline renderer | Layout regions | WRAP geometry only. The live-style path is not the product planner. |
 | Framing profiles | `framing.py`, `data/framing_profiles/` | PROVEN / CURRENT | `LayoutProfile` import | ADAPT. Profiles become data. `speaker_a` keys exist only in the importer. |
 | Face tools | `faces.py` YuNet | CURRENT | Overlap and future layout proposals | WRAP |
-| Visual verifier | `cfs_offline_verify.py` | EXPERIMENTAL | Optional later shot QA | REIMPLEMENT LATER. Not on the V1 critical path. It may override a plan in legacy; AMIX V1 does not let an experimental verifier silently change the active shot plan. |
+| Visual verifier | `cfs_offline_verify.py` | EXPERIMENTAL | Optional later shot QA | REIMPLEMENT LATER as a plan override. Not a V1 shot-plan authority. The diarization POC does call its mouth measurement to map clusters; that mapping is pinned evidence for the golden fixture, not a reason to ship the verifier. |
 | FFmpeg helpers | `utils.py` and call sites | PROVEN / CURRENT | Engine media tools | WRAP (probe, extract, cut, concat, mux). |
 | Cursor client | `cursor_ai.py` | CURRENT | Optional dev adapter | WRAP behind `GENERATE_STRUCTURED`. Not the product default. |
 | Roles and editorial prose | `legacy/roles/` | HAND-AUTHORED | Prompt templates if a task still needs that guidance | ADAPT as versioned prompt text, or leave in legacy until the task is implemented. |
@@ -56,12 +56,12 @@ AMIX does not copy `legacy/` wholesale. Status labels match [LEGACY_INVENTORY.md
 - Overlap is a second layer and forces a wide shot in the planner used for the accepted tests.
 - Protected master ranges outrank the director.
 - Long wordless stretches fall back to the original frame.
-- Render crops one tile to 16:9 or passes the frame through. Audio may be stream-copied.
+- Render crops one tile or passes the frame through. Direct scale to 1920×1080 is valid because those CFS tiles are already 16:9. Do not treat stretch-to-frame as the general rule. Audio may be stream-copied.
 - Plans are computed before render.
 
 ## Do not preserve
 
 - POC module layout, tmp scripts under `data/tmp_*`, or CFS03-only constants as AMIX structure.
-- Three participants as a schema limit.
+- Three participants as a schema limit. Fixed k=3 is a property of the current proof, not of the domain.
 - Float seconds as stored authority.
 - LLM-owned timestamps.

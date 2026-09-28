@@ -2,7 +2,7 @@
 
 ## Decision
 
-AMIX stores every media time as an **int64 count of microseconds** from the start of the referenced media asset.
+AMIX stores every media time as an **int64 count of microseconds** on the referenced media asset’s container presentation timeline. See [Time zero](#time-zero).
 
 Ranges are **half-open**: `[start_us, end_us)`.
 
@@ -21,9 +21,18 @@ Legacy code already treats time as decimal seconds rounded to three places (`rou
 | Integer microseconds | Exact integer. Millisecond ASR values land on `…000` microsecond boundaries. Frame snap can use a rational frame duration without a schema change. One 48 kHz sample is about 20.83 µs, so audio-sample alignment can be added later without a new unit. |
 | MPEG 90 kHz ticks | Exact for many broadcast timebases. Opaque in a desktop app and awkward next to Whisper’s millisecond grid. |
 
-Microseconds are the canonical unit. Milliseconds remain a display and legacy-import convenience, not a second stored clock.
+Microseconds are the canonical unit. Milliseconds are the precision of legacy files, not a second stored clock.
 
 30 fps is still not a binary-even microsecond (`1/30 s = 33333.333… µs`). Render snaps cuts with an explicit rational; it does not pretend `1/30` is an integer.
+
+## Time zero
+
+Canonical zero is the asset’s **FFmpeg container presentation time 0**: the same origin legacy `-ss` and `-t` use.
+
+- An AMIX microsecond is that timeline, converted by the rules below. It is not “time since the first decoded video frame” and not “time since the first audio sample” unless those happen to be container time 0.
+- A source-relative window is an offset on this timeline. The CFS03 golden window is container time 2960 s for 600 s. Ingest does not subtract 2960 s, and it does not move that window to time 0.
+- FFmpeg seek and render boundaries are formatted from these microseconds. Every stage uses this origin.
+- Probe may report a non-zero container or stream `start_time`. Store it on the asset. Do not silently rebase words, shots, overlaps, or seeks to hide it. Content before `start_time` is simply empty on this timeline. No subsystem may pick a different origin.
 
 ## Frame snap
 
@@ -44,11 +53,27 @@ Audio duration and video duration may differ by a few milliseconds, as they did 
 
 | Boundary | Rule |
 |---|---|
-| faster-whisper | `us = round_half_away_from_zero(seconds * 1_000_000)`. Legacy files that already used `round(seconds, 3)` import as `us = round(seconds, 3) * 1000`. |
-| FFmpeg / ffprobe | Format with six digits: `f"{us / 1_000_000:.6f}"`. Never pass a binary float that has been arithmetically combined in Python. |
+| Legacy JSON (millisecond grid) | See below. One conversion to a whole millisecond, then integer `us = ms * 1000`. |
+| faster-whisper, first capture | One conversion to int64 microseconds, then snap onto the millisecond grid with the same `us = ms * 1000` rule. Do not keep a finer fraction the legacy files never had, and do not convert the value again later. |
+| FFmpeg / ffprobe | Format the integer: `f"{us / 1_000_000:.6f}"`. Never pass a binary float that has been arithmetically combined in Python. |
 | Frontend playback | Media elements need seconds. The UI converts for the player (`us / 1e6`) and writes edits back as integer microseconds. The player’s float is not written into the project as authority. |
 | SRT and human timestamps | Derived. Not stored as the source of truth. |
-| Legacy JSON | Import once. Keep the original file hash on the analysis run. Do not keep a parallel float field after import. |
+
+### Legacy import
+
+Legacy artifacts store decimal seconds already rounded to three places. That is millisecond resolution. Import must not invent sub-millisecond precision and must not leave the value as a binary float.
+
+Preferred parse, from the decimal text in the file (not from a float that has already been rounded again):
+
+1. Read the timestamp as decimal text.
+2. `ms` = that value at whole-millisecond precision. A token that already has three decimal places is an exact millisecond count. Rounding, if the text has more places, is half away from zero, once.
+3. `us = ms * 1000` with integer arithmetic.
+
+Example: `2960.123` → `2960123` ms → `2960123000` µs.
+
+If the only available parse is a JSON number already loaded as a float, convert **once**: `ms = round_half_away_from_zero(seconds * 1000)`, then `us = ms * 1000`. Do not use `round(seconds, 3) * 1000` (that product is milliseconds, and it is still a float). Do not multiply the float by `1_000_000` and also by `1000`. Do not round again on a later stage.
+
+Imported times are therefore always multiples of 1000 microseconds. Keep the source file hash on the analysis run. Do not keep a parallel float column.
 
 ## What uses the clock
 

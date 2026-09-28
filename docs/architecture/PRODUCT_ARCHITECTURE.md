@@ -61,12 +61,12 @@ The UI does not implement media intelligence. Python does not draw the desktop. 
 
 | Mode | Media pipeline | Semantic tasks |
 |---|---|---|
-| Private / offline | Local only | Local model, or skipped with an explicit gap |
+| Private / offline | Local only. Missing weights or runtime files fail as `resource_missing`. No download, no cloud fallback. | Local model already on disk, or skipped with an explicit gap |
 | Hybrid | Local only | Optional decision/scoring service; selected semantic tasks may use cloud |
 | Best quality | Local only | A frontier cloud model may be chosen for selected semantic tasks |
 | Custom | Local only | User assigns a provider per task |
 
-Cloud is never a silent requirement for ingest, probe, transcription, diarization, alignment, turns, overlap, shot planning, or render. If a semantic task has no configured provider, the project still opens and the media timeline remains usable.
+Cloud is never a silent requirement for ingest, probe, transcription, diarization, alignment, turns, overlap, shot planning, or render. Offline mode does not fetch Whisper weights, YuNet, or any other runtime file that the legacy tools downloaded on first use. If a semantic task has no configured provider, the project still opens and the media timeline remains usable.
 
 ## Workspaces
 
@@ -93,15 +93,16 @@ Deterministic spine, then two editorial branches:
 
 ```
 INGEST → PROBE → PROXY (optional)
-              ↘
-               TRANSCRIBE → ALIGN WORDS → TURNS
-                    ↑            ↑
-                 DIARIZE ────────┘
-                                  ├→ OVERLAP → SHOT PLAN → 16:9 RENDER
-                                  └→ SEMANTIC TASKS → REEL PLAN → 9:16 RENDER
+
+TRANSCRIBE → ALIGN → TURNS ─┐
+DIARIZE (analysis window) ──┼→ SHOT PLAN → 16:9 RENDER
+OVERLAP (video, layout,     │
+         analysis window) ──┘
+
+NORMALIZE → SEMANTIC TASKS → REEL PLAN → 9:16 RENDER
 ```
 
-Normalize (text only) may run after transcribe and feeds semantic tasks. It does not feed clocks. Overlap does not rewrite turns. Detail: [MEDIA_PIPELINE.md](MEDIA_PIPELINE.md).
+Overlap does not depend on turns. The analysis window is part of diarize and overlap identity: a 10-minute span is not the same job as the whole episode. Normalize (text only) feeds semantic tasks and does not feed clocks. Detail: [MEDIA_PIPELINE.md](MEDIA_PIPELINE.md).
 
 ## Domain
 

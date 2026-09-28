@@ -72,7 +72,7 @@ Identities are UUID strings unless noted. Times are integer microseconds. See [T
 
 **Relationships.** Belongs to one profile. `LayoutBinding` attaches a participant to a region for a time span. A region may be unbound (graphic, empty, unknown).
 
-**Does not hold.** FFmpeg filter strings. Those are derived at render from integer crops.
+**Does not hold.** FFmpeg filter strings, or a license to stretch this rectangle to the output frame. A region is source geometry. Whether a full shot may scale it is a render policy: only when the crop already has the output aspect ratio (true of the CFS 16:9 tiles). Other layouts need an explicit framing policy, which is not defined yet.
 
 ## LayoutSpan
 
@@ -234,17 +234,19 @@ Active assignments are whichever run the project points at.
 - `presentation`: `full` | `program_wide` | `protected_master`
 - `participant_id` when `presentation = full`; otherwise null
 - `floor_participant_id` optional (who held the turn even if the image is wide or protected)
-- `reason`: `active_speaker` | `overlap` | `unknown_hold` | `protected` | `manual`
+- `reason`: `active_speaker` | `overlap` | `unknown_hold` | `protected` | `unbound` | `manual`
 - note, source turn ids, source overlap id nullable
 - `manual_override` boolean
 
+**Planner invariant.** A `full` shot may exist only where that `participant_id` has a layout-region binding on the span. If not, the shot is `program_wide` with reason `unbound`. The planner does not stretch an unrelated region, guess a region, reuse a binding from another span, or abort. Protected regions still win over `full`, `program_wide`, and `unbound`.
+
 **Render meaning.**
 
-- `full`: crop that participant’s bound region for this time, scale to the output frame.
-- `program_wide`: the source frame unchanged (legacy `ORIGINAL_WIDE`). No crop, no blur bed, no split screen.
+- `full`: crop the bound region and scale it only if that crop already matches the output aspect ratio. The CFS tiles are 16:9, so those regions scale to 1920×1080 directly. A rectangle that is not the output aspect is not stretched to fill the frame. A later framing policy will say how to frame it; V1 does not invent that policy.
+- `program_wide`: the source frame unchanged (legacy `ORIGINAL_WIDE`, conceptually UNTOUCHED_WIDE). No crop, no blur bed, no split screen.
 - `protected_master`: same pixels as program-wide, but the reason is an editability lock, not an editorial wide.
 
-V1 shot vocabulary matches the proven offline director: one full participant, or the untouched frame. Designed two- and three-person composites stay out of the vocabulary until a product decision adds them. The renderer rejects unknown presentations.
+V1 shot vocabulary matches the proven offline director: one full participant, or the untouched frame, or a protected master. Designed two- and three-person composites stay out of the vocabulary until a product decision adds them. The renderer rejects unknown presentations.
 
 **Does not hold.** Filter graphs as source of truth.
 
@@ -261,7 +263,7 @@ V1 shot vocabulary matches the proven offline director: one full participant, or
 - `source_asset_id`
 - input artifact ids (transcript, revision, prior run)
 - `algorithm_id`, `algorithm_version`
-- `config_hash`, config snapshot JSON (small)
+- `config_hash`, config snapshot JSON (small). When thresholds or features depend on the analyzed span, the snapshot includes that window (start, end, and any exclusion mask). A run on 2960–3560 s is not the same run as one on the whole asset.
 - `execution`: `local` | `cloud`
 - provider id, model id, model version, prompt hash (null when the stage is deterministic code)
 - `manual_modification`: boolean on the run or on a child revision

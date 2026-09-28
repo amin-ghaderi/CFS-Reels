@@ -6,11 +6,15 @@ Legacy times are float seconds rounded to milliseconds. Those floats are re-roun
 
 ## Decision
 
-Store all media times as int64 microseconds. Ranges are half-open. Whisper and legacy JSON convert at the boundary with a fixed rounding rule. FFmpeg arguments are formatted from integers. The UI converts to seconds only for playback. Render may snap a copy of a boundary to a rational frame rate without overwriting the editorial time.
+Store all media times as int64 microseconds on the asset’s FFmpeg container presentation timeline. Time 0 is container presentation time 0. Ingest does not rebase, including when a stream `start_time` is non-zero; that offset is recorded and every stage keeps the same origin. Ranges are half-open.
+
+Legacy files are millisecond timestamps. Import them once to a whole millisecond, then `us = ms * 1000` in integer arithmetic. Do not use `round(seconds, 3) * 1000`. Do not invent sub-millisecond precision those files did not have.
+
+FFmpeg arguments are formatted from the integers. The UI converts to seconds only for playback. Render may snap a copy of a boundary to a rational frame rate without overwriting the editorial time.
 
 ## Consequences
 
-- One clock for words, turns, overlaps, shots, reels, and protected regions.
+- One clock for words, turns, overlaps, shots, reels, and protected regions. Source-relative windows stay on that clock.
 - Importers must not keep a second float column as authority.
 - 1/30 second is still not an integer microsecond; frame snap is explicit.
 
