@@ -1,6 +1,6 @@
 # Media and transcript workspace
 
-Phase 6 is the first editing workspace. It lists and links media, and it shows an active transcript when one already exists. It does not transcribe, probe, or play video.
+Phase 6 is the first editing workspace. It lists and links media, and it shows an active transcript when one already exists. It does not transcribe or play video. Probing and preview proxies are described in [MEDIA_RUNTIME.md](MEDIA_RUNTIME.md).
 
 ## Workspace architecture
 
@@ -23,7 +23,9 @@ The preferred window is 1200×720. The minimum is 800×520 so a scaled laptop ca
 
 Linking records an external `MediaAsset`. The file is not copied into the project. The role defaults to `master`. The other stored roles are `proxy`, `audio_extract`, `export`, and `sidecar`.
 
-The engine stores the display filename, the external path, and the file size from a stat of that one path. Duration, frame rate, and picture size stay empty until a later probe. The desktop does not invent them.
+The engine stores the display filename, the external path, the file size, and a modification time from a stat of that one path. Duration, frame rate, and picture size stay empty until Analyze media runs. The desktop does not invent them. After a probe, the inspector shows the stored duration, display size, codecs, rational frame rate, and container start time.
+
+Generate proxy is available for a present master. The proxy is a derivative of that asset, not another row in the source list. Its state is Not generated, Queued, Generating, Ready, Stale, Failed, or Missing. There is still no video player.
 
 Availability is `present` or `missing`, from whether that path is a file. The Media list shows Missing without an integrity job.
 

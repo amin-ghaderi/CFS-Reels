@@ -554,7 +554,7 @@ class ServiceTests(unittest.TestCase):
                     connection.execute("SELECT version_num FROM alembic_version").fetchone()[0],
                     "9999_future",
                 )
-                connection.execute("UPDATE alembic_version SET version_num = '0002_processing_job'")
+                connection.execute("UPDATE alembic_version SET version_num = '0003_media_runtime'")
                 connection.commit()
                 connection.close()
                 reader = client.post(

@@ -163,6 +163,70 @@ class StoredMedia:
     fps_num: int | None
     fps_den: int | None
     container_start_us: int | None
+    container: str | None = None
+    video_codec: str | None = None
+    audio_codec: str | None = None
+    video_duration_us: int | None = None
+    audio_duration_us: int | None = None
+    duration_source: str | None = None
+    sample_rate: int | None = None
+    audio_channels: int | None = None
+    channel_layout: str | None = None
+    pixel_format: str | None = None
+    r_fps_num: int | None = None
+    r_fps_den: int | None = None
+    time_base_num: int | None = None
+    time_base_den: int | None = None
+    rotation_degrees: int | None = None
+    bit_rate: int | None = None
+    video_start_us: int | None = None
+    audio_start_us: int | None = None
+    file_mtime_ns: int | None = None
+    probed_at: str | None = None
+    probe_tool: str | None = None
+    probe_config: str | None = None
+    source_media_asset_id: str | None = None
+    proxy_profile: str | None = None
+    proxy_tool: str | None = None
+    proxy_job_id: str | None = None
+    proxy_source_size: int | None = None
+    proxy_source_mtime_ns: int | None = None
+    proxy_created_at: str | None = None
+    timestamp_policy: str | None = None
+
+
+@dataclass(frozen=True)
+class MediaProbeRecord:
+    """Canonical probe fields written onto an existing asset."""
+
+    container: str | None
+    duration_us: int | None
+    duration_source: str | None
+    container_start_us: int | None
+    bit_rate: int | None
+    video_codec: str | None
+    width: int | None
+    height: int | None
+    pixel_format: str | None
+    fps_num: int | None
+    fps_den: int | None
+    r_fps_num: int | None
+    r_fps_den: int | None
+    time_base_num: int | None
+    time_base_den: int | None
+    video_start_us: int | None
+    video_duration_us: int | None
+    rotation_degrees: int | None
+    audio_codec: str | None
+    sample_rate: int | None
+    audio_channels: int | None
+    channel_layout: str | None
+    audio_start_us: int | None
+    audio_duration_us: int | None
+    byte_size: int
+    file_mtime_ns: int
+    probe_tool: str
+    probe_config: str
 
 
 @dataclass(frozen=True)
@@ -494,6 +558,7 @@ class ProjectStore:
         container: str | None = None,
         video_codec: str | None = None,
         audio_codec: str | None = None,
+        file_mtime_ns: int | None = None,
         asset_id: str | None = None,
     ) -> str:
         self._require_write()
@@ -525,6 +590,7 @@ class ProjectStore:
                 container=container,
                 video_codec=video_codec,
                 audio_codec=audio_codec,
+                file_mtime_ns=file_mtime_ns,
             ))
             session.commit()
         return asset_id
@@ -564,7 +630,15 @@ class ProjectStore:
         path = self.resolve_media(asset_id)
         return "present" if path.is_file() else "missing"
 
-    def relink_external(self, asset_id: str, external_path: str, *, byte_size: int, display_name: str) -> StoredMedia:
+    def relink_external(
+        self,
+        asset_id: str,
+        external_path: str,
+        *,
+        byte_size: int,
+        display_name: str,
+        file_mtime_ns: int | None = None,
+    ) -> StoredMedia:
         """Point the same asset at a new external file. Analysis rows stay put."""
         self._require_write()
         with self._session() as session:
@@ -574,9 +648,102 @@ class ProjectStore:
             row.relative_path = None
             row.byte_size = byte_size
             row.display_name = display_name
+            row.file_mtime_ns = file_mtime_ns
+            _clear_probe(row)
             session.commit()
             session.refresh(row)
             return _media(row)
+
+    def apply_probe(self, asset_id: str, record: MediaProbeRecord) -> StoredMedia:
+        """Write probe metadata onto the same asset. This does not add a row."""
+        self._require_write()
+        with self._session() as session:
+            row = self._asset(session, asset_id)
+            _write_probe(row, record)
+            session.commit()
+            session.refresh(row)
+            return _media(row)
+
+    def find_proxy(self, source_asset_id: str) -> StoredMedia | None:
+        with self._session() as session:
+            row = session.scalar(
+                select(MediaAssetRow)
+                .where(
+                    MediaAssetRow.source_media_asset_id == source_asset_id,
+                    MediaAssetRow.role == "proxy",
+                    MediaAssetRow.project_id == self.project_id,
+                )
+                .order_by(MediaAssetRow.proxy_created_at.desc())
+            )
+            return None if row is None else _media(row)
+
+    def publish_proxy(
+        self,
+        source_asset_id: str,
+        record: MediaProbeRecord,
+        *,
+        relative_path: str,
+        display_name: str,
+        profile: str,
+        proxy_tool: str,
+        job_id: str,
+        source_size: int,
+        source_mtime_ns: int,
+        timestamp_policy: str,
+    ) -> StoredMedia:
+        """Create or update the one proxy row for this source. The file must already exist."""
+        self._require_write()
+        with self._session() as session:
+            self._asset(session, source_asset_id)
+            row = session.scalar(
+                select(MediaAssetRow).where(
+                    MediaAssetRow.source_media_asset_id == source_asset_id,
+                    MediaAssetRow.role == "proxy",
+                    MediaAssetRow.project_id == self.project_id,
+                )
+            )
+            if row is None:
+                row = MediaAssetRow(
+                    id=str(uuid.uuid4()),
+                    project_id=self.project_id,
+                    role="proxy",
+                    display_name=display_name,
+                    location_kind="project",
+                    source_media_asset_id=source_asset_id,
+                )
+                session.add(row)
+            row.display_name = display_name
+            row.location_kind = "project"
+            row.relative_path = relative_path.replace("\\", "/")
+            row.external_path = None
+            row.source_media_asset_id = source_asset_id
+            row.proxy_profile = profile
+            row.proxy_tool = proxy_tool
+            row.proxy_job_id = job_id
+            row.proxy_source_size = source_size
+            row.proxy_source_mtime_ns = source_mtime_ns
+            row.proxy_created_at = _now()
+            row.timestamp_policy = timestamp_policy
+            _write_probe(row, record)
+            session.commit()
+            session.refresh(row)
+            return _media(row)
+
+    def clean_proxy_tmp(self, keep_name: str | None = None) -> None:
+        """Remove interrupted proxy fragments. A published proxy file is not in this directory."""
+        folder = self.root / "proxy" / ".tmp"
+        if not folder.is_dir():
+            return
+        for item in folder.iterdir():
+            if item.is_file() and item.name != keep_name:
+                item.unlink()
+
+    def observed_file(self, asset_id: str) -> tuple[int | None, int | None]:
+        path = self.resolve_media(asset_id)
+        if not path.is_file():
+            return None, None
+        stat = path.stat()
+        return stat.st_size, stat.st_mtime_ns
 
     def require_media(self, asset_id: str) -> Path:
         path = self.resolve_media(asset_id)
@@ -1258,21 +1425,113 @@ class ProjectStore:
 
 def _media(row: MediaAssetRow) -> StoredMedia:
     return StoredMedia(
-        row.id,
-        row.role,
-        row.display_name,
-        row.location_kind,
-        row.relative_path,
-        row.external_path,
-        row.byte_size,
-        row.content_id,
-        row.duration_us,
-        row.width,
-        row.height,
-        row.fps_num,
-        row.fps_den,
-        row.container_start_us,
+        asset_id=row.id,
+        role=row.role,
+        display_name=row.display_name,
+        location_kind=row.location_kind,
+        relative_path=row.relative_path,
+        external_path=row.external_path,
+        byte_size=row.byte_size,
+        content_id=row.content_id,
+        duration_us=row.duration_us,
+        width=row.width,
+        height=row.height,
+        fps_num=row.fps_num,
+        fps_den=row.fps_den,
+        container_start_us=row.container_start_us,
+        container=row.container,
+        video_codec=row.video_codec,
+        audio_codec=row.audio_codec,
+        video_duration_us=row.video_duration_us,
+        audio_duration_us=row.audio_duration_us,
+        duration_source=row.duration_source,
+        sample_rate=row.sample_rate,
+        audio_channels=row.audio_channels,
+        channel_layout=row.channel_layout,
+        pixel_format=row.pixel_format,
+        r_fps_num=row.r_fps_num,
+        r_fps_den=row.r_fps_den,
+        time_base_num=row.time_base_num,
+        time_base_den=row.time_base_den,
+        rotation_degrees=row.rotation_degrees,
+        bit_rate=row.bit_rate,
+        video_start_us=row.video_start_us,
+        audio_start_us=row.audio_start_us,
+        file_mtime_ns=row.file_mtime_ns,
+        probed_at=row.probed_at,
+        probe_tool=row.probe_tool,
+        probe_config=row.probe_config,
+        source_media_asset_id=row.source_media_asset_id,
+        proxy_profile=row.proxy_profile,
+        proxy_tool=row.proxy_tool,
+        proxy_job_id=row.proxy_job_id,
+        proxy_source_size=row.proxy_source_size,
+        proxy_source_mtime_ns=row.proxy_source_mtime_ns,
+        proxy_created_at=row.proxy_created_at,
+        timestamp_policy=row.timestamp_policy,
     )
+
+
+def _write_probe(row: MediaAssetRow, record: MediaProbeRecord) -> None:
+    row.container = record.container
+    row.duration_us = record.duration_us
+    row.duration_source = record.duration_source
+    row.container_start_us = record.container_start_us
+    row.bit_rate = record.bit_rate
+    row.video_codec = record.video_codec
+    row.width = record.width
+    row.height = record.height
+    row.pixel_format = record.pixel_format
+    row.fps_num = record.fps_num
+    row.fps_den = record.fps_den
+    row.r_fps_num = record.r_fps_num
+    row.r_fps_den = record.r_fps_den
+    row.time_base_num = record.time_base_num
+    row.time_base_den = record.time_base_den
+    row.video_start_us = record.video_start_us
+    row.video_duration_us = record.video_duration_us
+    row.rotation_degrees = record.rotation_degrees
+    row.audio_codec = record.audio_codec
+    row.sample_rate = record.sample_rate
+    row.audio_channels = record.audio_channels
+    row.channel_layout = record.channel_layout
+    row.audio_start_us = record.audio_start_us
+    row.audio_duration_us = record.audio_duration_us
+    row.byte_size = record.byte_size
+    row.file_mtime_ns = record.file_mtime_ns
+    row.probed_at = _now()
+    row.probe_tool = record.probe_tool
+    row.probe_config = record.probe_config
+
+
+def _clear_probe(row: MediaAssetRow) -> None:
+    row.container = None
+    row.duration_us = None
+    row.duration_source = None
+    row.container_start_us = None
+    row.bit_rate = None
+    row.video_codec = None
+    row.audio_codec = None
+    row.width = None
+    row.height = None
+    row.pixel_format = None
+    row.fps_num = None
+    row.fps_den = None
+    row.r_fps_num = None
+    row.r_fps_den = None
+    row.time_base_num = None
+    row.time_base_den = None
+    row.video_start_us = None
+    row.video_duration_us = None
+    row.rotation_degrees = None
+    row.sample_rate = None
+    row.audio_channels = None
+    row.channel_layout = None
+    row.audio_start_us = None
+    row.audio_duration_us = None
+    row.probed_at = None
+    row.probe_tool = None
+    row.probe_config = None
 
 
 def _now() -> str:

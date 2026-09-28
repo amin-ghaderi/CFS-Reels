@@ -1,9 +1,9 @@
 import { open } from "@tauri-apps/plugin-dialog";
 
-import { linkMedia, relinkMedia } from "../../api/client";
+import { createJob, linkMedia, relinkMedia } from "../../api/client";
 import { asFailure } from "../../api/errors";
 import type { ProjectInfo } from "../../api/types";
-import { mediaAvailability, mediaFacts, roleLabel } from "../../media/present";
+import { mediaAvailability, mediaFacts, proxyLabel, roleLabel, sourceAssets } from "../../media/present";
 import { useProjectData } from "../../project/ProjectData";
 import { SplitPane } from "../../shell/SplitPane";
 
@@ -27,6 +27,39 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
       const asset = await linkMedia(project.handle, path);
       await data.refresh();
       data.select(asset.asset_id);
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    } finally {
+      data.setBusy(false);
+    }
+  }
+
+  async function analyze() {
+    if (!selected) {
+      return;
+    }
+    data.setNotice(null);
+    data.setBusy(true);
+    try {
+      await createJob(project.handle, "media_probe", { mediaAssetId: selected.asset_id });
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    } finally {
+      data.setBusy(false);
+    }
+  }
+
+  async function generateProxy() {
+    if (!selected) {
+      return;
+    }
+    data.setNotice(null);
+    data.setBusy(true);
+    try {
+      await createJob(project.handle, "generate_proxy", {
+        mediaAssetId: selected.asset_id,
+        spec: { profile: "amix.proxy.v1" },
+      });
     } catch (error) {
       data.setNotice(asFailure(error));
     } finally {
@@ -71,10 +104,18 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
           <dt>Location</dt>
           <dd>{selected.location_kind === "external" ? "External file" : "Inside the project"}</dd>
         </div>
+        {selected.role === "master" ? (
+          <div>
+            <dt>Proxy</dt>
+            <dd className={selected.proxy_state === "failed" ? "status failed" : selected.proxy_state === "stale" ? "status stale" : undefined}>
+              {proxyLabel(selected.proxy_state)}
+            </dd>
+          </div>
+        ) : null}
         {mediaFacts(selected).map((fact) => (
-          <div key={fact}>
-            <dt>Detail</dt>
-            <dd className="numeric">{fact}</dd>
+          <div key={fact.label}>
+            <dt>{fact.label}</dt>
+            <dd className="numeric" dir="ltr">{fact.value}</dd>
           </div>
         ))}
       </dl>
@@ -84,6 +125,16 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
         <button type="button" className="primary" onClick={() => void relink()} disabled={data.busy || project.read_only}>
           Relink
         </button>
+      ) : null}
+      {selected.role === "master" && selected.status === "present" ? (
+        <div className="actions">
+          <button type="button" onClick={() => void analyze()} disabled={data.busy || project.read_only}>
+            Analyze media
+          </button>
+          <button type="button" className="primary" onClick={() => void generateProxy()} disabled={data.busy || project.read_only}>
+            Generate proxy
+          </button>
+        </div>
       ) : null}
     </aside>
   ) : null;
@@ -100,9 +151,9 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
               Link file
             </button>
           </div>
-          {data.assets.length === 0 ? <p className="muted">No media is linked to this project yet.</p> : null}
+          {sourceAssets(data.assets).length === 0 ? <p className="muted">No media is linked to this project yet.</p> : null}
           <ul className="asset-list">
-            {data.assets.map((asset) => (
+            {sourceAssets(data.assets).map((asset) => (
               <li key={asset.asset_id}>
                 <button
                   type="button"
@@ -115,6 +166,7 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
                     {mediaAvailability(asset.status)}
                   </span>
                   <span className="muted">{roleLabel(asset.role)}</span>
+                  {asset.role === "master" ? <span className="muted">Proxy {proxyLabel(asset.proxy_state)}</span> : null}
                 </button>
               </li>
             ))}

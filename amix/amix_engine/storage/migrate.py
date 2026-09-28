@@ -13,7 +13,7 @@ from amix.amix_engine.storage.errors import SchemaMismatch
 
 AMIX_ROOT = Path(__file__).resolve().parents[2]
 ALEMBIC_INI = AMIX_ROOT / "alembic.ini"
-HEAD = "0002_processing_job"
+HEAD = "0003_media_runtime"
 
 
 def sqlite_url(database: Path) -> str:

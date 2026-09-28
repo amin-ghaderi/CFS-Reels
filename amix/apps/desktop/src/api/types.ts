@@ -79,6 +79,18 @@ export interface MediaAsset {
   height: number | null;
   fps_num: number | null;
   fps_den: number | null;
+  container: string | null;
+  container_start_us: number | null;
+  video_codec: string | null;
+  audio_codec: string | null;
+  sample_rate: number | null;
+  audio_channels: number | null;
+  channel_layout: string | null;
+  rotation_degrees: number | null;
+  probed_at: string | null;
+  source_media_asset_id: string | null;
+  proxy_state: string | null;
+  proxy_asset_id: string | null;
   status: "present" | "missing";
 }
 

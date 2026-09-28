@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from amix.amix_engine.jobs.handlers import ProjectIntegrityCheck
+from amix.amix_engine.jobs.media import GenerateProxyJob, MediaProbeJob
 from amix.amix_engine.jobs.runner import JobManager
 from amix.amix_engine.service.config import ServiceConfig
 from amix.amix_engine.service.errors import (
@@ -54,7 +55,11 @@ class EngineRuntime:
     ) -> None:
         self.config = config
         self.token = token or config.session_token or secrets.token_urlsafe(32)
-        handlers: dict = {ProjectIntegrityCheck.kind: ProjectIntegrityCheck()}
+        handlers: dict = {
+            ProjectIntegrityCheck.kind: ProjectIntegrityCheck(),
+            MediaProbeJob.kind: MediaProbeJob(),
+            GenerateProxyJob.kind: GenerateProxyJob(),
+        }
         for kind, handler in (extra_handlers or {}).items():
             if kind in handlers:
                 raise ValueError(f"handler already registered: {kind}")

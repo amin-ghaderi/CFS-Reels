@@ -26,5 +26,7 @@ describe("jobProblemMessage", () => {
     expect(message).toBe("The job did not finish.");
     expect(message).not.toContain("Traceback");
     expect(jobProblemMessage(null)).toBe("The job did not finish.");
+    expect(jobProblemMessage("media_tool_missing")).toBe("FFmpeg tools are not available.");
+    expect(jobProblemMessage("media_tool_missing")).not.toContain("FileNotFoundError");
   });
 });

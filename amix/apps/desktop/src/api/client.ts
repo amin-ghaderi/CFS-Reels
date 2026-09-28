@@ -52,8 +52,16 @@ export async function closeProject(handle: string): Promise<void> {
   await request("POST", `/v1/projects/${handle}/close`);
 }
 
-export async function createJob(handle: string, kind: string): Promise<JobInfo> {
-  return request("POST", `/v1/projects/${handle}/jobs`, { kind, spec: {} });
+export async function createJob(
+  handle: string,
+  kind: string,
+  options?: { mediaAssetId?: string; spec?: Record<string, unknown> },
+): Promise<JobInfo> {
+  return request("POST", `/v1/projects/${handle}/jobs`, {
+    kind,
+    spec: options?.spec ?? {},
+    media_asset_id: options?.mediaAssetId ?? null,
+  });
 }
 
 export async function listJobs(handle: string): Promise<JobInfo[]> {

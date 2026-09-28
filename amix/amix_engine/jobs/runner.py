@@ -20,6 +20,15 @@ class JobCancelled(Exception):
     """The handler observed cancellation and stopped."""
 
 
+class JobFailed(Exception):
+    """A handler failed with a stable code and a short message."""
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
 class UnsupportedJobKind(ValueError):
     """The kind is not a registered handler."""
 
@@ -44,11 +53,19 @@ class CancellationToken:
 
 
 class JobContext:
-    def __init__(self, store: ProjectStore, job_id: str, spec: dict, cancellation: CancellationToken) -> None:
+    def __init__(
+        self,
+        store: ProjectStore,
+        job_id: str,
+        spec: dict,
+        cancellation: CancellationToken,
+        media_asset_id: str | None = None,
+    ) -> None:
         self.store = store
         self.job_id = job_id
         self.spec = spec
         self.cancellation = cancellation
+        self.media_asset_id = media_asset_id
 
     def report_progress(self, progress_bp: int) -> None:
         self.cancellation.raise_if_cancelled()
@@ -135,7 +152,9 @@ class JobManager:
         token = CancellationToken()
         with self._guard:
             self._tokens[job.job_id] = token
-        self._executor.submit(self._execute, store, job.job_id, job.kind, job.spec, token)
+        self._executor.submit(
+            self._execute, store, job.job_id, job.kind, job.spec, token, job.media_asset_id,
+        )
 
     def _execute(
         self,
@@ -144,6 +163,7 @@ class JobManager:
         kind: str,
         spec: dict,
         token: CancellationToken,
+        media_asset_id: str | None = None,
     ) -> None:
         try:
             if token.is_cancelled() or not store.start_processing_job(job_id):
@@ -152,7 +172,7 @@ class JobManager:
             if token.is_cancelled():
                 store.finish_job_cancelled(job_id)
                 return
-            result = self._handlers[kind].run(JobContext(store, job_id, spec, token))
+            result = self._handlers[kind].run(JobContext(store, job_id, spec, token, media_asset_id))
             if token.is_cancelled():
                 store.finish_job_cancelled(job_id)
                 return
@@ -165,6 +185,11 @@ class JobManager:
                 store.finish_job_cancelled(job_id)
         except JobCancelled:
             self._stop_if_needed(store, job_id)
+        except JobFailed as exc:
+            try:
+                store.finish_job_failed(job_id, exc.code, exc.message)
+            except InvalidJobState:
+                return
         except Exception as exc:
             self._fail_if_needed(store, job_id, exc)
         finally:

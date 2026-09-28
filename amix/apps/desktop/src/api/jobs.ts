@@ -69,5 +69,11 @@ export function jobTitle(kind: string): string {
   if (kind === "project_integrity_check") {
     return "Project integrity check";
   }
+  if (kind === "media_probe") {
+    return "Analyze media";
+  }
+  if (kind === "generate_proxy") {
+    return "Generate proxy";
+  }
   return "Background job";
 }

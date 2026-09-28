@@ -1,4 +1,4 @@
-"""Media and transcript routes. These read the project store; they do not probe media."""
+"""Media and transcript routes. Probe and proxy work runs as jobs, not in the request."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -17,6 +17,7 @@ from amix.amix_engine.service.schemas import (
     TranscriptWordResponse,
     WordTextRequest,
 )
+from amix.amix_engine.jobs.media import proxy_state
 from amix.amix_engine.storage.errors import NoActiveTranscript
 from amix.amix_engine.storage.kinds import DEFAULT_MEDIA_ROLE, MEDIA_ROLES, WORD_PAGE_LIMIT
 from amix.amix_engine.storage.project import ProjectStore, StoredMedia, TranscriptWordView
@@ -26,7 +27,7 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
     @app.get("/v1/projects/{handle}/media", response_model=list[MediaResponse])
     def list_media(handle: str, request: Request) -> list[MediaResponse]:
         authorize(request)
-        return call(lambda: [_media_view(store, asset) for store, asset in _assets(runtime, handle)])
+        return call(lambda: _listed(runtime, handle))
 
     @app.post("/v1/projects/{handle}/media", response_model=MediaResponse)
     def link_media(handle: str, body: LinkMediaRequest, request: Request) -> MediaResponse:
@@ -76,22 +77,19 @@ def _store(runtime: EngineRuntime, handle: str) -> ProjectStore:
     return runtime.session(handle).store
 
 
-def _assets(runtime: EngineRuntime, handle: str):
-    store = _store(runtime, handle)
-    return [(store, asset) for asset in store.list_media_assets()]
-
-
 def _link(runtime: EngineRuntime, handle: str, path: str, role: str) -> MediaResponse:
     store = _store(runtime, handle)
     chosen = _existing_file(path)
     if role not in MEDIA_ROLES:
         raise ApiError(400, "invalid_media_role", "media role is not recognized")
+    stat = chosen.stat()
     asset_id = store.add_media_asset(
         display_name=chosen.name,
         role=role or DEFAULT_MEDIA_ROLE,
         location_kind="external",
         external_path=str(chosen),
-        byte_size=chosen.stat().st_size,
+        byte_size=stat.st_size,
+        file_mtime_ns=stat.st_mtime_ns,
     )
     return _media_view(store, store.get_media(asset_id))
 
@@ -99,11 +97,13 @@ def _link(runtime: EngineRuntime, handle: str, path: str, role: str) -> MediaRes
 def _relink(runtime: EngineRuntime, handle: str, asset_id: str, path: str) -> MediaResponse:
     store = _store(runtime, handle)
     chosen = _existing_file(path)
+    stat = chosen.stat()
     asset = store.relink_external(
         asset_id,
         str(chosen),
-        byte_size=chosen.stat().st_size,
+        byte_size=stat.st_size,
         display_name=chosen.name,
+        file_mtime_ns=stat.st_mtime_ns,
     )
     return _media_view(store, asset)
 
@@ -177,7 +177,17 @@ def _existing_file(path: str) -> Path:
     return chosen
 
 
-def _media_view(store: ProjectStore, asset: StoredMedia) -> MediaResponse:
+def _listed(runtime: EngineRuntime, handle: str) -> list[MediaResponse]:
+    store = _store(runtime, handle)
+    jobs = store.list_processing_jobs()
+    return [_media_view(store, asset, jobs) for asset in store.list_media_assets()]
+
+
+def _media_view(store: ProjectStore, asset: StoredMedia, jobs: list | None = None) -> MediaResponse:
+    job_rows = store.list_processing_jobs() if jobs is None else jobs
+    derivative = None if asset.role == "proxy" else store.find_proxy(asset.asset_id)
+    source_size, source_mtime = store.observed_file(asset.asset_id)
+    proxy_present = derivative is not None and store.media_status(derivative.asset_id) == "present"
     return MediaResponse(
         asset_id=asset.asset_id,
         role=asset.role,
@@ -191,6 +201,25 @@ def _media_view(store: ProjectStore, asset: StoredMedia) -> MediaResponse:
         height=asset.height,
         fps_num=asset.fps_num,
         fps_den=asset.fps_den,
+        container=asset.container,
+        container_start_us=asset.container_start_us,
+        video_codec=asset.video_codec,
+        audio_codec=asset.audio_codec,
+        sample_rate=asset.sample_rate,
+        audio_channels=asset.audio_channels,
+        channel_layout=asset.channel_layout,
+        rotation_degrees=asset.rotation_degrees,
+        probed_at=asset.probed_at,
+        source_media_asset_id=asset.source_media_asset_id,
+        proxy_state=proxy_state(
+            asset,
+            derivative,
+            job_rows,
+            source_size=source_size,
+            source_mtime_ns=source_mtime,
+            proxy_file_present=proxy_present,
+        ),
+        proxy_asset_id=None if derivative is None else derivative.asset_id,
         status=store.media_status(asset.asset_id),
     )
 

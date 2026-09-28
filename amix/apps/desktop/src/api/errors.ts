@@ -30,6 +30,12 @@ const MESSAGES: Record<string, string> = {
   unknown_word: "That word is no longer in the active transcript.",
   invalid_word_text: "Enter the corrected word.",
   invalid_word_page: "That transcript page is out of range.",
+  media_tool_missing: "FFmpeg tools are not available.",
+  media_probe_failed: "The media file could not be analyzed.",
+  media_proxy_failed: "The proxy could not be generated.",
+  invalid_proxy_profile: "That proxy profile is not available.",
+  invalid_proxy_source: "A proxy can be generated for source media.",
+  proxy_requires_video: "This media has no video to proxy.",
 };
 
 export function mapEngineFailure(status: number, body: string): EngineFailure {

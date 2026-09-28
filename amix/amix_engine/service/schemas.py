@@ -93,6 +93,18 @@ class MediaResponse(_Model):
     height: int | None
     fps_num: int | None
     fps_den: int | None
+    container: str | None = None
+    container_start_us: int | None = None
+    video_codec: str | None = None
+    audio_codec: str | None = None
+    sample_rate: int | None = None
+    audio_channels: int | None = None
+    channel_layout: str | None = None
+    rotation_degrees: int | None = None
+    probed_at: str | None = None
+    source_media_asset_id: str | None = None
+    proxy_state: str | None = None
+    proxy_asset_id: str | None = None
     status: str
 
 

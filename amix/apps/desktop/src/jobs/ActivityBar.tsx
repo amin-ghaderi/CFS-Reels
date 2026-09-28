@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { cancelJob, createJob, listJobs, retryJob } from "../api/client";
 import { asFailure, jobProblemMessage } from "../api/errors";
@@ -23,6 +23,7 @@ export function ActivityBar({
   const [token, setToken] = useState(0);
   const ordered = orderJobs(jobs);
   const active = jobs.filter((job) => !isTerminal(job.status)).length;
+  const mediaJobs = useRef("");
   const failed = jobs.filter((job) => job.status === "FAILED").length;
   const missing = missingCount(media.assets);
   const summary = active > 0 ? `${active} running` : failed > 0 ? `${failed} failed` : "No active job";
@@ -53,6 +54,24 @@ export function ActivityBar({
       window.clearTimeout(timer);
     };
   }, [project.handle, token]);
+
+  const mediaSignature = jobs
+    .filter((job) => job.kind === "media_probe" || job.kind === "generate_proxy")
+    .map((job) => `${job.job_id}:${job.status}`)
+    .join("|");
+
+  useEffect(() => {
+    if (mediaSignature && mediaSignature !== mediaJobs.current) {
+      mediaJobs.current = mediaSignature;
+      void media.refresh();
+    }
+  }, [mediaSignature, media]);
+
+  useEffect(() => {
+    if (active > 0) {
+      setOpen(true);
+    }
+  }, [active]);
 
   async function runIntegrity() {
     onNotice(null);
@@ -105,11 +124,14 @@ export function ActivityBar({
                   <strong>{jobTitle(job.kind)}</strong>
                   <span>{jobStatusLabel(job.status)}</span>
                 </div>
-                <div className="meter" aria-hidden="true">
-                  <span style={{ width: `${progressPercent(job.progress_bp)}%` }} />
-                </div>
+                {job.progress_bp > 0 ? (
+                  <div className="meter" aria-hidden="true">
+                    <span style={{ width: `${progressPercent(job.progress_bp)}%` }} />
+                  </div>
+                ) : null}
                 <p className="muted numeric">
-                  Attempt {job.attempt} · {progressPercent(job.progress_bp)}%
+                  Attempt {job.attempt}
+                  {job.progress_bp > 0 ? ` · ${progressPercent(job.progress_bp)}%` : job.status === "RUNNING" ? " · Working" : ""}
                 </p>
                 {job.error_code || job.error_message ? <p>{jobProblemMessage(job.error_code)}</p> : null}
                 {import.meta.env.DEV && job.error_message ? (

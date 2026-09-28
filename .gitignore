@@ -104,3 +104,4 @@ legacy/data/final/covers/*
 *.webm
 data/director_tests/_work*/
 legacy/data/director_tests/_work*/
+amix/tools/

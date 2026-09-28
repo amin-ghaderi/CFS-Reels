@@ -311,8 +311,13 @@ dialog.dialog::backdrop {
 }
 
 .warning,
-.status.missing {
+.status.missing,
+.status.stale {
   color: var(--warning);
+}
+
+.status.failed {
+  color: var(--danger);
 }
 
 .asset-list,

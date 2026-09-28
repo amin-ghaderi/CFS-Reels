@@ -112,9 +112,8 @@ shutdown timeout. If a job is still active at the deadline, close returns
 `project_close_timeout` and the write lock stays held. Service shutdown uses
 the same wait, then closes stores and releases locks. It does not wait forever.
 
-Worker threads only orchestrate. Later heavy media and model stages are
-expected to run as subprocesses or specialized workers, not as GIL-bound
-inference on this pool.
+Worker threads orchestrate. Probe and proxy run FFmpeg in a subprocess.
+Later model stages should do the same, not GIL-bound inference on this pool.
 
 ## Media and transcript reads
 
@@ -124,8 +123,14 @@ are an overlay. Details are in
 [MEDIA_TRANSCRIPT_WORKSPACE.md](MEDIA_TRANSCRIPT_WORKSPACE.md). These routes do
 not probe, copy, or transcribe media.
 
+## Media runtime jobs
+
+`media_probe` and `generate_proxy` are registered job kinds. The client names
+the kind and the media asset. It does not send an executable path or an FFmpeg
+argument list. Details are in [MEDIA_RUNTIME.md](MEDIA_RUNTIME.md).
+
 ## Not implemented
 
-Whisper, FFmpeg rendering, video decode, LLM
+Whisper, final export rendering, video playback, LLM
 providers, model manager, reels, conversation mapping, cloud sync, WebSockets,
 and distributed workers.

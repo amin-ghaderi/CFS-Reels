@@ -3,7 +3,8 @@
 AMIX is a local-first, cross-platform intelligent video editing platform for
 long-form conversational video.
 
-Current status: Phase 6 media and transcript workspace, on top of the Phase 5
+Current status: Phase 7 media runtime, on top of the Phase 6 media and transcript
+workspace, the Phase 5
 desktop shell, the Phase 4 local engine service, the Phase 3 project store,
 and the Phase 2 deterministic engine.
 
@@ -23,6 +24,8 @@ jobs. See [docs/ENGINE_SERVICE.md](docs/ENGINE_SERVICE.md). The desktop shell
 in `apps/desktop` starts that service. See [docs/DESKTOP_FOUNDATION.md](docs/DESKTOP_FOUNDATION.md).
 The Media and Transcript workspaces are described in
 [docs/MEDIA_TRANSCRIPT_WORKSPACE.md](docs/MEDIA_TRANSCRIPT_WORKSPACE.md).
+Probe and preview proxies are described in
+[docs/MEDIA_RUNTIME.md](docs/MEDIA_RUNTIME.md).
 
 ```
 amix/.venv/Scripts/python -m amix.amix_engine.service
@@ -56,6 +59,11 @@ On macOS or Linux, use `amix/.venv/bin/python` instead of
 `amix/.venv/Scripts/python`.
 
 `amix/.venv/` is gitignored.
+
+FFmpeg and ffprobe are external development tools. AMIX does not download or
+bundle them. Set `AMIX_FFMPEG` and `AMIX_FFPROBE`, or place both binaries in
+`amix/tools/`, or have them on `PATH`. See
+[docs/MEDIA_RUNTIME.md](docs/MEDIA_RUNTIME.md). `amix/tools/` is gitignored.
 
 ## Tests
 
