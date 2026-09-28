@@ -1,0 +1,28 @@
+{
+  "role": "INPUT",
+  "description": "CFS tile geometry bound to fixture participant ids for the whole window.",
+  "source": "legacy/reels_factory/cfs_multicam_16x9.py TILES",
+  "bindings": [
+    {
+      "participant_id": "cfs03-a",
+      "x": 52,
+      "y": 24,
+      "w": 896,
+      "h": 504
+    },
+    {
+      "participant_id": "cfs03-b",
+      "x": 972,
+      "y": 24,
+      "w": 896,
+      "h": 504
+    },
+    {
+      "participant_id": "cfs03-c",
+      "x": 512,
+      "y": 552,
+      "w": 896,
+      "h": 504
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "role": "INPUT",
+  "source_start_seconds": 2960,
+  "duration_seconds": 600,
+  "source_video": "legacy/data/inbox/03.mp4",
+  "source_video_bytes": 8681934519,
+  "assign": {
+    "majority_fraction": 0.55,
+    "tie_ratio": 0.75,
+    "min_word_seconds": 0.02
+  },
+  "turns": {
+    "same_turn_gap_seconds": 1.5
+  },
+  "overlap": {
+    "sample_fps": 8,
+    "window_s": 1.25,
+    "step_s": 0.25,
+    "simultaneous_s": 0.75,
+    "min_windows": 2,
+    "merge_gap_s": 0.75,
+    "lip_on": 4.2,
+    "weaker_min": 5.5,
+    "min_region_s": 2.5
+  },
+  "planner": {
+    "min_floor_seconds": 2.0,
+    "min_floor_words": 4,
+    "long_wordless_seconds": 12.0,
+    "reactions": "excluded; hand-authored in the legacy plan and not part of the automatic planner"
+  }
+}

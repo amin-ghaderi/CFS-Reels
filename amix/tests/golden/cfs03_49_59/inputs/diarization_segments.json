@@ -1,0 +1,372 @@
+{
+  "role": "INPUT",
+  "description": "Anonymous diarization segments before word assignment.",
+  "source": "legacy/data/speakers/CFS03_49-59_diarization_raw.json segments",
+  "segments": [
+    {
+      "start": 2960.0,
+      "end": 2971.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 2972.5,
+      "end": 2985.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 2986.25,
+      "end": 2995.0,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 2996.5,
+      "end": 3006.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3007.0,
+      "end": 3022.0,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3022.5,
+      "end": 3028.75,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3029.25,
+      "end": 3042.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3043.75,
+      "end": 3069.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3069.5,
+      "end": 3075.5,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3075.0,
+      "end": 3076.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3076.0,
+      "end": 3088.0,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3088.0,
+      "end": 3099.75,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3100.25,
+      "end": 3107.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3107.5,
+      "end": 3112.0,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3111.5,
+      "end": 3113.25,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3112.75,
+      "end": 3126.75,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3126.25,
+      "end": 3130.0,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3131.0,
+      "end": 3135.75,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3135.25,
+      "end": 3163.75,
+      "cluster_id": "SPEAKER_02"
+    },
+    {
+      "start": 3164.75,
+      "end": 3167.5,
+      "cluster_id": "SPEAKER_02"
+    },
+    {
+      "start": 3168.5,
+      "end": 3170.25,
+      "cluster_id": "SPEAKER_02"
+    },
+    {
+      "start": 3171.75,
+      "end": 3173.5,
+      "cluster_id": "SPEAKER_02"
+    },
+    {
+      "start": 3173.0,
+      "end": 3182.25,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3184.0,
+      "end": 3186.25,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3187.0,
+      "end": 3208.75,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3209.5,
+      "end": 3210.75,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3211.5,
+      "end": 3216.0,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3216.5,
+      "end": 3219.25,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3219.75,
+      "end": 3228.25,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3228.75,
+      "end": 3236.75,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3237.5,
+      "end": 3241.25,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3242.5,
+      "end": 3254.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3254.0,
+      "end": 3262.25,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3261.75,
+      "end": 3267.0,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3266.5,
+      "end": 3275.25,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3274.75,
+      "end": 3278.0,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3277.5,
+      "end": 3284.25,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3284.5,
+      "end": 3288.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3288.0,
+      "end": 3304.0,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3304.0,
+      "end": 3305.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3305.0,
+      "end": 3320.75,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3320.25,
+      "end": 3321.75,
+      "cluster_id": "SPEAKER_02"
+    },
+    {
+      "start": 3321.75,
+      "end": 3328.75,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3329.25,
+      "end": 3337.0,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3337.0,
+      "end": 3338.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3338.0,
+      "end": 3345.5,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3346.0,
+      "end": 3347.75,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3348.25,
+      "end": 3350.75,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3351.25,
+      "end": 3357.5,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3358.0,
+      "end": 3376.0,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3375.5,
+      "end": 3380.75,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3381.5,
+      "end": 3398.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3399.25,
+      "end": 3400.25,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3401.25,
+      "end": 3407.75,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3408.25,
+      "end": 3411.0,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3412.0,
+      "end": 3414.0,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3414.5,
+      "end": 3424.75,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3425.5,
+      "end": 3430.25,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3430.75,
+      "end": 3444.25,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3444.75,
+      "end": 3452.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3453.5,
+      "end": 3459.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3460.0,
+      "end": 3461.75,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3461.25,
+      "end": 3465.25,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3465.25,
+      "end": 3473.0,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3473.25,
+      "end": 3477.25,
+      "cluster_id": "SPEAKER_02"
+    },
+    {
+      "start": 3476.75,
+      "end": 3478.75,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3478.5,
+      "end": 3480.75,
+      "cluster_id": "SPEAKER_02"
+    },
+    {
+      "start": 3480.25,
+      "end": 3493.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3494.25,
+      "end": 3497.5,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3499.5,
+      "end": 3513.0,
+      "cluster_id": "SPEAKER_01"
+    },
+    {
+      "start": 3512.5,
+      "end": 3552.5,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3553.0,
+      "end": 3556.0,
+      "cluster_id": "SPEAKER_00"
+    },
+    {
+      "start": 3555.5,
+      "end": 3559.75,
+      "cluster_id": "SPEAKER_01"
+    }
+  ]
+}

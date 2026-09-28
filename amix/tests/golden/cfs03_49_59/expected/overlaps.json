@@ -1,0 +1,61 @@
+{
+  "role": "EXPECTED",
+  "description": "Assertion target for overlap_regions. Not an input.",
+  "source": "legacy/data/speakers/CFS03_49-59_overlaps_v3.json",
+  "regions": [
+    {
+      "start_us": 3022500000,
+      "end_us": 3025500000,
+      "participant_ids": [
+        "cfs03-a",
+        "cfs03-b"
+      ],
+      "confidence": 0.93
+    },
+    {
+      "start_us": 3105500000,
+      "end_us": 3112000000,
+      "participant_ids": [
+        "cfs03-a",
+        "cfs03-c"
+      ],
+      "confidence": 0.93
+    },
+    {
+      "start_us": 3267000000,
+      "end_us": 3269500000,
+      "participant_ids": [
+        "cfs03-a",
+        "cfs03-c"
+      ],
+      "confidence": 0.93
+    },
+    {
+      "start_us": 3392250000,
+      "end_us": 3397500000,
+      "participant_ids": [
+        "cfs03-a",
+        "cfs03-b"
+      ],
+      "confidence": 0.93
+    },
+    {
+      "start_us": 3432250000,
+      "end_us": 3436000000,
+      "participant_ids": [
+        "cfs03-a",
+        "cfs03-c"
+      ],
+      "confidence": 0.93
+    },
+    {
+      "start_us": 3517750000,
+      "end_us": 3520250000,
+      "participant_ids": [
+        "cfs03-a",
+        "cfs03-c"
+      ],
+      "confidence": 0.876
+    }
+  ]
+}

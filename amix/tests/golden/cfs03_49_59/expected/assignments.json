@@ -1,0 +1,5991 @@
+{
+  "role": "EXPECTED",
+  "description": "Assertion target for assign_words. Not an input.",
+  "source": "legacy/data/speakers/CFS03_49-59_words_with_speakers.json",
+  "assignments": [
+    {
+      "word_id": "W0001",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0002",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0003",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0004",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0005",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0006",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0007",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0008",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0009",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0010",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0011",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0012",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0013",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0014",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0015",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0016",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0017",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0018",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0019",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0020",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0021",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0022",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0023",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0024",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0025",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0026",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0027",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0028",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0029",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0030",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0031",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0032",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0033",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0034",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0035",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0036",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0037",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0038",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0039",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0040",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0041",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0042",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0043",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0044",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0045",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0046",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0047",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0048",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0049",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0050",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0051",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0052",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0053",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0054",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0055",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0056",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0057",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0058",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0059",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0060",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0061",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0062",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0063",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0064",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0065",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0066",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0067",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0068",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0069",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0070",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0071",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0072",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0073",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0074",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0075",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0076",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0077",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0078",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0079",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0080",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0081",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0082",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0083",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0084",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0085",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0086",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0087",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0088",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0089",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0090",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0091",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0092",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0093",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0094",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0095",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0096",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0097",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0098",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0099",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0100",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0101",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0102",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0103",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0104",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0105",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0106",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0107",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0108",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0109",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0110",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0111",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0112",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0113",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0114",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0115",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0116",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0117",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0118",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0119",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0120",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0121",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0122",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0123",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0124",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0125",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0126",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0127",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0128",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0129",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0130",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0131",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0132",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0133",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0134",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0135",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0136",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0137",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0138",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0139",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0140",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0141",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0142",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0143",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0144",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0145",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0146",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0147",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0148",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0149",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0150",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0151",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0152",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0153",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0154",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0155",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0156",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0157",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0158",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0159",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0160",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0161",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0162",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0163",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0164",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0165",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0166",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0167",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0168",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0169",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0170",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0171",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0172",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0173",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0174",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0175",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0176",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0177",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0178",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0179",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0180",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0181",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0182",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0183",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0184",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0185",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0186",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0187",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0188",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0189",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0190",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0191",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0192",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0193",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0194",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0195",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0196",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0197",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0198",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0199",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0200",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0201",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0202",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0203",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0204",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0205",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0206",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0207",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0208",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0209",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0210",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0211",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0212",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0213",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0214",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0215",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0216",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0217",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0218",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0219",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0220",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0221",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0222",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0223",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0224",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0225",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0226",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0227",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0228",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0229",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0230",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0231",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0232",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0233",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0234",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0235",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0236",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0237",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0238",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0239",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0240",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0241",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0242",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0243",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0244",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0245",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0246",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0247",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0248",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0249",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0250",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0251",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0252",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0253",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0254",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0255",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0256",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0257",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0258",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0259",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0260",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0261",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0262",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0263",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0264",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0265",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0266",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0267",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0268",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0269",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0270",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0271",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0272",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0273",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0274",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0275",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0276",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0277",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0278",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0279",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0280",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0281",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0282",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0283",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0284",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0285",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0286",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0287",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0288",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0289",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0290",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0291",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0292",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0293",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0294",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0295",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0296",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0297",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0298",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0299",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0300",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0301",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0302",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0303",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0304",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0305",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0306",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0307",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0308",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0309",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0310",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0311",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0312",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0313",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0314",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0315",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0316",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0317",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0318",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0319",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0320",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0321",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0322",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0323",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0324",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0325",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0326",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0327",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0328",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0329",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0330",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0331",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0332",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0333",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0334",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0335",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0336",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0337",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0338",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0339",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0340",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0341",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0342",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0343",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0344",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0345",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0346",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0347",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0348",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0349",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0350",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0351",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0352",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0353",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0354",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0355",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0356",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0357",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0358",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0359",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0360",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0361",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0362",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0363",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0364",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0365",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0366",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0367",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0368",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0369",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0370",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0371",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0372",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0373",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0374",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0375",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0376",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0377",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0378",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0379",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0380",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0381",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0382",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0383",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0384",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0385",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0386",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0387",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0388",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0389",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0390",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0391",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0392",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0393",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0394",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0395",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0396",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0397",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0398",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0399",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0400",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0401",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0402",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0403",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0404",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0405",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0406",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0407",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0408",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0409",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0410",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0411",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0412",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0413",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0414",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0415",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0416",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0417",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0418",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0419",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0420",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0421",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0422",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0423",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0424",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0425",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0426",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0427",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0428",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0429",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0430",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0431",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0432",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0433",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0434",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0435",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0436",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0437",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0438",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0439",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0440",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0441",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0442",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0443",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0444",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0445",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0446",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0447",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0448",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0449",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0450",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0451",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0452",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0453",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0454",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0455",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0456",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0457",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0458",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0459",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0460",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0461",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0462",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0463",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0464",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0465",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0466",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0467",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0468",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0469",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0470",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0471",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0472",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0473",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0474",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0475",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0476",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0477",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0478",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0479",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0480",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0481",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0482",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0483",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0484",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0485",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0486",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0487",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0488",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0489",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0490",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0491",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0492",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0493",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0494",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0495",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0496",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0497",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0498",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0499",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0500",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0501",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0502",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0503",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0504",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0505",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0506",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0507",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0508",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0509",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0510",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0511",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0512",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0513",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0514",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0515",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0516",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0517",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0518",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0519",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0520",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0521",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0522",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0523",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0524",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0525",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0526",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0527",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0528",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0529",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0530",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0531",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0532",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0533",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0534",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0535",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0536",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0537",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0538",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0539",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0540",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0541",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0542",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0543",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0544",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0545",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0546",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0547",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0548",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0549",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0550",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0551",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0552",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0553",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0554",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0555",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0556",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0557",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0558",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0559",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0560",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0561",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0562",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0563",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0564",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0565",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0566",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0567",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0568",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0569",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0570",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0571",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0572",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0573",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0574",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0575",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0576",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0577",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0578",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0579",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0580",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0581",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0582",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0583",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0584",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0585",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0586",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0587",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0588",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0589",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0590",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0591",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0592",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0593",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0594",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0595",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0596",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0597",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0598",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0599",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0600",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0601",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0602",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0603",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0604",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0605",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0606",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0607",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0608",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0609",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0610",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0611",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0612",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0613",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0614",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0615",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0616",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0617",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0618",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0619",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0620",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0621",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0622",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0623",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0624",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0625",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0626",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0627",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0628",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0629",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0630",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0631",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0632",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0633",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0634",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0635",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0636",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0637",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0638",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0639",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0640",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0641",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0642",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0643",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0644",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0645",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0646",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0647",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0648",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0649",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0650",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0651",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0652",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0653",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0654",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0655",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0656",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0657",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0658",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0659",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0660",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0661",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0662",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0663",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0664",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0665",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0666",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0667",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0668",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0669",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0670",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0671",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0672",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0673",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0674",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0675",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0676",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0677",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0678",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0679",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0680",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0681",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0682",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0683",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0684",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0685",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0686",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0687",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0688",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0689",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0690",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0691",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0692",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0693",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0694",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0695",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0696",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0697",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0698",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0699",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0700",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0701",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0702",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0703",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0704",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0705",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0706",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0707",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0708",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0709",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0710",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0711",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0712",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0713",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0714",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0715",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0716",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0717",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0718",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0719",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0720",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0721",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0722",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0723",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0724",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0725",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0726",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0727",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0728",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0729",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0730",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0731",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0732",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0733",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0734",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0735",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0736",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0737",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0738",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0739",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0740",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0741",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0742",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0743",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0744",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0745",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0746",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0747",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0748",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0749",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0750",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0751",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0752",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0753",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0754",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0755",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0756",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0757",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0758",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0759",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0760",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0761",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0762",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0763",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0764",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0765",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0766",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0767",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0768",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0769",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0770",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0771",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0772",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0773",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0774",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0775",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0776",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0777",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0778",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0779",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0780",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0781",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0782",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0783",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0784",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0785",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0786",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0787",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0788",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0789",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0790",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0791",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0792",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0793",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0794",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0795",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0796",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0797",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0798",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0799",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0800",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0801",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0802",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0803",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0804",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0805",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0806",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0807",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0808",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0809",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0810",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0811",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0812",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0813",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0814",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0815",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0816",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0817",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0818",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0819",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0820",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0821",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0822",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0823",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0824",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0825",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0826",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0827",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0828",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0829",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0830",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0831",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0832",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0833",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0834",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0835",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0836",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0837",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0838",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0839",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0840",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0841",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W0842",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0843",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0844",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0845",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0846",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0847",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0848",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0849",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0850",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0851",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0852",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0853",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0854",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0855",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0856",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0857",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0858",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0859",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0860",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0861",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0862",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0863",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0864",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0865",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0866",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0867",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0868",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0869",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0870",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0871",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0872",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0873",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0874",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0875",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0876",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0877",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0878",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0879",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0880",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0881",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0882",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0883",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0884",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0885",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0886",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0887",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0888",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0889",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0890",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0891",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0892",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0893",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0894",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0895",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0896",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0897",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0898",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0899",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0900",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0901",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0902",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0903",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0904",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0905",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0906",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0907",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0908",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0909",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0910",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0911",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0912",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0913",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0914",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0915",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0916",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0917",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0918",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0919",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0920",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0921",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0922",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0923",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0924",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0925",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0926",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0927",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0928",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0929",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0930",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0931",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0932",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0933",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0934",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0935",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0936",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0937",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0938",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0939",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0940",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0941",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0942",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0943",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0944",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0945",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0946",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0947",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0948",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0949",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0950",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0951",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0952",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0953",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0954",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0955",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0956",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0957",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0958",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0959",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0960",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0961",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0962",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0963",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0964",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0965",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0966",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0967",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0968",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0969",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0970",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0971",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0972",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0973",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0974",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0975",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0976",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0977",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0978",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0979",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0980",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0981",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0982",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0983",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0984",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0985",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0986",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0987",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0988",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0989",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0990",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0991",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0992",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0993",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W0994",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0995",
+      "participant_id": null
+    },
+    {
+      "word_id": "W0996",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0997",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0998",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W0999",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1000",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1001",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1002",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1003",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1004",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1005",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1006",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1007",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1008",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1009",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1010",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1011",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1012",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1013",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1014",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1015",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1016",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1017",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1018",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1019",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1020",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1021",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1022",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1023",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1024",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1025",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1026",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1027",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1028",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1029",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1030",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1031",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1032",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1033",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1034",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1035",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1036",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1037",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1038",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1039",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1040",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1041",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1042",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1043",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1044",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1045",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1046",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1047",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1048",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1049",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1050",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1051",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1052",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1053",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1054",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1055",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1056",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1057",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1058",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1059",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1060",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1061",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1062",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1063",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1064",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1065",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1066",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1067",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1068",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1069",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1070",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1071",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1072",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1073",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1074",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1075",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1076",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1077",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1078",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1079",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1080",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1081",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1082",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1083",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1084",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1085",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1086",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1087",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1088",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1089",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1090",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1091",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1092",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1093",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1094",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1095",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1096",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1097",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1098",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1099",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1100",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1101",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1102",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1103",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1104",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1105",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1106",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1107",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1108",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1109",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1110",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1111",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1112",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1113",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1114",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1115",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1116",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1117",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1118",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1119",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1120",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1121",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1122",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1123",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1124",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1125",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1126",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1127",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1128",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1129",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1130",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1131",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1132",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1133",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1134",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1135",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1136",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1137",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1138",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1139",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1140",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1141",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1142",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1143",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1144",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1145",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1146",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1147",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1148",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1149",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1150",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1151",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1152",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1153",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1154",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1155",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1156",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1157",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1158",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1159",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1160",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1161",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1162",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1163",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1164",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1165",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1166",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1167",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1168",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1169",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1170",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1171",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1172",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1173",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1174",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1175",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1176",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1177",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1178",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1179",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1180",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1181",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1182",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1183",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1184",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1185",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1186",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1187",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1188",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1189",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1190",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1191",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1192",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1193",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1194",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1195",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1196",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1197",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1198",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1199",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1200",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1201",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1202",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1203",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1204",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1205",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1206",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1207",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1208",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1209",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1210",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1211",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1212",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1213",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1214",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1215",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1216",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1217",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1218",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1219",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1220",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1221",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1222",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1223",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1224",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1225",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1226",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1227",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1228",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1229",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1230",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1231",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1232",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1233",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1234",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1235",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1236",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1237",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1238",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1239",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1240",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1241",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1242",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1243",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1244",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1245",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1246",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1247",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1248",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1249",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1250",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1251",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1252",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1253",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1254",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1255",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1256",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1257",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1258",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1259",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1260",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1261",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1262",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1263",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1264",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1265",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1266",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1267",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1268",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1269",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1270",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1271",
+      "participant_id": "cfs03-b"
+    },
+    {
+      "word_id": "W1272",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1273",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1274",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1275",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1276",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1277",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1278",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1279",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1280",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1281",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1282",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1283",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1284",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1285",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1286",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1287",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1288",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1289",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1290",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1291",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1292",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1293",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1294",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1295",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1296",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1297",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1298",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1299",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1300",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1301",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1302",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1303",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1304",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1305",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1306",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1307",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1308",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1309",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1310",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1311",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1312",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1313",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1314",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1315",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1316",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1317",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1318",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1319",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1320",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1321",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1322",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1323",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1324",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1325",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1326",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1327",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1328",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1329",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1330",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1331",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1332",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1333",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1334",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1335",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1336",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1337",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1338",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1339",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1340",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1341",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1342",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1343",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1344",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1345",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1346",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1347",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1348",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1349",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1350",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1351",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1352",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1353",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1354",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1355",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1356",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1357",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1358",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1359",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1360",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1361",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1362",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1363",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1364",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1365",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1366",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1367",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1368",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1369",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1370",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1371",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1372",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1373",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1374",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1375",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1376",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1377",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1378",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1379",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1380",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1381",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1382",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1383",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1384",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1385",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1386",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1387",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1388",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1389",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1390",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1391",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1392",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1393",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1394",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1395",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1396",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1397",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1398",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1399",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1400",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1401",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1402",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1403",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1404",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1405",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1406",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1407",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1408",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1409",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1410",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1411",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1412",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1413",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1414",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1415",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1416",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1417",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1418",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1419",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1420",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1421",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1422",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1423",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1424",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1425",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1426",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1427",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1428",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1429",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1430",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1431",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1432",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1433",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1434",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1435",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1436",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1437",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1438",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1439",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1440",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1441",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1442",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1443",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1444",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1445",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1446",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1447",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1448",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1449",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1450",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1451",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1452",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1453",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1454",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1455",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1456",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1457",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1458",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1459",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1460",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1461",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1462",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1463",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1464",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1465",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1466",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1467",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1468",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1469",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1470",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1471",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1472",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1473",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1474",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1475",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1476",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1477",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1478",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1479",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1480",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1481",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1482",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1483",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1484",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1485",
+      "participant_id": "cfs03-c"
+    },
+    {
+      "word_id": "W1486",
+      "participant_id": null
+    },
+    {
+      "word_id": "W1487",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1488",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1489",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1490",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1491",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1492",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1493",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1494",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1495",
+      "participant_id": "cfs03-a"
+    },
+    {
+      "word_id": "W1496",
+      "participant_id": null
+    }
+  ]
+}

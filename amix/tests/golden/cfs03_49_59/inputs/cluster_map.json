@@ -1,0 +1,10 @@
+{
+  "role": "INPUT",
+  "description": "Pinned cluster-to-participant map for this CFS03 proof. Hand-anchored in legacy. Not discovered by AMIX.",
+  "source": "legacy/data/speakers/CFS03_49-59_diarization_raw.json mapping",
+  "map": {
+    "SPEAKER_01": "cfs03-a",
+    "SPEAKER_02": "cfs03-b",
+    "SPEAKER_00": "cfs03-c"
+  }
+}

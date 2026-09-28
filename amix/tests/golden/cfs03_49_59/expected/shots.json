@@ -1,0 +1,223 @@
+{
+  "role": "EXPECTED",
+  "description": "Automatic floor/overlap plan. Reaction inserts removed by not running them. Not an input.",
+  "source": "legacy build_floors + prepare_overlaps + overlay, without insert_reactions",
+  "shots": [
+    {
+      "start_us": 2960000000,
+      "end_us": 3022440000,
+      "presentation": "full",
+      "participant_id": "cfs03-a",
+      "floor_participant_id": "cfs03-a",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3022440000,
+      "end_us": 3025500000,
+      "presentation": "untouched_wide",
+      "participant_id": null,
+      "floor_participant_id": "cfs03-a",
+      "reason": "overlap"
+    },
+    {
+      "start_us": 3025500000,
+      "end_us": 3069560000,
+      "presentation": "full",
+      "participant_id": "cfs03-a",
+      "floor_participant_id": "cfs03-a",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3069560000,
+      "end_us": 3088220000,
+      "presentation": "full",
+      "participant_id": "cfs03-c",
+      "floor_participant_id": "cfs03-c",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3088220000,
+      "end_us": 3105500000,
+      "presentation": "full",
+      "participant_id": "cfs03-a",
+      "floor_participant_id": "cfs03-a",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3105500000,
+      "end_us": 3112000000,
+      "presentation": "untouched_wide",
+      "participant_id": null,
+      "floor_participant_id": "cfs03-a",
+      "reason": "overlap"
+    },
+    {
+      "start_us": 3112000000,
+      "end_us": 3126540000,
+      "presentation": "full",
+      "participant_id": "cfs03-c",
+      "floor_participant_id": "cfs03-c",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3126540000,
+      "end_us": 3135560000,
+      "presentation": "full",
+      "participant_id": "cfs03-a",
+      "floor_participant_id": "cfs03-a",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3135560000,
+      "end_us": 3173500000,
+      "presentation": "full",
+      "participant_id": "cfs03-b",
+      "floor_participant_id": "cfs03-b",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3173500000,
+      "end_us": 3187160000,
+      "presentation": "full",
+      "participant_id": "cfs03-c",
+      "floor_participant_id": "cfs03-c",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3187160000,
+      "end_us": 3254160000,
+      "presentation": "full",
+      "participant_id": "cfs03-a",
+      "floor_participant_id": "cfs03-a",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3254160000,
+      "end_us": 3257100000,
+      "presentation": "full",
+      "participant_id": "cfs03-c",
+      "floor_participant_id": "cfs03-c",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3257100000,
+      "end_us": 3287420000,
+      "presentation": "untouched_wide",
+      "participant_id": null,
+      "floor_participant_id": null,
+      "reason": "unknown_hold"
+    },
+    {
+      "start_us": 3287420000,
+      "end_us": 3375940000,
+      "presentation": "full",
+      "participant_id": "cfs03-c",
+      "floor_participant_id": "cfs03-c",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3375940000,
+      "end_us": 3391860000,
+      "presentation": "full",
+      "participant_id": "cfs03-a",
+      "floor_participant_id": "cfs03-a",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3391860000,
+      "end_us": 3397700000,
+      "presentation": "untouched_wide",
+      "participant_id": null,
+      "floor_participant_id": "cfs03-a",
+      "reason": "overlap"
+    },
+    {
+      "start_us": 3397700000,
+      "end_us": 3432250000,
+      "presentation": "full",
+      "participant_id": "cfs03-a",
+      "floor_participant_id": "cfs03-a",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3432250000,
+      "end_us": 3436000000,
+      "presentation": "untouched_wide",
+      "participant_id": null,
+      "floor_participant_id": "cfs03-a",
+      "reason": "overlap"
+    },
+    {
+      "start_us": 3436000000,
+      "end_us": 3461840000,
+      "presentation": "full",
+      "participant_id": "cfs03-a",
+      "floor_participant_id": "cfs03-a",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3461840000,
+      "end_us": 3466960000,
+      "presentation": "full",
+      "participant_id": "cfs03-c",
+      "floor_participant_id": "cfs03-c",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3466960000,
+      "end_us": 3473080000,
+      "presentation": "full",
+      "participant_id": "cfs03-a",
+      "floor_participant_id": "cfs03-a",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3473080000,
+      "end_us": 3480840000,
+      "presentation": "full",
+      "participant_id": "cfs03-b",
+      "floor_participant_id": "cfs03-b",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3480840000,
+      "end_us": 3513060000,
+      "presentation": "full",
+      "participant_id": "cfs03-a",
+      "floor_participant_id": "cfs03-a",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3513060000,
+      "end_us": 3517750000,
+      "presentation": "full",
+      "participant_id": "cfs03-c",
+      "floor_participant_id": "cfs03-c",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3517750000,
+      "end_us": 3520420000,
+      "presentation": "untouched_wide",
+      "participant_id": null,
+      "floor_participant_id": "cfs03-c",
+      "reason": "overlap"
+    },
+    {
+      "start_us": 3520420000,
+      "end_us": 3555920000,
+      "presentation": "full",
+      "participant_id": "cfs03-c",
+      "floor_participant_id": "cfs03-c",
+      "reason": "active_speaker"
+    },
+    {
+      "start_us": 3555920000,
+      "end_us": 3560000000,
+      "presentation": "full",
+      "participant_id": "cfs03-a",
+      "floor_participant_id": "cfs03-a",
+      "reason": "active_speaker"
+    }
+  ]
+}

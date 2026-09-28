@@ -1,0 +1,721 @@
+{
+  "role": "EXPECTED",
+  "description": "Assertion target for build_turns. Not an input.",
+  "source": "legacy/data/speakers/CFS03_49-59_turns_v3.json",
+  "turns": [
+    {
+      "turn_id": "T0001",
+      "participant_id": "cfs03-a",
+      "start_us": 2960170000,
+      "end_us": 2971210000,
+      "word_count": 37
+    },
+    {
+      "turn_id": "T0002",
+      "participant_id": null,
+      "start_us": 2971210000,
+      "end_us": 2973150000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0003",
+      "participant_id": "cfs03-a",
+      "start_us": 2973150000,
+      "end_us": 2985270000,
+      "word_count": 26
+    },
+    {
+      "turn_id": "T0004",
+      "participant_id": null,
+      "start_us": 2985270000,
+      "end_us": 2986410000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0005",
+      "participant_id": "cfs03-a",
+      "start_us": 2986410000,
+      "end_us": 2994450000,
+      "word_count": 23
+    },
+    {
+      "turn_id": "T0006",
+      "participant_id": null,
+      "start_us": 2994450000,
+      "end_us": 2996770000,
+      "word_count": 4
+    },
+    {
+      "turn_id": "T0007",
+      "participant_id": "cfs03-a",
+      "start_us": 2996770000,
+      "end_us": 3006040000,
+      "word_count": 24
+    },
+    {
+      "turn_id": "T0008",
+      "participant_id": null,
+      "start_us": 3006040000,
+      "end_us": 3007100000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0009",
+      "participant_id": "cfs03-a",
+      "start_us": 3007100000,
+      "end_us": 3028660000,
+      "word_count": 46
+    },
+    {
+      "turn_id": "T0010",
+      "participant_id": null,
+      "start_us": 3028660000,
+      "end_us": 3029340000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0011",
+      "participant_id": "cfs03-a",
+      "start_us": 3029340000,
+      "end_us": 3042420000,
+      "word_count": 34
+    },
+    {
+      "turn_id": "T0012",
+      "participant_id": "cfs03-a",
+      "start_us": 3044480000,
+      "end_us": 3069560000,
+      "word_count": 69
+    },
+    {
+      "turn_id": "T0013",
+      "participant_id": "cfs03-c",
+      "start_us": 3069560000,
+      "end_us": 3075380000,
+      "word_count": 16
+    },
+    {
+      "turn_id": "T0014",
+      "participant_id": null,
+      "start_us": 3075380000,
+      "end_us": 3076880000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0015",
+      "participant_id": "cfs03-c",
+      "start_us": 3076880000,
+      "end_us": 3088220000,
+      "word_count": 34
+    },
+    {
+      "turn_id": "T0016",
+      "participant_id": "cfs03-a",
+      "start_us": 3088220000,
+      "end_us": 3090540000,
+      "word_count": 7
+    },
+    {
+      "turn_id": "T0017",
+      "participant_id": null,
+      "start_us": 3090540000,
+      "end_us": 3090540000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0018",
+      "participant_id": "cfs03-a",
+      "start_us": 3090540000,
+      "end_us": 3099680000,
+      "word_count": 30
+    },
+    {
+      "turn_id": "T0019",
+      "participant_id": null,
+      "start_us": 3099680000,
+      "end_us": 3099880000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0020",
+      "participant_id": "cfs03-a",
+      "start_us": 3100380000,
+      "end_us": 3106800000,
+      "word_count": 19
+    },
+    {
+      "turn_id": "T0021",
+      "participant_id": "cfs03-c",
+      "start_us": 3108280000,
+      "end_us": 3111540000,
+      "word_count": 9
+    },
+    {
+      "turn_id": "T0022",
+      "participant_id": null,
+      "start_us": 3111540000,
+      "end_us": 3112000000,
+      "word_count": 3
+    },
+    {
+      "turn_id": "T0023",
+      "participant_id": "cfs03-a",
+      "start_us": 3112000000,
+      "end_us": 3112520000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0024",
+      "participant_id": null,
+      "start_us": 3112520000,
+      "end_us": 3112520000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0025",
+      "participant_id": "cfs03-a",
+      "start_us": 3112520000,
+      "end_us": 3112780000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0026",
+      "participant_id": null,
+      "start_us": 3112780000,
+      "end_us": 3113100000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0027",
+      "participant_id": "cfs03-c",
+      "start_us": 3113100000,
+      "end_us": 3126160000,
+      "word_count": 43
+    },
+    {
+      "turn_id": "T0028",
+      "participant_id": null,
+      "start_us": 3126160000,
+      "end_us": 3126540000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0029",
+      "participant_id": "cfs03-a",
+      "start_us": 3126540000,
+      "end_us": 3130020000,
+      "word_count": 9
+    },
+    {
+      "turn_id": "T0030",
+      "participant_id": null,
+      "start_us": 3130020000,
+      "end_us": 3131300000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0031",
+      "participant_id": "cfs03-a",
+      "start_us": 3131300000,
+      "end_us": 3135560000,
+      "word_count": 13
+    },
+    {
+      "turn_id": "T0032",
+      "participant_id": "cfs03-b",
+      "start_us": 3135560000,
+      "end_us": 3163440000,
+      "word_count": 80
+    },
+    {
+      "turn_id": "T0033",
+      "participant_id": null,
+      "start_us": 3163440000,
+      "end_us": 3165400000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0034",
+      "participant_id": "cfs03-b",
+      "start_us": 3165400000,
+      "end_us": 3167600000,
+      "word_count": 5
+    },
+    {
+      "turn_id": "T0035",
+      "participant_id": null,
+      "start_us": 3167600000,
+      "end_us": 3172040000,
+      "word_count": 3
+    },
+    {
+      "turn_id": "T0036",
+      "participant_id": "cfs03-b",
+      "start_us": 3172040000,
+      "end_us": 3173160000,
+      "word_count": 3
+    },
+    {
+      "turn_id": "T0037",
+      "participant_id": null,
+      "start_us": 3173160000,
+      "end_us": 3173500000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0038",
+      "participant_id": "cfs03-c",
+      "start_us": 3173500000,
+      "end_us": 3182080000,
+      "word_count": 27
+    },
+    {
+      "turn_id": "T0039",
+      "participant_id": null,
+      "start_us": 3182080000,
+      "end_us": 3183160000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0040",
+      "participant_id": "cfs03-c",
+      "start_us": 3183880000,
+      "end_us": 3186520000,
+      "word_count": 6
+    },
+    {
+      "turn_id": "T0041",
+      "participant_id": "cfs03-a",
+      "start_us": 3187160000,
+      "end_us": 3208140000,
+      "word_count": 49
+    },
+    {
+      "turn_id": "T0042",
+      "participant_id": null,
+      "start_us": 3208140000,
+      "end_us": 3209560000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0043",
+      "participant_id": "cfs03-a",
+      "start_us": 3209560000,
+      "end_us": 3210460000,
+      "word_count": 2
+    },
+    {
+      "turn_id": "T0044",
+      "participant_id": null,
+      "start_us": 3210460000,
+      "end_us": 3211520000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0045",
+      "participant_id": "cfs03-a",
+      "start_us": 3211520000,
+      "end_us": 3236400000,
+      "word_count": 70
+    },
+    {
+      "turn_id": "T0046",
+      "participant_id": null,
+      "start_us": 3236400000,
+      "end_us": 3237580000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0047",
+      "participant_id": "cfs03-a",
+      "start_us": 3237580000,
+      "end_us": 3241780000,
+      "word_count": 8
+    },
+    {
+      "turn_id": "T0048",
+      "participant_id": null,
+      "start_us": 3241780000,
+      "end_us": 3242180000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0049",
+      "participant_id": "cfs03-a",
+      "start_us": 3242180000,
+      "end_us": 3254160000,
+      "word_count": 34
+    },
+    {
+      "turn_id": "T0050",
+      "participant_id": "cfs03-c",
+      "start_us": 3254160000,
+      "end_us": 3257100000,
+      "word_count": 9
+    },
+    {
+      "turn_id": "T0051",
+      "participant_id": "cfs03-a",
+      "start_us": 3287420000,
+      "end_us": 3288020000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0052",
+      "participant_id": null,
+      "start_us": 3288020000,
+      "end_us": 3288480000,
+      "word_count": 2
+    },
+    {
+      "turn_id": "T0053",
+      "participant_id": "cfs03-c",
+      "start_us": 3288480000,
+      "end_us": 3294200000,
+      "word_count": 13
+    },
+    {
+      "turn_id": "T0054",
+      "participant_id": null,
+      "start_us": 3294840000,
+      "end_us": 3294840000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0055",
+      "participant_id": "cfs03-c",
+      "start_us": 3294840000,
+      "end_us": 3304160000,
+      "word_count": 34
+    },
+    {
+      "turn_id": "T0056",
+      "participant_id": "cfs03-a",
+      "start_us": 3304160000,
+      "end_us": 3305140000,
+      "word_count": 3
+    },
+    {
+      "turn_id": "T0057",
+      "participant_id": null,
+      "start_us": 3305280000,
+      "end_us": 3305500000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0058",
+      "participant_id": "cfs03-c",
+      "start_us": 3305500000,
+      "end_us": 3307500000,
+      "word_count": 6
+    },
+    {
+      "turn_id": "T0059",
+      "participant_id": "cfs03-c",
+      "start_us": 3313780000,
+      "end_us": 3320260000,
+      "word_count": 12
+    },
+    {
+      "turn_id": "T0060",
+      "participant_id": null,
+      "start_us": 3320260000,
+      "end_us": 3320760000,
+      "word_count": 2
+    },
+    {
+      "turn_id": "T0061",
+      "participant_id": "cfs03-b",
+      "start_us": 3320760000,
+      "end_us": 3321860000,
+      "word_count": 4
+    },
+    {
+      "turn_id": "T0062",
+      "participant_id": "cfs03-c",
+      "start_us": 3322120000,
+      "end_us": 3336640000,
+      "word_count": 42
+    },
+    {
+      "turn_id": "T0063",
+      "participant_id": null,
+      "start_us": 3336740000,
+      "end_us": 3337300000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0064",
+      "participant_id": "cfs03-a",
+      "start_us": 3337300000,
+      "end_us": 3338300000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0065",
+      "participant_id": "cfs03-c",
+      "start_us": 3338300000,
+      "end_us": 3341360000,
+      "word_count": 12
+    },
+    {
+      "turn_id": "T0066",
+      "participant_id": "cfs03-c",
+      "start_us": 3342900000,
+      "end_us": 3345740000,
+      "word_count": 5
+    },
+    {
+      "turn_id": "T0067",
+      "participant_id": null,
+      "start_us": 3345740000,
+      "end_us": 3346240000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0068",
+      "participant_id": "cfs03-c",
+      "start_us": 3346240000,
+      "end_us": 3375260000,
+      "word_count": 90
+    },
+    {
+      "turn_id": "T0069",
+      "participant_id": null,
+      "start_us": 3375500000,
+      "end_us": 3375940000,
+      "word_count": 2
+    },
+    {
+      "turn_id": "T0070",
+      "participant_id": "cfs03-a",
+      "start_us": 3375940000,
+      "end_us": 3380540000,
+      "word_count": 17
+    },
+    {
+      "turn_id": "T0071",
+      "participant_id": null,
+      "start_us": 3381120000,
+      "end_us": 3381280000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0072",
+      "participant_id": "cfs03-a",
+      "start_us": 3381280000,
+      "end_us": 3398540000,
+      "word_count": 45
+    },
+    {
+      "turn_id": "T0073",
+      "participant_id": null,
+      "start_us": 3399140000,
+      "end_us": 3399380000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0074",
+      "participant_id": "cfs03-a",
+      "start_us": 3399380000,
+      "end_us": 3400340000,
+      "word_count": 3
+    },
+    {
+      "turn_id": "T0075",
+      "participant_id": null,
+      "start_us": 3400340000,
+      "end_us": 3401100000,
+      "word_count": 3
+    },
+    {
+      "turn_id": "T0076",
+      "participant_id": "cfs03-a",
+      "start_us": 3401100000,
+      "end_us": 3405540000,
+      "word_count": 10
+    },
+    {
+      "turn_id": "T0077",
+      "participant_id": "cfs03-a",
+      "start_us": 3408000000,
+      "end_us": 3411120000,
+      "word_count": 11
+    },
+    {
+      "turn_id": "T0078",
+      "participant_id": null,
+      "start_us": 3411120000,
+      "end_us": 3411120000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0079",
+      "participant_id": "cfs03-a",
+      "start_us": 3412040000,
+      "end_us": 3452420000,
+      "word_count": 104
+    },
+    {
+      "turn_id": "T0080",
+      "participant_id": null,
+      "start_us": 3452980000,
+      "end_us": 3453760000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0081",
+      "participant_id": "cfs03-a",
+      "start_us": 3453760000,
+      "end_us": 3461160000,
+      "word_count": 21
+    },
+    {
+      "turn_id": "T0082",
+      "participant_id": null,
+      "start_us": 3461160000,
+      "end_us": 3461160000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0083",
+      "participant_id": "cfs03-a",
+      "start_us": 3461160000,
+      "end_us": 3461320000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0084",
+      "participant_id": null,
+      "start_us": 3461320000,
+      "end_us": 3461840000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0085",
+      "participant_id": "cfs03-c",
+      "start_us": 3461840000,
+      "end_us": 3465360000,
+      "word_count": 10
+    },
+    {
+      "turn_id": "T0086",
+      "participant_id": "cfs03-a",
+      "start_us": 3465360000,
+      "end_us": 3466960000,
+      "word_count": 4
+    },
+    {
+      "turn_id": "T0087",
+      "participant_id": null,
+      "start_us": 3466960000,
+      "end_us": 3466960000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0088",
+      "participant_id": "cfs03-a",
+      "start_us": 3466960000,
+      "end_us": 3472420000,
+      "word_count": 15
+    },
+    {
+      "turn_id": "T0089",
+      "participant_id": "cfs03-b",
+      "start_us": 3473080000,
+      "end_us": 3476800000,
+      "word_count": 13
+    },
+    {
+      "turn_id": "T0090",
+      "participant_id": null,
+      "start_us": 3476800000,
+      "end_us": 3477200000,
+      "word_count": 3
+    },
+    {
+      "turn_id": "T0091",
+      "participant_id": "cfs03-a",
+      "start_us": 3477200000,
+      "end_us": 3478220000,
+      "word_count": 4
+    },
+    {
+      "turn_id": "T0092",
+      "participant_id": null,
+      "start_us": 3478540000,
+      "end_us": 3478740000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0093",
+      "participant_id": "cfs03-b",
+      "start_us": 3478740000,
+      "end_us": 3480340000,
+      "word_count": 4
+    },
+    {
+      "turn_id": "T0094",
+      "participant_id": null,
+      "start_us": 3480340000,
+      "end_us": 3480840000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0095",
+      "participant_id": "cfs03-a",
+      "start_us": 3480840000,
+      "end_us": 3497760000,
+      "word_count": 37
+    },
+    {
+      "turn_id": "T0096",
+      "participant_id": null,
+      "start_us": 3498540000,
+      "end_us": 3499580000,
+      "word_count": 2
+    },
+    {
+      "turn_id": "T0097",
+      "participant_id": "cfs03-a",
+      "start_us": 3499580000,
+      "end_us": 3512560000,
+      "word_count": 53
+    },
+    {
+      "turn_id": "T0098",
+      "participant_id": null,
+      "start_us": 3512560000,
+      "end_us": 3513060000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0099",
+      "participant_id": "cfs03-c",
+      "start_us": 3513060000,
+      "end_us": 3555540000,
+      "word_count": 120
+    },
+    {
+      "turn_id": "T0100",
+      "participant_id": null,
+      "start_us": 3555620000,
+      "end_us": 3555920000,
+      "word_count": 1
+    },
+    {
+      "turn_id": "T0101",
+      "participant_id": "cfs03-a",
+      "start_us": 3555920000,
+      "end_us": 3559320000,
+      "word_count": 9
+    },
+    {
+      "turn_id": "T0102",
+      "participant_id": null,
+      "start_us": 3559320000,
+      "end_us": 3560160000,
+      "word_count": 1
+    }
+  ]
+}
