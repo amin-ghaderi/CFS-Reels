@@ -454,9 +454,11 @@ class MigrationTests(unittest.TestCase):
                 revision = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
                 columns = {row[1] for row in connection.execute("PRAGMA table_info(media_asset)")}
                 types = {row[1]: row[2] for row in connection.execute("PRAGMA table_info(media_asset)")}
+                tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             finally:
                 connection.close()
-            self.assertEqual(revision, "0004_diarization")
+            self.assertEqual(revision, "0005_shot_override")
+            self.assertIn("shot_override", tables)
             self.assertIn("source_media_asset_id", columns)
             self.assertIn("fps_num", columns)
             self.assertNotIn("REAL", types["fps_num"].upper())
@@ -464,7 +466,7 @@ class MigrationTests(unittest.TestCase):
             root = Path(tmp) / "Fresh"
             store = create_project(root, "Fresh")
             try:
-                self.assertEqual(store.alembic_revision(), "0004_diarization")
+                self.assertEqual(store.alembic_revision(), "0005_shot_override")
             finally:
                 store.close()
 

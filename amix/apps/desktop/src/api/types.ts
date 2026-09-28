@@ -232,17 +232,31 @@ export interface MulticamReadiness {
   plan_stale: boolean;
   blocking_reason: string | null;
   vision_state: string;
+  ffmpeg_ready: boolean;
   plan_start_us: number | null;
   plan_end_us: number | null;
 }
 
+export interface FullChoice {
+  participant_id: string;
+  display_name: string;
+}
+
 export interface ShotView {
+  shot_id: string;
   start_us: number;
   end_us: number;
   presentation: string;
   participant_id: string | null;
   participant_name: string | null;
   reason: string;
+  automatic_presentation: string;
+  automatic_participant_id: string | null;
+  automatic_participant_name: string | null;
+  override_decision: string;
+  locked: boolean;
+  overridden: boolean;
+  full_choices: FullChoice[];
 }
 
 export interface ShotPlanState {
@@ -251,4 +265,16 @@ export interface ShotPlanState {
   start_us: number | null;
   end_us: number | null;
   shots: ShotView[];
+}
+
+export interface ExportRecord {
+  job_id: string;
+  filename: string;
+  relative_path: string;
+  width: number | null;
+  height: number | null;
+  aspect: string | null;
+  preset_id: string | null;
+  created_at: string | null;
+  status: string;
 }

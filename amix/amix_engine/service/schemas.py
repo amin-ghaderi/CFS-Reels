@@ -282,17 +282,31 @@ class MulticamReadinessResponse(_Model):
     plan_stale: bool
     blocking_reason: str | None
     vision_state: str
+    ffmpeg_ready: bool
     plan_start_us: int | None = None
     plan_end_us: int | None = None
 
 
+class FullChoiceResponse(_Model):
+    participant_id: str
+    display_name: str
+
+
 class ShotResponse(_Model):
+    shot_id: str
     start_us: int
     end_us: int
     presentation: str
     participant_id: str | None = None
     participant_name: str | None = None
     reason: str
+    automatic_presentation: str
+    automatic_participant_id: str | None = None
+    automatic_participant_name: str | None = None
+    override_decision: str
+    locked: bool
+    overridden: bool
+    full_choices: list[FullChoiceResponse]
 
 
 class ShotPlanStateResponse(_Model):
@@ -301,3 +315,22 @@ class ShotPlanStateResponse(_Model):
     start_us: int | None = None
     end_us: int | None = None
     shots: list[ShotResponse]
+
+
+class ShotOverrideRequest(_Model):
+    shot_plan_run_id: str
+    shot_id: str
+    decision: str
+    participant_id: str | None = None
+
+
+class ExportResponse(_Model):
+    job_id: str
+    filename: str
+    relative_path: str
+    width: int | None = None
+    height: int | None = None
+    aspect: str | None = None
+    preset_id: str | None = None
+    created_at: str | None = None
+    status: str

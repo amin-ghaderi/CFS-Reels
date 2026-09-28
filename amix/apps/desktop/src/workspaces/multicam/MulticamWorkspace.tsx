@@ -1,22 +1,29 @@
 import { useEffect, useState } from "react";
 
-import { createJob, listJobs, multicamReadiness, overlapState, shotPlanState } from "../../api/client";
+import { createJob, listExports, listJobs, multicamReadiness, overlapState, saveShotOverride, shotPlanState } from "../../api/client";
 import { asFailure, jobProblemMessage } from "../../api/errors";
 import { isTerminal } from "../../api/jobs";
-import type { JobInfo, MulticamReadiness, OverlapState, ProjectInfo, ShotPlanState, ShotView } from "../../api/types";
+import type { ExportRecord, JobInfo, MulticamReadiness, OverlapState, ProjectInfo, ShotPlanState, ShotView } from "../../api/types";
 import { PreviewPlayer } from "../../playback/PreviewPlayer";
 import { usePlayback } from "../../playback/PlaybackSession";
 import { useProjectData } from "../../project/ProjectData";
 import { formatMicroseconds } from "../../time/format";
 import {
+  automaticLabel,
   currentShot,
   latestFailure,
   multicamPhase,
   phaseLabel,
+  presetId,
   regionSeekUs,
+  renderBlockReason,
+  renderJobSpec,
   runningJob,
   shotLabel,
   shotSeekUs,
+  shotStatus,
+  type OutputFormat,
+  type OutputResolution,
 } from "../../multicam/multicam";
 
 const EMPTY_OVERLAP: OverlapState = {
@@ -45,12 +52,16 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
   const [overlap, setOverlap] = useState<OverlapState>(EMPTY_OVERLAP);
   const [plan, setPlan] = useState<ShotPlanState>(EMPTY_PLAN);
   const [picked, setPicked] = useState<ShotView | null>(null);
+  const [exports, setExports] = useState<ExportRecord[]>([]);
+  const [format, setFormat] = useState<OutputFormat>("16:9");
+  const [resolution, setResolution] = useState<OutputResolution>("1080");
 
   useEffect(() => {
     if (!asset) {
       setReadiness(null);
       setOverlap(EMPTY_OVERLAP);
       setPlan(EMPTY_PLAN);
+      setExports([]);
       return;
     }
     let stop = false;
@@ -60,7 +71,8 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
         multicamReadiness(project.handle, asset.asset_id),
         overlapState(project.handle, asset.asset_id),
         shotPlanState(project.handle, asset.asset_id),
-      ]).then(([listed, nextReady, nextOverlap, nextPlan]) => {
+        listExports(project.handle, asset.asset_id),
+      ]).then(([listed, nextReady, nextOverlap, nextPlan, nextExports]) => {
         if (stop) {
           return;
         }
@@ -68,6 +80,7 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
         setReadiness(nextReady);
         setOverlap(nextOverlap);
         setPlan(nextPlan);
+        setExports(nextExports);
       }).catch((error: unknown) => {
         if (!stop) {
           data.setNotice(asFailure(error));
@@ -85,10 +98,19 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
   const phase = multicamPhase(asset?.asset_id ?? null, readiness, jobs);
   const waiting = Boolean(asset) && readiness === null && !runningJob(jobs, asset?.asset_id ?? "", "detect_overlap") && !runningJob(jobs, asset?.asset_id ?? "", "build_multicam_plan");
   const followed = currentShot(plan.shots, playback.playheadUs);
-  const shown = picked && followed && picked.start_us === followed.start_us ? picked : followed ?? picked;
+  const shown = followed ?? (picked ? plan.shots.find((shot) => shot.shot_id === picked.shot_id) ?? null : null);
   const overlapJob = asset ? runningJob(jobs, asset.asset_id, "detect_overlap") : null;
   const planJob = asset ? runningJob(jobs, asset.asset_id, "build_multicam_plan") : null;
   const failed = asset ? latestFailure(jobs, asset.asset_id) : null;
+  const renderJob = asset ? runningJob(jobs, asset.asset_id, "render_multicam") : null;
+  const chosenPreset = presetId(format, resolution);
+  const block = readiness ? renderBlockReason({
+    planPresent: Boolean(plan.run_id),
+    planStale: Boolean(plan.stale || readiness.plan_stale),
+    sourceAvailable: Boolean(asset),
+    ffmpegReady: readiness.ffmpeg_ready,
+    presetKnown: Boolean(chosenPreset),
+  }) : "Loading";
 
   async function analyzeOverlap() {
     if (!asset) {
@@ -112,6 +134,38 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
     data.setNotice(null);
     try {
       await createJob(project.handle, "build_multicam_plan", { mediaAssetId: asset.asset_id });
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    }
+  }
+
+  async function chooseOverride(decision: string, participantId?: string) {
+    if (!asset || !plan.run_id || !shown) {
+      return;
+    }
+    data.setNotice(null);
+    try {
+      const next = await saveShotOverride(project.handle, asset.asset_id, {
+        shot_plan_run_id: plan.run_id,
+        shot_id: shown.shot_id,
+        decision,
+        participant_id: participantId ?? null,
+      });
+      setPlan(next);
+      setPicked(next.shots.find((shot) => shot.shot_id === shown.shot_id) ?? null);
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    }
+  }
+
+  async function renderProgram() {
+    if (!asset || !plan.run_id || block) {
+      return;
+    }
+    data.setNotice(null);
+    const request = renderJobSpec(format, resolution, plan.run_id);
+    try {
+      await createJob(project.handle, request.kind, { mediaAssetId: asset.asset_id, spec: request.spec });
     } catch (error) {
       data.setNotice(asFailure(error));
     }
@@ -157,13 +211,46 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
               {plan.shots.map((shot) => {
                 const active = followed?.start_us === shot.start_us && followed.end_us === shot.end_us;
                 return (
-                  <li key={`${shot.start_us}-${shot.end_us}-${shot.reason}`} className={active ? "is-current" : undefined}>
+                  <li key={shot.shot_id} className={active ? "is-current" : undefined}>
                     <button type="button" onClick={() => { setPicked(shot); playback.requestSeek(shotSeekUs(shot)); }}>
-                      {formatMicroseconds(shot.start_us)} – {formatMicroseconds(shot.end_us)} · {shotLabel(shot)} · {shot.reason}
+                      {formatMicroseconds(shot.start_us)} – {formatMicroseconds(shot.end_us)} · {shotLabel(shot)} · {shotStatus(shot)}
                     </button>
                   </li>
                 );
               })}
+            </ul>
+          )}
+        </section>
+        <section aria-label="Render">
+          <h2>Render</h2>
+          <p>Output size. This does not rebuild the shot plan.</p>
+          <div className="row">
+            <label>
+              Format
+              <select value={format} onChange={(event) => setFormat(event.target.value as OutputFormat)}>
+                <option value="16:9">Landscape 16:9</option>
+                <option value="9:16">Portrait 9:16</option>
+              </select>
+            </label>
+            <label>
+              Resolution
+              <select value={resolution} onChange={(event) => setResolution(event.target.value as OutputResolution)}>
+                <option value="1080">1080</option>
+                <option value="720">720</option>
+              </select>
+            </label>
+            <button type="button" onClick={() => void renderProgram()} disabled={Boolean(block) || Boolean(renderJob)}>
+              {renderJob ? "Rendering" : "Render"}
+            </button>
+          </div>
+          {block ? <p>{block}</p> : null}
+          {exports.length === 0 ? <p>No completed exports.</p> : (
+            <ul className="review-list">
+              {exports.map((row) => (
+                <li key={row.job_id}>
+                  {row.filename} · {row.width ?? "?"}×{row.height ?? "?"} · {row.aspect ?? ""} · {row.created_at ?? ""} · {row.status}
+                </li>
+              ))}
             </ul>
           )}
         </section>
@@ -173,8 +260,36 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
         {shown ? (
           <>
             <p>{shotLabel(shown)}</p>
+            <p>{shotStatus(shown)}{shown.locked ? " / Locked" : ""}</p>
             <p>{formatMicroseconds(shown.start_us)} – {formatMicroseconds(shown.end_us)}</p>
-            <p>{shown.reason}</p>
+            <p>Automatic: {automaticLabel(shown)}</p>
+            {shown.locked ? <p>Protected / Locked</p> : (
+              <label>
+                Override
+                <select
+                  value={shown.override_decision === "full" ? `full:${shown.participant_id ?? ""}` : shown.override_decision}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === "auto" || value === "wide") {
+                      void chooseOverride(value);
+                      return;
+                    }
+                    void chooseOverride("full", value.slice("full:".length));
+                  }}
+                >
+                  <option value="auto">Auto</option>
+                  <option value="wide">Wide</option>
+                  {shown.full_choices.map((choice) => (
+                    <option key={choice.participant_id} value={`full:${choice.participant_id}`}>
+                      Full — {choice.display_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {shown.overridden && !shown.locked ? (
+              <button type="button" onClick={() => void chooseOverride("auto")}>Use Automatic</button>
+            ) : null}
           </>
         ) : <p>No shot at the playhead.</p>}
       </aside>

@@ -83,6 +83,7 @@ from amix.amix_engine.storage.models import (
     ProjectRow,
     ProtectedRegionRow,
     ShotPlanRow,
+    ShotOverrideRow,
     ShotRow,
     SpeakerAssignmentRow,
     TranscriptRow,
@@ -1383,6 +1384,128 @@ class ProjectStore:
                 ),
             )
 
+    def list_shot_records(self, run_id: str) -> list[dict]:
+        with self._session() as session:
+            plan = session.scalar(select(ShotPlanRow).where(ShotPlanRow.analysis_run_id == run_id))
+            if plan is None:
+                raise ProjectDatabaseInvalid(f"no shot plan for run {run_id}")
+            shots = session.scalars(
+                select(ShotRow).where(ShotRow.shot_plan_id == plan.id).order_by(ShotRow.sequence)
+            ).all()
+            return [
+                {
+                    "shot_id": shot.id,
+                    "sequence": int(shot.sequence),
+                    "start_us": int(shot.start_us),
+                    "end_us": int(shot.end_us),
+                    "presentation": shot.presentation,
+                    "participant_id": shot.participant_id,
+                    "floor_participant_id": shot.floor_participant_id,
+                    "reason": shot.reason,
+                }
+                for shot in shots
+            ]
+
+    def list_shot_overrides(self, plan_run_id: str) -> list[dict]:
+        with self._session() as session:
+            rows = session.scalars(
+                select(ShotOverrideRow)
+                .where(ShotOverrideRow.shot_plan_run_id == plan_run_id)
+                .order_by(ShotOverrideRow.shot_id)
+            ).all()
+            return [
+                {
+                    "override_id": row.id,
+                    "shot_id": row.shot_id,
+                    "decision": row.decision,
+                    "participant_id": row.participant_id,
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                }
+                for row in rows
+            ]
+
+    def save_shot_override(
+        self,
+        *,
+        asset_id: str,
+        plan_run_id: str,
+        shot_id: str,
+        decision: str,
+        participant_id: str | None,
+    ) -> str:
+        self._require_write()
+        with self._session() as session:
+            self._asset(session, asset_id)
+            current = session.scalar(
+                select(ShotOverrideRow).where(
+                    ShotOverrideRow.shot_plan_run_id == plan_run_id,
+                    ShotOverrideRow.shot_id == shot_id,
+                )
+            )
+            now = _now()
+            if current is None:
+                current = ShotOverrideRow(
+                    id=str(uuid.uuid4()),
+                    media_asset_id=asset_id,
+                    shot_plan_run_id=plan_run_id,
+                    shot_id=shot_id,
+                    decision=decision,
+                    participant_id=participant_id,
+                    created_at=now,
+                    updated_at=now,
+                )
+                session.add(current)
+            else:
+                current.decision = decision
+                current.participant_id = participant_id
+                current.updated_at = now
+            session.commit()
+            return current.id
+
+    def clear_shot_override(self, plan_run_id: str, shot_id: str) -> None:
+        self._require_write()
+        with self._session() as session:
+            current = session.scalar(
+                select(ShotOverrideRow).where(
+                    ShotOverrideRow.shot_plan_run_id == plan_run_id,
+                    ShotOverrideRow.shot_id == shot_id,
+                )
+            )
+            if current is not None:
+                session.delete(current)
+                session.commit()
+
+    def publish_export(
+        self,
+        source_asset_id: str,
+        record: MediaProbeRecord,
+        *,
+        relative_path: str,
+        display_name: str,
+        job_id: str,
+    ) -> str:
+        """Insert one export asset. The encoded file must already be in place."""
+        self._require_write()
+        asset_id = str(uuid.uuid4())
+        with self._session() as session:
+            self._asset(session, source_asset_id)
+            row = MediaAssetRow(
+                id=asset_id,
+                project_id=self.project_id,
+                role="export",
+                display_name=display_name,
+                location_kind="project",
+                relative_path=relative_path.replace("\\", "/"),
+                source_media_asset_id=source_asset_id,
+                proxy_job_id=job_id,
+                proxy_created_at=_now(),
+            )
+            _write_probe(row, record)
+            session.add(row)
+            session.commit()
+        return asset_id
+
     def publish_activated_transcript(
         self,
         *,
@@ -1451,6 +1574,7 @@ class ProjectStore:
                 raise ProjectDatabaseInvalid(run_id)
             return {
                 "run_id": row.id,
+                "media_asset_id": row.media_asset_id,
                 "kind": row.kind,
                 "status": row.status,
                 "algorithm_id": row.algorithm_id,

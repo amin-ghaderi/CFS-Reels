@@ -71,4 +71,8 @@ The layout fingerprint is the exact binding list in display pixels. A later layo
 
 ## Limits
 
-This phase does not render a multicam program, identify speakers from faces, or download a model. The detector still needs a usable layout before it starts. Fewer than two participants with a region in the window fails as `insufficient_layout`.
+Overlap analysis does not identify speakers from faces and does not download a model. The detector still needs a usable layout before it starts. Fewer than two participants with a region in the window fails as `insufficient_layout`.
+
+Rendering a multicam program is separate. See [MULTICAM_RENDERER.md](MULTICAM_RENDERER.md).
+
+The production overlap extractor has not been compared with the six known CFS03 regions, because `AMIX_YUNET_MODEL_PATH` was not set. The overlap thresholds were not changed for that reason.

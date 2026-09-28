@@ -18,6 +18,7 @@ import type {
   MulticamReadiness,
   OverlapState,
   ShotPlanState,
+  ExportRecord,
 } from "./types";
 
 interface RawResponse {
@@ -193,6 +194,18 @@ export function multicamReadiness(handle: string, assetId: string): Promise<Mult
 
 export function shotPlanState(handle: string, assetId: string): Promise<ShotPlanState> {
   return request("GET", `/v1/projects/${handle}/media/${assetId}/shot-plan`);
+}
+
+export function saveShotOverride(
+  handle: string,
+  assetId: string,
+  body: { shot_plan_run_id: string; shot_id: string; decision: string; participant_id?: string | null },
+): Promise<ShotPlanState> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/shot-overrides`, body);
+}
+
+export function listExports(handle: string, assetId: string): Promise<ExportRecord[]> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/exports`);
 }
 
 export function preparePlayback(sourceMediaAssetId: string, requestId: number): Promise<PreparedPlayback> {

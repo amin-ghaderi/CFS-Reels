@@ -68,6 +68,20 @@ const MESSAGES: Record<string, string> = {
   transcript_required: "No transcript is available for this media yet.",
   analysis_not_covering: "Turns and overlap do not cover a shared plan range.",
   invalid_plan_profile: "That multicam profile is not available.",
+  plan_required: "Build a shot plan before rendering.",
+  plan_stale: "The shot plan is out of date.",
+  plan_changed: "That shot plan is no longer the active plan.",
+  protected_locked: "A protected shot stays on the full program frame.",
+  unknown_shot: "That shot is not in this plan.",
+  layout_not_covering: "That participant does not cover this whole shot.",
+  invalid_render_preset: "That output format is not available.",
+  invalid_override: "Choose automatic, wide, or one participant.",
+  framing_failed: "The picture could not be framed for this output.",
+  region_too_small: "The participant region cannot fill this output.",
+  empty_plan: "This plan has no shots to render.",
+  render_requires_source: "Rendering uses the original source media.",
+  render_requires_probe: "Probe this media before rendering.",
+  render_failed: "The render did not finish.",
 };
 
 export function mapEngineFailure(status: number, body: string): EngineFailure {

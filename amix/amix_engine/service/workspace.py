@@ -7,6 +7,8 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 
 from amix.amix_engine.layout import COORDINATE_SPACE, LayoutRejected, validate_layout
+from amix.amix_engine.multicam.effective import OverrideRejected, describe_shots, set_shot_override
+from amix.amix_engine.multicam.profile import PRESETS
 from amix.amix_engine.playback import PlaybackDescriptor, resolve_playback
 from amix.amix_engine.service.errors import ApiError
 from amix.amix_engine.service.runtime import EngineRuntime
@@ -33,6 +35,8 @@ from amix.amix_engine.service.schemas import (
     MulticamReadinessResponse,
     OverlapRegionResponse,
     OverlapStateResponse,
+    ExportResponse,
+    ShotOverrideRequest,
     ShotPlanStateResponse,
     ShotResponse,
 )
@@ -159,6 +163,16 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
     def shot_plan_state(handle: str, asset_id: str, request: Request) -> ShotPlanStateResponse:
         authorize(request)
         return call(lambda: _shot_plan_state(runtime, handle, asset_id))
+
+    @app.post("/v1/projects/{handle}/media/{asset_id}/shot-overrides", response_model=ShotPlanStateResponse)
+    def save_shot_override(handle: str, asset_id: str, body: ShotOverrideRequest, request: Request) -> ShotPlanStateResponse:
+        authorize(request)
+        return call(lambda: _save_override(runtime, handle, asset_id, body))
+
+    @app.get("/v1/projects/{handle}/media/{asset_id}/exports", response_model=list[ExportResponse])
+    def list_exports(handle: str, asset_id: str, request: Request) -> list[ExportResponse]:
+        authorize(request)
+        return call(lambda: _exports(runtime, handle, asset_id))
 
 
 def _store(runtime: EngineRuntime, handle: str) -> ProjectStore:
@@ -532,6 +546,7 @@ def _multicam_state(runtime: EngineRuntime, handle: str, asset_id: str) -> Multi
         plan_stale=ready["plan_stale"],
         blocking_reason=ready["blocking_reason"],
         vision_state=ready["vision_state"],
+        ffmpeg_ready=ready["ffmpeg_ready"],
         plan_start_us=ready["plan_start_us"],
         plan_end_us=ready["plan_end_us"],
     )
@@ -564,27 +579,73 @@ def _overlap_state(runtime: EngineRuntime, handle: str, asset_id: str) -> Overla
 
 
 def _shot_plan_state(runtime: EngineRuntime, handle: str, asset_id: str) -> ShotPlanStateResponse:
+    described = describe_shots(_store(runtime, handle), asset_id)
+    return _shot_plan_view(described)
+
+
+def _save_override(
+    runtime: EngineRuntime, handle: str, asset_id: str, body: ShotOverrideRequest,
+) -> ShotPlanStateResponse:
     store = _store(runtime, handle)
-    ready = multicam_readiness(store, asset_id)
-    run_id = ready["shot_plan_run_id"]
-    if run_id is None:
-        return ShotPlanStateResponse(run_id=None, stale=False, shots=[])
-    names = {participant_id: name for participant_id, name, _order in store.list_participants()}
-    plan = store.load_shot_plan(run_id)
+    try:
+        set_shot_override(
+            store, asset_id, body.shot_plan_run_id, body.shot_id, body.decision, body.participant_id,
+        )
+    except OverrideRejected as exc:
+        status = 404 if exc.code in {"unknown_shot", "unknown_shot_plan", "unknown_participant"} else 400
+        raise ApiError(status, exc.code, exc.message) from exc
+    return _shot_plan_view(describe_shots(store, asset_id))
+
+
+def _shot_plan_view(described: dict) -> ShotPlanStateResponse:
     return ShotPlanStateResponse(
-        run_id=run_id,
-        stale=ready["plan_stale"],
-        start_us=plan.span.start_us,
-        end_us=plan.span.end_us,
+        run_id=described["run_id"],
+        stale=described["stale"],
+        start_us=described["start_us"],
+        end_us=described["end_us"],
         shots=[
             ShotResponse(
-                start_us=shot.start_us,
-                end_us=shot.end_us,
-                presentation=shot.presentation.value,
-                participant_id=None if shot.participant_id is None else shot.participant_id.value,
-                participant_name=None if shot.participant_id is None else names.get(shot.participant_id.value),
-                reason=shot.reason,
+                shot_id=shot["shot_id"],
+                start_us=shot["start_us"],
+                end_us=shot["end_us"],
+                presentation=shot["presentation"],
+                participant_id=shot["participant_id"],
+                participant_name=shot["participant_name"],
+                reason=shot["reason"],
+                automatic_presentation=shot["automatic_presentation"],
+                automatic_participant_id=shot["automatic_participant_id"],
+                automatic_participant_name=shot["automatic_participant_name"],
+                override_decision=shot["override_decision"],
+                locked=shot["locked"],
+                overridden=shot["overridden"],
+                full_choices=shot["full_choices"],
             )
-            for shot in plan.shots
+            for shot in described["shots"]
         ],
     )
+
+
+def _exports(runtime: EngineRuntime, handle: str, asset_id: str) -> list[ExportResponse]:
+    store = _store(runtime, handle)
+    store.get_media(asset_id)
+    rows = []
+    for job in store.list_processing_jobs():
+        if job.kind != "render_multicam" or job.media_asset_id != asset_id:
+            continue
+        if job.status != "succeeded" or not isinstance(job.result, dict):
+            continue
+        preset_id = job.result.get("preset_id")
+        preset = PRESETS.get(preset_id) if isinstance(preset_id, str) else None
+        relative = job.result.get("relative_path")
+        rows.append(ExportResponse(
+            job_id=job.job_id,
+            filename=str(relative).rsplit("/", 1)[-1] if isinstance(relative, str) else job.job_id,
+            relative_path=relative if isinstance(relative, str) else "",
+            width=job.result.get("width"),
+            height=job.result.get("height"),
+            aspect=None if preset is None else preset.aspect,
+            preset_id=preset_id if isinstance(preset_id, str) else None,
+            created_at=job.finished_at,
+            status=job.status,
+        ))
+    return rows

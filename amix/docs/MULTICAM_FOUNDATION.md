@@ -28,4 +28,4 @@ The plan is one immutable AnalysisRun of kind `shot_plan`. It depends on the exa
 
 Multicam is a review workspace. It shows the proxy through the existing player, the overlap regions, and the automatic shots. A region or a shot seeks that same player to the canonical start. The highlighted shot is the one whose half-open range contains the playhead. That lookup is local.
 
-Shot labels are `Full — <participant>`, `Wide`, and `Protected`. The current shot is named the same way beside the picture. The picture itself stays the untouched proxy frame. There is no crop preview, no rendered program, and no manual camera override. Those need a renderer and an authority rule for edits, which are later phases.
+Shot labels are `Full — <participant>`, `Wide`, and `Protected`. The current shot is named the same way beside the picture. The proxy picture stays the source frame. Manual camera choices are a separate layer on one automatic plan, and rendering is a later step. See [MULTICAM_RENDERER.md](MULTICAM_RENDERER.md).

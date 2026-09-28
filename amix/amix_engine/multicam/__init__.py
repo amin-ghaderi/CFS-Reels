@@ -1,1 +1,1 @@
-"""Pure 16:9 shot planning. No media and no renderer."""
+"""Shot planning, effective camera choices, and one multicam renderer."""

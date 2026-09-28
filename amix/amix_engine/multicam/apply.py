@@ -9,6 +9,8 @@ from amix.amix_engine.domain.types import Word
 from amix.amix_engine.layout import layout_fingerprint, protected_fingerprint
 from amix.amix_engine.multicam.planner import PlannerConfig, plan_shots
 from amix.amix_engine.storage.kinds import DIARIZATION, OVERLAP, PARTICIPANT_ASSIGNMENT, SHOT_PLAN, TURNS
+from amix.amix_engine.adapters.media.discovery import discover_tools
+from amix.amix_engine.adapters.media.errors import MediaToolMissing
 from amix.amix_engine.storage.project import ProjectStore
 from amix.amix_engine.time.clock import TimeRange
 
@@ -77,6 +79,7 @@ def multicam_readiness(store: ProjectStore, asset_id: str) -> dict:
         "diarization_run_id": store.get_active_run_id(asset_id, DIARIZATION),
         "transcript_run_id": None if transcript is None else transcript.analysis_run_id,
         "vision_state": vision_model_status().state,
+        "ffmpeg_ready": _ffmpeg_ready(),
     }
 
 
@@ -184,3 +187,20 @@ def _blocking(*, turns_ready, overlap_ready, overlap_stale, layout_ready, inputs
     if not inputs_ready:
         return "analysis_not_covering"
     return None
+
+
+_ffmpeg_state: bool | None = None
+
+
+def _ffmpeg_ready() -> bool:
+    """Remember the first lookup. The desktop polls readiness every second."""
+    global _ffmpeg_state
+    if _ffmpeg_state is not None:
+        return _ffmpeg_state
+    try:
+        discover_tools()
+    except MediaToolMissing:
+        _ffmpeg_state = False
+        return False
+    _ffmpeg_state = True
+    return True

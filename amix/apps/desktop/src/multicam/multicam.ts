@@ -1,8 +1,18 @@
-import type { JobInfo, MulticamReadiness, OverlapRegionView, ShotView } from "../api/types";
+import type { ExportRecord, JobInfo, MulticamReadiness, OverlapRegionView, ShotView } from "../api/types";
 import { isTerminal } from "../api/jobs";
 
-/** Review actions only. Reaction inserts and manual camera overrides are not part of this workspace. */
-export const MULTICAM_CONTROLS = ["analyze_overlap", "build_plan"] as const;
+/** Review, one-shot camera overrides, and output render. Reaction inserts are not included. */
+export const MULTICAM_CONTROLS = ["analyze_overlap", "build_plan", "override_shot", "render"] as const;
+
+export const OUTPUT_PRESETS = [
+  { id: "landscape_1080", format: "16:9", resolution: "1080", label: "Landscape 1080" },
+  { id: "landscape_720", format: "16:9", resolution: "720", label: "Landscape 720" },
+  { id: "portrait_1080", format: "9:16", resolution: "1080", label: "Portrait 1080" },
+  { id: "portrait_720", format: "9:16", resolution: "720", label: "Portrait 720" },
+] as const;
+
+export type OutputFormat = "16:9" | "9:16";
+export type OutputResolution = "1080" | "720";
 
 export type MulticamPhase =
   | "no_media"
@@ -123,4 +133,64 @@ export function shotSeekUs(shot: Pick<ShotView, "start_us">): number {
 /** Local half-open lookup. The playhead is canonical microseconds. */
 export function currentShot(shots: readonly ShotView[], playheadUs: number): ShotView | null {
   return shots.find((shot) => shot.start_us <= playheadUs && playheadUs < shot.end_us) ?? null;
+}
+
+export function shotStatus(shot: Pick<ShotView, "locked" | "overridden">): "Protected" | "Overridden" | "Automatic" {
+  if (shot.locked) {
+    return "Protected";
+  }
+  return shot.overridden ? "Overridden" : "Automatic";
+}
+
+export function automaticLabel(shot: Pick<ShotView, "automatic_presentation" | "automatic_participant_name">): string {
+  if (shot.automatic_presentation === "full") {
+    return `Full — ${shot.automatic_participant_name || "Participant"}`;
+  }
+  if (shot.automatic_presentation === "protected_master") {
+    return "Protected";
+  }
+  return "Wide";
+}
+
+export function presetId(format: OutputFormat, resolution: OutputResolution): string {
+  const orientation = format === "16:9" ? "landscape" : "portrait";
+  return `${orientation}_${resolution}`;
+}
+
+/** Output choice only. The shot plan run stays the one already built. */
+export function renderJobSpec(format: OutputFormat, resolution: OutputResolution, shotPlanRunId: string) {
+  return {
+    kind: "render_multicam" as const,
+    spec: { preset: presetId(format, resolution), shot_plan_run_id: shotPlanRunId },
+  };
+}
+
+export function renderBlockReason(input: {
+  planPresent: boolean;
+  planStale: boolean;
+  sourceAvailable: boolean;
+  ffmpegReady: boolean;
+  presetKnown: boolean;
+}): string | null {
+  if (!input.sourceAvailable) {
+    return "A media file for this project is missing.";
+  }
+  if (!input.planPresent) {
+    return "Build a shot plan before rendering.";
+  }
+  if (input.planStale) {
+    return "The shot plan is out of date.";
+  }
+  if (!input.ffmpegReady) {
+    return "FFmpeg tools are not available.";
+  }
+  if (!input.presetKnown) {
+    return "That output format is not available.";
+  }
+  return null;
+}
+
+export function exportSummary(row: Pick<ExportRecord, "filename" | "width" | "height" | "aspect" | "created_at" | "status">): string {
+  const size = row.width && row.height ? `${row.width}×${row.height}` : "size unknown";
+  return `${row.filename} · ${size} · ${row.aspect ?? "aspect unknown"} · ${row.created_at ?? ""} · ${row.status}`;
 }

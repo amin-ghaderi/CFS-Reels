@@ -84,8 +84,9 @@ It does not download a diarization model. See
 
 Overlap analysis uses OpenCV and a local YuNet file. AMIX does not download
 that file. Set `AMIX_YUNET_MODEL_PATH` to an existing model. See
-[docs/OVERLAP_RUNTIME.md](docs/OVERLAP_RUNTIME.md) and
-[docs/MULTICAM_FOUNDATION.md](docs/MULTICAM_FOUNDATION.md).
+[docs/OVERLAP_RUNTIME.md](docs/OVERLAP_RUNTIME.md),
+[docs/MULTICAM_FOUNDATION.md](docs/MULTICAM_FOUNDATION.md), and
+[docs/MULTICAM_RENDERER.md](docs/MULTICAM_RENDERER.md).
 
 ## Tests
 

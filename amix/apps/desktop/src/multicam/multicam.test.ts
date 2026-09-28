@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import type { JobInfo, MulticamReadiness, ShotView } from "../api/types";
+import type { ExportRecord, JobInfo, MulticamReadiness, ShotView } from "../api/types";
 import {
   MULTICAM_CONTROLS,
+  OUTPUT_PRESETS,
+  automaticLabel,
   currentShot,
+  exportSummary,
   multicamPhase,
   phaseLabel,
   regionSeekUs,
+  renderBlockReason,
+  renderJobSpec,
   shotLabel,
   shotSeekUs,
+  shotStatus,
 } from "./multicam";
 
 function ready(patch: Partial<MulticamReadiness> = {}): MulticamReadiness {
@@ -22,6 +28,7 @@ function ready(patch: Partial<MulticamReadiness> = {}): MulticamReadiness {
     plan_stale: false,
     blocking_reason: "overlap_required",
     vision_state: "READY",
+    ffmpeg_ready: true,
     plan_start_us: null,
     plan_end_us: null,
     ...patch,
@@ -51,10 +58,37 @@ function job(patch: Partial<JobInfo>): JobInfo {
   };
 }
 
+function shot(patch: Partial<ShotView> & Pick<ShotView, "start_us" | "end_us" | "presentation" | "reason">): ShotView {
+  return {
+    shot_id: patch.reason,
+    participant_id: null,
+    participant_name: null,
+    automatic_presentation: patch.presentation,
+    automatic_participant_id: null,
+    automatic_participant_name: null,
+    override_decision: "auto",
+    locked: patch.presentation === "protected_master",
+    overridden: false,
+    full_choices: [],
+    ...patch,
+  };
+}
+
 const shots: ShotView[] = [
-  { start_us: 0, end_us: 2_000_000, presentation: "full", participant_id: "a", participant_name: "Alice", reason: "floor" },
-  { start_us: 2_000_000, end_us: 4_000_000, presentation: "untouched_wide", participant_id: null, participant_name: null, reason: "overlap" },
-  { start_us: 4_000_000, end_us: 5_000_000, presentation: "protected_master", participant_id: null, participant_name: null, reason: "protected" },
+  shot({
+    shot_id: "s1", start_us: 0, end_us: 2_000_000, presentation: "full", reason: "floor",
+    participant_id: "a", participant_name: "Alice",
+    automatic_participant_id: "a", automatic_participant_name: "Alice",
+    full_choices: [{ participant_id: "a", display_name: "Alice" }, { participant_id: "b", display_name: "Bea" }],
+  }),
+  shot({
+    shot_id: "s2", start_us: 2_000_000, end_us: 4_000_000, presentation: "untouched_wide", reason: "overlap",
+    full_choices: [{ participant_id: "a", display_name: "Alice" }],
+  }),
+  shot({
+    shot_id: "s3", start_us: 4_000_000, end_us: 5_000_000, presentation: "protected_master", reason: "protected",
+    locked: true,
+  }),
 ];
 
 describe("multicam review", () => {
@@ -88,8 +122,56 @@ describe("multicam review", () => {
     expect(currentShot(shots, 5_000_000)).toBeNull();
   });
 
-  it("does not offer reaction shots or manual overrides", () => {
-    expect(MULTICAM_CONTROLS).toEqual(["analyze_overlap", "build_plan"]);
-    expect(MULTICAM_CONTROLS.join(" ")).not.toMatch(/reaction|override/i);
+  it("offers a shot override and a render, and does not offer reaction shots", () => {
+    expect(MULTICAM_CONTROLS).toEqual(["analyze_overlap", "build_plan", "override_shot", "render"]);
+    expect(MULTICAM_CONTROLS.join(" ")).not.toMatch(/reaction/i);
+  });
+
+  it("keeps override choices on the current shot and locks protected shots", () => {
+    expect(shotStatus(shots[0])).toBe("Automatic");
+    expect(automaticLabel(shots[0])).toBe("Full — Alice");
+    expect(shots[0].full_choices.map((choice) => choice.display_name)).toEqual(["Alice", "Bea"]);
+    expect(shots[1].full_choices.map((choice) => choice.participant_id)).toEqual(["a"]);
+    const overridden = { ...shots[1], presentation: "full", participant_name: "Alice", override_decision: "full", overridden: true };
+    const cleared = { ...overridden, override_decision: "auto", overridden: false };
+    expect(shotStatus(overridden)).toBe("Overridden");
+    expect(shotStatus(cleared)).toBe("Automatic");
+    expect(shotStatus(shots[2])).toBe("Protected");
+    expect(shots[2].locked).toBe(true);
+    expect(shots[2].full_choices).toEqual([]);
+  });
+
+  it("treats 16:9 and 9:16 as output presets on the same shot plan", () => {
+    expect(OUTPUT_PRESETS.map((preset) => preset.format)).toEqual(["16:9", "16:9", "9:16", "9:16"]);
+    expect(OUTPUT_PRESETS.map((preset) => preset.resolution)).toEqual(["1080", "720", "1080", "720"]);
+    const landscape = renderJobSpec("16:9", "1080", "plan-1");
+    const portrait = renderJobSpec("9:16", "720", "plan-1");
+    expect(landscape.kind).toBe("render_multicam");
+    expect(portrait.kind).toBe("render_multicam");
+    expect(landscape.spec.shot_plan_run_id).toBe(portrait.spec.shot_plan_run_id);
+    expect(landscape.spec.preset).toBe("landscape_1080");
+    expect(portrait.spec.preset).toBe("portrait_720");
+    expect(landscape.kind).not.toBe("build_multicam_plan");
+    expect(renderBlockReason({
+      planPresent: true, planStale: true, sourceAvailable: true, ffmpegReady: true, presetKnown: true,
+    })).toMatch(/out of date/);
+    expect(renderBlockReason({
+      planPresent: true, planStale: false, sourceAvailable: false, ffmpegReady: true, presetKnown: true,
+    })).toMatch(/missing/);
+    expect(renderBlockReason({
+      planPresent: true, planStale: false, sourceAvailable: true, ffmpegReady: true, presetKnown: true,
+    })).toBeNull();
+  });
+
+  it("names a completed export without starting another plan", () => {
+    const row: ExportRecord = {
+      job_id: "job", filename: "job.mp4", relative_path: "exports/job.mp4",
+      width: 1080, height: 1920, aspect: "9:16", preset_id: "portrait_1080",
+      created_at: "2026-09-28T12:00:00+00:00", status: "succeeded",
+    };
+    expect(exportSummary(row)).toContain("1080×1920");
+    expect(exportSummary(row)).toContain("9:16");
+    expect(exportSummary(row)).toContain("succeeded");
+    expect(renderJobSpec("9:16", "1080", "plan-1").kind).toBe("render_multicam");
   });
 });

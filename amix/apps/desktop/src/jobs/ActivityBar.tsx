@@ -121,7 +121,7 @@ export function ActivityBar({
             {ordered.map((job) => (
               <li key={job.job_id} className="job">
                 <div className="job-row">
-                  <strong>{jobTitle(job.kind)}</strong>
+                  <strong>{jobTitle(job.kind, job.spec)}</strong>
                   <span>{jobStatusLabel(job.status)}</span>
                 </div>
                 {job.progress_bp > 0 ? (

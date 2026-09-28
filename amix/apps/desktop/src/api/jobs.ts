@@ -65,7 +65,7 @@ export function orderJobs<T extends { status: JobStatus; created_at: string; job
   ];
 }
 
-export function jobTitle(kind: string): string {
+export function jobTitle(kind: string, spec?: Record<string, unknown> | null): string {
   if (kind === "project_integrity_check") {
     return "Project integrity check";
   }
@@ -87,5 +87,16 @@ export function jobTitle(kind: string): string {
   if (kind === "build_multicam_plan") {
     return "Build multicam plan";
   }
+  if (kind === "render_multicam") {
+    const preset = spec && typeof spec.preset === "string" ? PRESET_LABELS[spec.preset] : "";
+    return preset ? `Render multicam · ${preset}` : "Render multicam";
+  }
   return "Background job";
 }
+
+const PRESET_LABELS: Record<string, string> = {
+  landscape_1080: "Landscape 1080",
+  landscape_720: "Landscape 720",
+  portrait_1080: "Portrait 1080",
+  portrait_720: "Portrait 720",
+};

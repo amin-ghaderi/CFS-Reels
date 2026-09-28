@@ -283,6 +283,28 @@ class ShotRow(Base):
     reason: Mapped[str] = mapped_column(Text, nullable=False)
 
 
+class ShotOverrideRow(Base):
+    """A camera choice for one automatic shot. The shot row itself is not edited."""
+
+    __tablename__ = "shot_override"
+    __table_args__ = (
+        UniqueConstraint("shot_plan_run_id", "shot_id", name="uq_shot_override_shot"),
+        CheckConstraint(
+            "(decision = 'wide' AND participant_id IS NULL) OR (decision = 'full' AND participant_id IS NOT NULL)",
+            name="ck_shot_override_decision",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
+    media_asset_id: Mapped[str] = mapped_column(ForeignKey("media_asset.id", ondelete="RESTRICT"), nullable=False)
+    shot_plan_run_id: Mapped[str] = mapped_column(ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False)
+    shot_id: Mapped[str] = mapped_column(ForeignKey("shot.id", ondelete="RESTRICT"), nullable=False)
+    decision: Mapped[str] = mapped_column(Text, nullable=False)
+    participant_id: Mapped[str | None] = mapped_column(ForeignKey("participant.id", ondelete="RESTRICT"))
+    created_at: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[str] = mapped_column(Text, nullable=False)
+
+
 class ActiveAnalysisRow(Base):
     __tablename__ = "active_analysis"
     __table_args__ = (
