@@ -1,6 +1,9 @@
 .venv/
 amix/.venv/
 amix/*.egg-info/
+amix/apps/desktop/node_modules/
+amix/apps/desktop/dist/
+amix/apps/desktop/src-tauri/target/
 __pycache__/
 .pytest_cache/
 *.pyc

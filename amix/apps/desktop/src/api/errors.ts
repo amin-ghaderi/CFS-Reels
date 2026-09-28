@@ -1,0 +1,44 @@
+import type { EngineFailure } from "./types";
+
+const MESSAGES: Record<string, string> = {
+  unauthorized: "The desktop session could not authenticate with the engine.",
+  project_already_open: "This project is already open in AMIX.",
+  project_already_locked: "This project is open in another AMIX window.",
+  project_close_timeout: "A background job did not stop in time. The project stays open.",
+  unsupported_job_kind: "That job is not available.",
+  unknown_project_handle: "This project session is no longer valid. Open the project again.",
+  project_not_found: "That folder does not contain an AMIX project.",
+  project_database_invalid: "That folder is not a usable AMIX project.",
+  schema_mismatch: "This project database cannot be opened in the requested mode.",
+  invalid_project_path: "The selected folder could not be used.",
+  invalid_request: "That request was not valid.",
+  engine_shutting_down: "The engine is shutting down.",
+  project_read_only: "This project is open read-only.",
+  media_missing: "A media file for this project is missing.",
+  unknown_job: "That job is no longer available.",
+  invalid_job_state: "That job cannot be changed in its current state.",
+  job_spec_rejected: "The job request was rejected.",
+  internal_error: "The engine hit an unexpected error.",
+  blank_name: "Enter a project name.",
+  invalid_name: "Use a project name without slashes.",
+  invalid_parent: "Choose a folder for the new project.",
+};
+
+export function mapEngineFailure(status: number, body: string): EngineFailure {
+  const code = readCode(body);
+  const message = MESSAGES[code] ?? "The engine could not complete that action.";
+  return { code: code || `http_${status}`, message };
+}
+
+function readCode(body: string): string {
+  try {
+    const parsed = JSON.parse(body) as { error?: { code?: unknown } };
+    const code = parsed.error?.code;
+    if (typeof code === "string" && /^[a-z0-9_]+$/.test(code)) {
+      return code;
+    }
+  } catch {
+    return "";
+  }
+  return "";
+}

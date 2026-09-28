@@ -1,0 +1,258 @@
+:root {
+  color-scheme: dark;
+  --bg: #141618;
+  --bg-raised: #1c1f23;
+  --panel: #22262b;
+  --panel-strong: #2a2f35;
+  --border: #3a4048;
+  --text: #e8eaee;
+  --text-secondary: #a7adb6;
+  --accent: #7aa2ff;
+  --accent-ink: #0e1424;
+  --danger: #e07a7a;
+  --success: #73c492;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --radius: 8px;
+  --font-sm: 12px;
+  --font-md: 14px;
+  --font-lg: 18px;
+  --font-xl: 28px;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: var(--font-md);
+  background: var(--bg);
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: var(--panel-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: 52px minmax(0, 1fr) 36px;
+  height: 100%;
+}
+
+.topbar,
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-4);
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.statusbar {
+  border-bottom: 0;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+}
+
+.brand {
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+
+.project-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-body {
+  display: grid;
+  grid-template-columns: minmax(160px, 200px) minmax(0, 1fr) minmax(220px, 300px);
+  min-height: 0;
+}
+
+.nav,
+.inspector,
+.workspace {
+  min-height: 0;
+  overflow: auto;
+}
+
+.nav,
+.inspector {
+  background: var(--panel);
+  padding: var(--space-3);
+}
+
+.nav {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.nav button {
+  text-align: left;
+}
+
+.nav button[aria-current="page"] {
+  border-color: var(--accent);
+}
+
+.workspace {
+  padding: var(--space-5);
+}
+
+.inspector {
+  border-left: 1px solid var(--border);
+}
+
+h1,
+h2 {
+  font-weight: 600;
+  margin: 0 0 var(--space-3);
+}
+
+h1 {
+  font-size: var(--font-xl);
+}
+
+h2 {
+  font-size: var(--font-lg);
+}
+
+.muted {
+  color: var(--text-secondary);
+}
+
+.start-screen,
+.gate {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+}
+
+.card {
+  width: min(440px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.banner {
+  background: #3a2424;
+  border: 1px solid var(--danger);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.job {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+  background: var(--bg-raised);
+}
+
+.job-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.meter {
+  height: 6px;
+  background: var(--bg);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 45%);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+}
+
+label {
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+input[type="text"] {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+
+.diagnostics {
+  margin-top: var(--space-4);
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+details {
+  margin-top: var(--space-3);
+}
