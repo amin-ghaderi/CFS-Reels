@@ -65,3 +65,66 @@ class ErrorBody(_Model):
 
 class ErrorResponse(_Model):
     error: ErrorBody
+
+
+class LinkMediaRequest(_Model):
+    path: str = Field(min_length=1)
+    role: str = "master"
+
+
+class RelinkMediaRequest(_Model):
+    path: str = Field(min_length=1)
+
+
+class WordTextRequest(_Model):
+    text: str = Field(min_length=1, max_length=500)
+
+
+class MediaResponse(_Model):
+    asset_id: str
+    role: str
+    display_name: str
+    location_kind: str
+    relative_path: str | None
+    external_path: str | None
+    byte_size: int | None
+    duration_us: int | None
+    width: int | None
+    height: int | None
+    fps_num: int | None
+    fps_den: int | None
+    status: str
+
+
+class MediaStatusResponse(_Model):
+    asset_id: str
+    status: str
+
+
+class TranscriptResponse(_Model):
+    active: bool
+    transcript_id: str | None = None
+    analysis_run_id: str | None = None
+    media_asset_id: str | None = None
+    language: str | None = None
+    word_count: int | None = None
+
+
+class TranscriptWordResponse(_Model):
+    word_id: str
+    sequence: int
+    effective_text: str
+    machine_text: str
+    start_us: int
+    end_us: int
+    confidence: float | None
+    text_corrected: bool
+    participant_id: str | None
+    participant_name: str | None
+
+
+class TranscriptWordPage(_Model):
+    offset: int
+    limit: int
+    word_count: int
+    words: list[TranscriptWordResponse]

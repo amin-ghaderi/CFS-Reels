@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { canCancel, canRetry, isTerminal, progressPercent } from "./jobs";
+import { canCancel, canRetry, isTerminal, orderJobs, progressPercent } from "./jobs";
+import type { JobInfo } from "./types";
 
 describe("job display helpers", () => {
   it("converts basis points for display only", () => {
@@ -21,4 +22,36 @@ describe("job display helpers", () => {
     expect(canRetry("INTERRUPTED")).toBe(true);
     expect(isTerminal("QUEUED")).toBe(false);
   });
+
+  it("lists active jobs before terminal history", () => {
+    const jobs = [
+      job("old-done", "SUCCEEDED", "2020-01-01T00:00:00Z"),
+      job("running", "RUNNING", "2020-01-01T00:00:02Z"),
+      job("newer-done", "FAILED", "2020-01-01T00:00:03Z"),
+      job("queued", "QUEUED", "2020-01-01T00:00:01Z"),
+    ];
+    expect(orderJobs(jobs).map((item) => item.job_id)).toEqual(["running", "queued", "newer-done", "old-done"]);
+  });
 });
+
+function job(id: string, status: JobInfo["status"], createdAt: string): JobInfo {
+  return {
+    job_id: id,
+    project_id: "p",
+    media_asset_id: null,
+    kind: "project_integrity_check",
+    status,
+    progress_bp: 0,
+    spec: {},
+    result: null,
+    error_code: null,
+    error_message: null,
+    created_at: createdAt,
+    started_at: null,
+    finished_at: null,
+    cancel_requested: false,
+    attempt: 1,
+    resumed_from_job_id: null,
+    interrupt_reason: null,
+  };
+}

@@ -19,3 +19,8 @@ ANALYSIS_KINDS = frozenset({
 
 WORD_TEXT = "word_text"
 SPEAKER_OVERRIDE = "speaker_override"
+
+# Domain roles from the media model. Not a filename taxonomy.
+MEDIA_ROLES = frozenset({"master", "proxy", "audio_extract", "export", "sidecar"})
+DEFAULT_MEDIA_ROLE = "master"
+WORD_PAGE_LIMIT = 400

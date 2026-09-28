@@ -65,3 +65,48 @@ export interface EngineFailure {
   code: string;
   message: string;
 }
+
+export interface MediaAsset {
+  asset_id: string;
+  role: string;
+  display_name: string;
+  location_kind: string;
+  relative_path: string | null;
+  external_path: string | null;
+  byte_size: number | null;
+  duration_us: number | null;
+  width: number | null;
+  height: number | null;
+  fps_num: number | null;
+  fps_den: number | null;
+  status: "present" | "missing";
+}
+
+export interface ActiveTranscript {
+  active: boolean;
+  transcript_id: string | null;
+  analysis_run_id: string | null;
+  media_asset_id: string | null;
+  language: string | null;
+  word_count: number | null;
+}
+
+export interface TranscriptWord {
+  word_id: string;
+  sequence: number;
+  effective_text: string;
+  machine_text: string;
+  start_us: number;
+  end_us: number;
+  confidence: number | null;
+  text_corrected: boolean;
+  participant_id: string | null;
+  participant_name: string | null;
+}
+
+export interface TranscriptWordPage {
+  offset: number;
+  limit: number;
+  word_count: number;
+  words: TranscriptWord[];
+}

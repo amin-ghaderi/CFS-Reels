@@ -20,6 +20,7 @@ from amix.amix_engine.service.errors import (
     UnknownProjectHandle,
 )
 from amix.amix_engine.service.runtime import EngineRuntime, resolve_project_path
+from amix.amix_engine.service.workspace import register_workspace_routes
 from amix.amix_engine.service.schemas import (
     CreateJobRequest,
     CreateProjectRequest,
@@ -34,6 +35,7 @@ from amix.amix_engine.storage.errors import (
     InvalidJobState,
     JobSpecRejected,
     MediaMissing,
+    NoActiveTranscript,
     ProjectAlreadyLocked,
     ProjectDatabaseInvalid,
     SchemaMismatch,
@@ -128,6 +130,7 @@ def create_app(runtime: EngineRuntime) -> FastAPI:
         _authorize(request)
         return _call(lambda: _job_view(runtime.jobs.retry(runtime.session(handle).store, job_id)))
 
+    register_workspace_routes(app, runtime, _authorize, _call)
     return app
 
 
@@ -174,12 +177,18 @@ def _call(fn: Callable):
         raise ApiError(400, "unsupported_job_kind", "unsupported job kind") from exc
     except EngineNotAccepting as exc:
         raise ApiError(503, "engine_shutting_down", "engine is not accepting jobs") from exc
+    except NoActiveTranscript as exc:
+        raise ApiError(404, "no_active_transcript", "no transcript is available for this media") from exc
     except ProjectDatabaseInvalid as exc:
         message = str(exc)
         if "read-only" in message:
             raise ApiError(409, "project_read_only", "project is open read-only") from exc
         if "missing project database" in message:
             raise ApiError(404, "project_not_found", "project database was not found") from exc
+        if message.startswith("unknown media asset"):
+            raise ApiError(404, "unknown_media_asset", "unknown media asset") from exc
+        if message.startswith("unknown word"):
+            raise ApiError(404, "unknown_word", "unknown word") from exc
         raise ApiError(400, "project_database_invalid", "project database is invalid") from exc
 
 

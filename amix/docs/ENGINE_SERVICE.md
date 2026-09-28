@@ -116,8 +116,16 @@ Worker threads only orchestrate. Later heavy media and model stages are
 expected to run as subprocesses or specialized workers, not as GIL-bound
 inference on this pool.
 
+## Media and transcript reads
+
+Authenticated project routes list media, link or relink an external file, report
+present or missing, and read the active transcript in pages. Word text corrections
+are an overlay. Details are in
+[MEDIA_TRANSCRIPT_WORKSPACE.md](MEDIA_TRANSCRIPT_WORKSPACE.md). These routes do
+not probe, copy, or transcribe media.
+
 ## Not implemented
 
-Desktop shell, React, Tauri, Whisper, FFmpeg rendering, video decode, LLM
+Whisper, FFmpeg rendering, video decode, LLM
 providers, model manager, reels, conversation mapping, cloud sync, WebSockets,
 and distributed workers.

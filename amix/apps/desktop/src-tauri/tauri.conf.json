@@ -14,10 +14,10 @@
       {
         "label": "main",
         "title": "AMIX",
-        "width": 1400,
-        "height": 900,
-        "minWidth": 960,
-        "minHeight": 640,
+        "width": 1200,
+        "height": 720,
+        "minWidth": 800,
+        "minHeight": 520,
         "resizable": true
       }
     ],

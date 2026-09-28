@@ -34,6 +34,37 @@ export function progressPercent(progressBp: number): number {
   return Math.floor(progressBp / 100);
 }
 
+export function jobStatusLabel(status: JobStatus): string {
+  switch (status) {
+    case "QUEUED":
+      return "Queued";
+    case "RUNNING":
+      return "Running";
+    case "SUCCEEDED":
+      return "Succeeded";
+    case "FAILED":
+      return "Failed";
+    case "CANCEL_REQUESTED":
+      return "Cancel requested";
+    case "CANCELLED":
+      return "Cancelled";
+    case "INTERRUPTED":
+      return "Interrupted";
+  }
+}
+
+/** Active work stays ahead of history. Persisted order is unchanged. */
+export function orderJobs<T extends { status: JobStatus; created_at: string; job_id: string }>(jobs: readonly T[]): T[] {
+  const newest = (left: T, right: T) => {
+    const byTime = right.created_at.localeCompare(left.created_at);
+    return byTime === 0 ? right.job_id.localeCompare(left.job_id) : byTime;
+  };
+  return [
+    ...jobs.filter((job) => !isTerminal(job.status)).sort(newest),
+    ...jobs.filter((job) => isTerminal(job.status)).sort(newest),
+  ];
+}
+
 export function jobTitle(kind: string): string {
   if (kind === "project_integrity_check") {
     return "Project integrity check";

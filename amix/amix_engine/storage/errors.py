@@ -17,6 +17,10 @@ class MediaMissing(FileNotFoundError):
     """The asset's media file is not at the stored location."""
 
 
+class NoActiveTranscript(LookupError):
+    """The media asset has no active transcript analysis."""
+
+
 class UnknownJob(RuntimeError):
     """No processing job has this id in the open project."""
 

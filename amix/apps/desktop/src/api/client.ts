@@ -1,7 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import { mapEngineFailure } from "./errors";
-import type { EngineStatus, JobInfo, ProjectInfo } from "./types";
+import type {
+  ActiveTranscript,
+  EngineStatus,
+  JobInfo,
+  MediaAsset,
+  ProjectInfo,
+  TranscriptWord,
+  TranscriptWordPage,
+} from "./types";
 
 interface RawResponse {
   status: number;
@@ -62,6 +70,44 @@ export async function cancelJob(handle: string, jobId: string): Promise<JobInfo>
 
 export async function retryJob(handle: string, jobId: string): Promise<JobInfo> {
   return request("POST", `/v1/projects/${handle}/jobs/${jobId}/retry`);
+}
+
+export async function listMedia(handle: string): Promise<MediaAsset[]> {
+  return request("GET", `/v1/projects/${handle}/media`);
+}
+
+export async function linkMedia(handle: string, path: string, role = "master"): Promise<MediaAsset> {
+  return request("POST", `/v1/projects/${handle}/media`, { path, role });
+}
+
+export async function relinkMedia(handle: string, assetId: string, path: string): Promise<MediaAsset> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/relink`, { path });
+}
+
+export async function activeTranscript(handle: string, assetId: string): Promise<ActiveTranscript> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/transcript`);
+}
+
+export async function transcriptWords(
+  handle: string,
+  assetId: string,
+  offset: number,
+  limit: number,
+): Promise<TranscriptWordPage> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/transcript/words/${offset}/${limit}`);
+}
+
+export async function correctWordText(
+  handle: string,
+  assetId: string,
+  wordId: string,
+  text: string,
+): Promise<TranscriptWord> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/words/${wordId}/text`, { text });
+}
+
+export async function clearWordText(handle: string, assetId: string, wordId: string): Promise<TranscriptWord> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/words/${wordId}/text/clear`);
 }
 
 async function request<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {

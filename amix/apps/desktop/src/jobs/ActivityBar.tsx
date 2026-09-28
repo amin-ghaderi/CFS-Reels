@@ -1,0 +1,156 @@
+import { useEffect, useState } from "react";
+
+import { cancelJob, createJob, listJobs, retryJob } from "../api/client";
+import { asFailure, jobProblemMessage } from "../api/errors";
+import { canCancel, canRetry, isTerminal, jobStatusLabel, jobTitle, orderJobs, progressPercent } from "../api/jobs";
+import type { EngineFailure, JobInfo, ProjectInfo } from "../api/types";
+import { missingCount } from "../media/present";
+import { useProjectData } from "../project/ProjectData";
+
+const POLL_MS = 1000;
+const BACKOFF_MS = 2000;
+
+export function ActivityBar({
+  project,
+  onNotice,
+}: {
+  project: ProjectInfo;
+  onNotice: (notice: EngineFailure | null) => void;
+}) {
+  const media = useProjectData();
+  const [jobs, setJobs] = useState<JobInfo[]>([]);
+  const [open, setOpen] = useState(false);
+  const [token, setToken] = useState(0);
+  const ordered = orderJobs(jobs);
+  const active = jobs.filter((job) => !isTerminal(job.status)).length;
+  const failed = jobs.filter((job) => job.status === "FAILED").length;
+  const missing = missingCount(media.assets);
+  const summary = active > 0 ? `${active} running` : failed > 0 ? `${failed} failed` : "No active job";
+
+  useEffect(() => {
+    let stop = false;
+    let timer = 0;
+    const tick = async (delay: number) => {
+      try {
+        const next = await listJobs(project.handle);
+        if (stop) {
+          return;
+        }
+        setJobs(next);
+        if (next.some((job) => !isTerminal(job.status))) {
+          timer = window.setTimeout(() => void tick(POLL_MS), delay);
+        }
+      } catch (error) {
+        if (!stop) {
+          onNotice(asFailure(error));
+          timer = window.setTimeout(() => void tick(BACKOFF_MS), BACKOFF_MS);
+        }
+      }
+    };
+    void tick(POLL_MS);
+    return () => {
+      stop = true;
+      window.clearTimeout(timer);
+    };
+  }, [project.handle, token]);
+
+  async function runIntegrity() {
+    onNotice(null);
+    try {
+      await createJob(project.handle, "project_integrity_check");
+      setOpen(true);
+      setToken((value) => value + 1);
+    } catch (error) {
+      onNotice(asFailure(error));
+    }
+  }
+
+  async function onCancel(jobId: string) {
+    try {
+      await cancelJob(project.handle, jobId);
+      setToken((value) => value + 1);
+    } catch (error) {
+      onNotice(asFailure(error));
+    }
+  }
+
+  async function onRetry(jobId: string) {
+    try {
+      await retryJob(project.handle, jobId);
+      setOpen(true);
+      setToken((value) => value + 1);
+    } catch (error) {
+      onNotice(asFailure(error));
+    }
+  }
+
+  return (
+    <>
+      {open ? (
+        <section className="activity" aria-label="Activity">
+          <div className="toolbar">
+            <h2>Activity</h2>
+            <button type="button" onClick={() => void runIntegrity()} disabled={project.read_only}>
+              Check project
+            </button>
+            <button type="button" onClick={() => setOpen(false)}>
+              Hide
+            </button>
+          </div>
+          {ordered.length === 0 ? <p className="muted">No jobs yet.</p> : null}
+          <ul className="job-list">
+            {ordered.map((job) => (
+              <li key={job.job_id} className="job">
+                <div className="job-row">
+                  <strong>{jobTitle(job.kind)}</strong>
+                  <span>{jobStatusLabel(job.status)}</span>
+                </div>
+                <div className="meter" aria-hidden="true">
+                  <span style={{ width: `${progressPercent(job.progress_bp)}%` }} />
+                </div>
+                <p className="muted numeric">
+                  Attempt {job.attempt} · {progressPercent(job.progress_bp)}%
+                </p>
+                {job.error_code || job.error_message ? <p>{jobProblemMessage(job.error_code)}</p> : null}
+                {import.meta.env.DEV && job.error_message ? (
+                  <details>
+                    <summary>Details</summary>
+                    <div>{job.error_message}</div>
+                  </details>
+                ) : null}
+                {canCancel(job.status) || canRetry(job.status) ? (
+                  <div className="actions">
+                    {canCancel(job.status) ? (
+                      <button type="button" onClick={() => void onCancel(job.job_id)}>
+                        Cancel
+                      </button>
+                    ) : null}
+                    {canRetry(job.status) ? (
+                      <button type="button" onClick={() => void onRetry(job.job_id)}>
+                        Retry
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      <footer className="statusbar">
+        <span>Engine ready</span>
+        <span>{project.read_only ? "Read-only project" : "Project open"}</span>
+        <span>
+          {missing > 0 ? `${missing} media missing` : media.assets.length === 0 ? "No media" : "Media available"}
+        </span>
+        <button type="button" className="status-button" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+          {summary}
+        </button>
+        <span className="live" aria-live="polite">
+          {summary}
+          {missing > 0 ? `, ${missing} media missing` : ""}
+        </span>
+      </footer>
+    </>
+  );
+}

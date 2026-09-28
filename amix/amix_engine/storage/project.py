@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sqlalchemy import func, select, text
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from amix.amix_engine import __version__
@@ -35,6 +35,7 @@ from amix.amix_engine.storage.database import create_project_engine
 from amix.amix_engine.storage.errors import (
     InvalidJobState,
     MediaMissing,
+    NoActiveTranscript,
     ProjectDatabaseInvalid,
     SchemaMismatch,
 )
@@ -173,6 +174,29 @@ class StoredWord:
     start_us: int
     end_us: int
     confidence: float | None
+
+
+@dataclass(frozen=True)
+class ActiveTranscript:
+    transcript_id: str
+    analysis_run_id: str
+    media_asset_id: str
+    language: str | None
+    word_count: int
+
+
+@dataclass(frozen=True)
+class TranscriptWordView:
+    word_id: str
+    sequence: int
+    machine_text: str
+    effective_text: str
+    start_us: int
+    end_us: int
+    confidence: float | None
+    text_corrected: bool
+    participant_id: str | None
+    participant_name: str | None
 
 
 class ProjectStore:
@@ -540,6 +564,20 @@ class ProjectStore:
         path = self.resolve_media(asset_id)
         return "present" if path.is_file() else "missing"
 
+    def relink_external(self, asset_id: str, external_path: str, *, byte_size: int, display_name: str) -> StoredMedia:
+        """Point the same asset at a new external file. Analysis rows stay put."""
+        self._require_write()
+        with self._session() as session:
+            row = self._asset(session, asset_id)
+            row.location_kind = "external"
+            row.external_path = external_path
+            row.relative_path = None
+            row.byte_size = byte_size
+            row.display_name = display_name
+            session.commit()
+            session.refresh(row)
+            return _media(row)
+
     def require_media(self, asset_id: str) -> Path:
         path = self.resolve_media(asset_id)
         if not path.is_file():
@@ -684,6 +722,142 @@ class ProjectStore:
 
     def correct_word_text(self, word_id: str, text_value: str, *, scope_id: str) -> None:
         self._write_correction(WORD_TEXT, word_id, scope_id, text_value)
+
+    def clear_word_text(self, word_id: str) -> None:
+        """Drop the text overlay. Machine word text is left as stored."""
+        self._require_write()
+        with self._session() as session:
+            row = session.get(WordRow, word_id)
+            if row is None:
+                raise ProjectDatabaseInvalid(f"unknown word {word_id}")
+            machine = row.text
+            session.execute(
+                delete(ManualCorrectionRow).where(
+                    ManualCorrectionRow.kind == WORD_TEXT,
+                    ManualCorrectionRow.target_id == word_id,
+                )
+            )
+            session.commit()
+            session.expire_all()
+            if session.get(WordRow, word_id).text != machine:
+                raise ProjectDatabaseInvalid("clearing a correction rewrote machine text")
+
+    def active_transcript(self, asset_id: str) -> ActiveTranscript | None:
+        with self._session() as session:
+            self._asset(session, asset_id)
+            active = session.get(ActiveAnalysisRow, (asset_id, "transcript"))
+            if active is None:
+                return None
+            transcript = session.scalar(
+                select(TranscriptRow).where(TranscriptRow.analysis_run_id == active.analysis_run_id)
+            )
+            if transcript is None:
+                raise ProjectDatabaseInvalid(f"no transcript for run {active.analysis_run_id}")
+            count = int(session.scalar(
+                select(func.count()).select_from(WordRow).where(WordRow.transcript_id == transcript.id)
+            ) or 0)
+            return ActiveTranscript(
+                transcript.id,
+                active.analysis_run_id,
+                asset_id,
+                transcript.language,
+                count,
+            )
+
+    def page_active_words(self, asset_id: str, offset: int, limit: int) -> tuple[ActiveTranscript, list[TranscriptWordView]]:
+        if offset < 0 or limit < 1:
+            raise ValueError("invalid word page")
+        described = self.active_transcript(asset_id)
+        if described is None:
+            raise NoActiveTranscript(asset_id)
+        with self._session() as session:
+            words = session.scalars(
+                select(WordRow)
+                .where(WordRow.transcript_id == described.transcript_id)
+                .order_by(WordRow.sequence, WordRow.id)
+                .offset(offset)
+                .limit(limit)
+            ).all()
+            return described, self._word_views(session, asset_id, words)
+
+    def active_word_view(self, asset_id: str, word_id: str) -> TranscriptWordView:
+        described = self.active_transcript(asset_id)
+        if described is None:
+            raise NoActiveTranscript(asset_id)
+        with self._session() as session:
+            word = session.get(WordRow, word_id)
+            if word is None or word.transcript_id != described.transcript_id:
+                raise ProjectDatabaseInvalid(f"unknown word {word_id}")
+            return self._word_views(session, asset_id, [word])[0]
+
+    def _word_views(self, session: Session, asset_id: str, words: list[WordRow]) -> list[TranscriptWordView]:
+        ids = [word.id for word in words]
+        if not ids:
+            return []
+        text_overrides = {
+            row.target_id: row.value
+            for row in session.scalars(
+                select(ManualCorrectionRow).where(
+                    ManualCorrectionRow.kind == WORD_TEXT,
+                    ManualCorrectionRow.target_id.in_(ids),
+                )
+            )
+        }
+        assignment_run = session.get(ActiveAnalysisRow, (asset_id, PARTICIPANT_ASSIGNMENT))
+        assigned: dict[str, str | None] = {}
+        overrides: dict[str, str | None] = {}
+        if assignment_run is not None:
+            assigned = {
+                row.word_id: row.participant_id
+                for row in session.scalars(
+                    select(SpeakerAssignmentRow).where(
+                        SpeakerAssignmentRow.analysis_run_id == assignment_run.analysis_run_id,
+                        SpeakerAssignmentRow.word_id.in_(ids),
+                    )
+                )
+            }
+            overrides = {
+                row.target_id: row.value
+                for row in session.scalars(
+                    select(ManualCorrectionRow).where(
+                        ManualCorrectionRow.kind == SPEAKER_OVERRIDE,
+                        ManualCorrectionRow.target_id.in_(ids),
+                    )
+                )
+            }
+        participant_ids = {
+            value
+            for value in [*assigned.values(), *overrides.values()]
+            if value
+        }
+        names = {}
+        if participant_ids:
+            names = {
+                row.id: row.display_name
+                for row in session.scalars(
+                    select(ParticipantRow).where(ParticipantRow.id.in_(participant_ids))
+                )
+            }
+        views = []
+        for word in words:
+            corrected = word.id in text_overrides and text_overrides[word.id] is not None
+            effective = text_overrides[word.id] if corrected else word.text
+            participant_id = None
+            if assignment_run is not None:
+                participant_id = overrides[word.id] if word.id in overrides else assigned.get(word.id)
+            views.append(TranscriptWordView(
+                word.id,
+                word.sequence,
+                word.text,
+                effective if effective is not None else word.text,
+                word.start_us,
+                word.end_us,
+                word.confidence,
+                corrected,
+                participant_id,
+                None if not participant_id else names.get(participant_id),
+            ))
+        return views
 
     def machine_word_text(self, word_id: str) -> str:
         with self._session() as session:

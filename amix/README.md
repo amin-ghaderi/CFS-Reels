@@ -3,8 +3,9 @@
 AMIX is a local-first, cross-platform intelligent video editing platform for
 long-form conversational video.
 
-Current status: Phase 5 desktop shell, on top of the Phase 4 local engine service,
-the Phase 3 project store, and the Phase 2 deterministic engine.
+Current status: Phase 6 media and transcript workspace, on top of the Phase 5
+desktop shell, the Phase 4 local engine service, the Phase 3 project store,
+and the Phase 2 deterministic engine.
 
 `amix_engine` imports the CFS03 49–59 minute fixture and recomputes word
 assignments, speaking turns, overlap regions (from saved lip activity, not
@@ -20,6 +21,8 @@ the database. See [docs/STORAGE.md](docs/STORAGE.md).
 A local FastAPI service on `127.0.0.1` opens those projects and runs in-process
 jobs. See [docs/ENGINE_SERVICE.md](docs/ENGINE_SERVICE.md). The desktop shell
 in `apps/desktop` starts that service. See [docs/DESKTOP_FOUNDATION.md](docs/DESKTOP_FOUNDATION.md).
+The Media and Transcript workspaces are described in
+[docs/MEDIA_TRANSCRIPT_WORKSPACE.md](docs/MEDIA_TRANSCRIPT_WORKSPACE.md).
 
 ```
 amix/.venv/Scripts/python -m amix.amix_engine.service
@@ -69,6 +72,6 @@ The suite does not use the network, the source video, FFmpeg, Whisper, or OpenCV
 
 ## Not implemented yet
 
-Desktop editing workspaces, rendering, transcription, diarization from audio, face detection,
+Rendering, transcription, diarization from audio, face detection,
 cloud or local LLM providers, Reel editing, conversation maps, and the global
 application database.

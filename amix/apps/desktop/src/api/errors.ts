@@ -23,6 +23,13 @@ const MESSAGES: Record<string, string> = {
   blank_name: "Enter a project name.",
   invalid_name: "Use a project name without slashes.",
   invalid_parent: "Choose a folder for the new project.",
+  unknown_media_asset: "That media file is no longer in this project.",
+  invalid_media_path: "Choose an existing media file.",
+  invalid_media_role: "That media role is not recognized.",
+  no_active_transcript: "No transcript is available for this media yet.",
+  unknown_word: "That word is no longer in the active transcript.",
+  invalid_word_text: "Enter the corrected word.",
+  invalid_word_page: "That transcript page is out of range.",
 };
 
 export function mapEngineFailure(status: number, body: string): EngineFailure {
@@ -45,6 +52,19 @@ function readCode(body: string): string {
 }
 
 /** User-facing job text. Raw engine exception text is not part of this sentence. */
+export function asFailure(error: unknown): EngineFailure {
+  if (typeof error === "string" && error.trim() && !/authorization|bearer\s+/i.test(error)) {
+    return { code: "desktop_error", message: error };
+  }
+  if (error && typeof error === "object" && "code" in error && "message" in error) {
+    const failure = error as EngineFailure;
+    if (typeof failure.code === "string" && typeof failure.message === "string") {
+      return failure;
+    }
+  }
+  return { code: "desktop_error", message: "The desktop could not complete that action." };
+}
+
 export function jobProblemMessage(code: string | null): string {
   if (code && MESSAGES[code]) {
     return MESSAGES[code];
