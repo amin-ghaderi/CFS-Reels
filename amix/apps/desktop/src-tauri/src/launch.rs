@@ -10,15 +10,22 @@ use crate::ready::{parse_ready_line, ReadyRecord};
 const READY_TIMEOUT: Duration = Duration::from_secs(20);
 
 pub struct EngineChild {
-    child: Option<Child>,
+    pid: u32,
     pub record: ReadyRecord,
+    /// Fires once when the owned process has been reaped. Taken by the session watcher.
+    exit_rx: Option<mpsc::Receiver<()>>,
+    waiter: Option<thread::JoinHandle<()>>,
     stdout_thread: Option<thread::JoinHandle<()>>,
     stderr_thread: Option<thread::JoinHandle<()>>,
 }
 
 impl EngineChild {
     pub fn process_id(&self) -> u32 {
-        self.child.as_ref().map(Child::id).unwrap_or(0)
+        self.pid
+    }
+
+    pub fn take_exit(&mut self) -> Option<mpsc::Receiver<()>> {
+        self.exit_rx.take()
     }
 }
 
@@ -84,9 +91,17 @@ pub fn spawn_development_engine() -> Result<EngineChild, String> {
     if let Ok(mut slot) = secret.lock() {
         *slot = Some(record.token.clone());
     }
+    let pid = child.id();
+    let (exit_tx, exit_rx) = mpsc::channel();
+    let waiter = Some(thread::spawn(move || {
+        let _ = child.wait();
+        let _ = exit_tx.send(());
+    }));
     Ok(EngineChild {
-        child: Some(child),
+        pid,
         record,
+        exit_rx: Some(exit_rx),
+        waiter,
         stdout_thread,
         stderr_thread,
     })
@@ -98,8 +113,12 @@ pub fn stop_engine(engine: EngineChild) {
 
 impl Drop for EngineChild {
     fn drop(&mut self) {
-        if let Some(mut child) = self.child.take() {
-            terminate(&mut child);
+        kill_process_tree(self.pid);
+        if let Some(exit_rx) = self.exit_rx.take() {
+            let _ = exit_rx.recv_timeout(Duration::from_secs(5));
+        }
+        if let Some(waiter) = self.waiter.take() {
+            let _ = waiter.join();
         }
         if let Some(thread) = self.stdout_thread.take() {
             let _ = thread.join();
@@ -107,6 +126,33 @@ impl Drop for EngineChild {
         if let Some(thread) = self.stderr_thread.take() {
             let _ = thread.join();
         }
+    }
+}
+
+/// Stops the engine process and every child it spawned. Does not wait; the waiter thread reaps it.
+pub fn kill_process_tree(pid: u32) {
+    if pid == 0 {
+        return;
+    }
+    #[cfg(unix)]
+    {
+        let pid = pid as i32;
+        unsafe {
+            libc::kill(-pid, libc::SIGTERM);
+        }
+        thread::sleep(Duration::from_millis(200));
+        unsafe {
+            libc::kill(-pid, libc::SIGKILL);
+        }
+    }
+    #[cfg(windows)]
+    {
+        let _ = Command::new("taskkill")
+            .args(["/PID", &pid.to_string(), "/T", "/F"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
     }
 }
 

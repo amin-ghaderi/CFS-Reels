@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use amix_desktop_lib::launch::{self, stop_engine};
 use amix_desktop_lib::paths::join_project_path;
-use amix_desktop_lib::transport::engine_http;
+use amix_desktop_lib::transport::{engine_http, HttpTimeouts};
 
 #[test]
 fn development_engine_serves_a_project_and_releases_its_lock() {
@@ -17,7 +17,7 @@ fn development_engine_serves_a_project_and_releases_its_lock() {
     assert_eq!(engine.record.host, "127.0.0.1");
     assert!(port > 0);
 
-    let health = engine_http(port, &token, "GET", "/v1/health", None, Duration::from_secs(5))
+    let health = engine_http(port, &token, "GET", "/v1/health", None, HttpTimeouts::health())
         .expect("health");
     assert_eq!(health.status, 200);
     assert!(health.body.contains("amix-engine"));
@@ -33,7 +33,7 @@ fn development_engine_serves_a_project_and_releases_its_lock() {
         "POST",
         "/v1/projects/create",
         Some(&serde_json::json!({ "path": project, "name": "Smoke" }).to_string()),
-        Duration::from_secs(15),
+        HttpTimeouts::standard(),
     )
     .expect("create");
     assert_eq!(created.status, 200, "{}", created.body);
@@ -49,7 +49,7 @@ fn development_engine_serves_a_project_and_releases_its_lock() {
         "POST",
         &format!("/v1/projects/{handle}/jobs"),
         Some(r#"{"kind":"project_integrity_check","spec":{}}"#),
-        Duration::from_secs(15),
+        HttpTimeouts::standard(),
     )
     .expect("job");
     assert_eq!(job.status, 200, "{}", job.body);
@@ -75,7 +75,7 @@ fn development_engine_serves_a_project_and_releases_its_lock() {
         "POST",
         &format!("/v1/projects/{handle}/jobs/{job_id}/cancel"),
         None,
-        Duration::from_secs(5),
+        HttpTimeouts::health(),
     )
     .expect("cancel");
     assert_eq!(cancel.status, 409, "{}", cancel.body);
@@ -87,7 +87,7 @@ fn development_engine_serves_a_project_and_releases_its_lock() {
         "POST",
         &format!("/v1/projects/{handle}/close"),
         None,
-        Duration::from_secs(5),
+        HttpTimeouts::close(),
     )
     .expect("close");
     assert_eq!(closed.status, 200, "{}", closed.body);
@@ -119,7 +119,7 @@ fn job_status(port: u16, token: &str, handle: &str, job_id: &str) -> String {
         "GET",
         &format!("/v1/projects/{handle}/jobs/{job_id}"),
         None,
-        Duration::from_secs(5),
+        HttpTimeouts::health(),
     )
     .expect("job status");
     json_string(&current.body, "status")

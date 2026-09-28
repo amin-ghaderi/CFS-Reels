@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mapEngineFailure } from "./errors";
+import { mapEngineFailure, jobProblemMessage } from "./errors";
 
 describe("mapEngineFailure", () => {
   it("maps stable engine codes to plain sentences", () => {
@@ -17,5 +17,14 @@ describe("mapEngineFailure", () => {
     const failure = mapEngineFailure(500, "not-json");
     expect(failure.message).toBe("The engine could not complete that action.");
     expect(failure.code).toBe("http_500");
+  });
+});
+
+describe("jobProblemMessage", () => {
+  it("does not surface raw engine exception text", () => {
+    const message = jobProblemMessage("handler_failed");
+    expect(message).toBe("The job did not finish.");
+    expect(message).not.toContain("Traceback");
+    expect(jobProblemMessage(null)).toBe("The job did not finish.");
   });
 });

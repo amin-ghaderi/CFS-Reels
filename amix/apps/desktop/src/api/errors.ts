@@ -19,6 +19,7 @@ const MESSAGES: Record<string, string> = {
   invalid_job_state: "That job cannot be changed in its current state.",
   job_spec_rejected: "The job request was rejected.",
   internal_error: "The engine hit an unexpected error.",
+  handler_failed: "The job did not finish.",
   blank_name: "Enter a project name.",
   invalid_name: "Use a project name without slashes.",
   invalid_parent: "Choose a folder for the new project.",
@@ -41,4 +42,12 @@ function readCode(body: string): string {
     return "";
   }
   return "";
+}
+
+/** User-facing job text. Raw engine exception text is not part of this sentence. */
+export function jobProblemMessage(code: string | null): string {
+  if (code && MESSAGES[code]) {
+    return MESSAGES[code];
+  }
+  return "The job did not finish.";
 }

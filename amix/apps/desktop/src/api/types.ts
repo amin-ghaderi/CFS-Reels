@@ -3,11 +3,25 @@
 export type EnginePhase = "STARTING" | "READY" | "FAILED" | "STOPPED";
 
 export interface EngineStatus {
+  generation: number;
   state: EnginePhase;
   message: string;
   host: string | null;
   port: number | null;
   version: string | null;
+  project: SessionProject | null;
+  notice: string | null;
+}
+
+/** Project session owned by this desktop process. The handle belongs to `generation`. */
+export interface SessionProject {
+  handle: string;
+  project_id: string;
+  name: string;
+  read_only: boolean;
+  schema_revision: string | null;
+  path: string;
+  generation: number;
 }
 
 export interface ProjectInfo {

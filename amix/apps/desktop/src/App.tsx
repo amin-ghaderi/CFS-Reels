@@ -1,19 +1,22 @@
 import { open } from "@tauri-apps/plugin-dialog";
-import { useEffect, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
+import { useEffect, useRef, useState } from "react";
 
 import {
   cancelJob,
   closeProject,
   createJob,
   createProject,
+  desktopSession,
   engineRetry,
-  engineStatus,
   joinProjectPath,
   listJobs,
   openProject,
   retryJob,
 } from "./api/client";
+import { jobProblemMessage } from "./api/errors";
 import { canCancel, canRetry, isTerminal, jobTitle, progressPercent } from "./api/jobs";
+import { projectInfo, visibleProject } from "./api/session";
 import type { EngineFailure, EngineStatus, JobInfo, ProjectInfo } from "./api/types";
 
 const DESTINATIONS = ["Media", "Transcript", "Conversation", "Multicam", "Reels", "Export"] as const;
@@ -29,35 +32,62 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [naming, setNaming] = useState<string | null>(null);
   const [pollToken, setPollToken] = useState(0);
+  const generationRef = useRef(0);
+
+  function applySession(session: EngineStatus) {
+    if (session.generation < generationRef.current) {
+      return;
+    }
+    generationRef.current = session.generation;
+    setEngine(session);
+    const current = visibleProject(session);
+    if (current) {
+      setProject(projectInfo(current));
+      setFolder(current.path);
+      setNotice((existing) => (existing?.code === "engine_session" ? null : existing));
+    } else {
+      setProject(null);
+      setFolder(null);
+      setJobs([]);
+      if (session.notice) {
+        setNotice({ code: "engine_session", message: session.notice });
+      }
+    }
+  }
 
   useEffect(() => {
+    let unlisten: (() => void) | undefined;
     let stop = false;
-    const tick = async () => {
-      try {
-        const status = await engineStatus();
+    void (async () => {
+      unlisten = await listen<EngineStatus>("amix-session", (event) => {
         if (!stop) {
-          setEngine(status);
+          applySession(event.payload);
         }
-        if (!stop && (status.state === "STARTING" || status.state === "STOPPED")) {
-          window.setTimeout(tick, 400);
-        }
-      } catch {
-        if (!stop) {
-          setEngine({
-            state: "FAILED",
-            message: "The desktop shell could not read engine status.",
-            host: null,
-            port: null,
-            version: null,
-          });
-        }
+      });
+      if (stop) {
+        unlisten();
+        return;
       }
-    };
-    void tick();
+      applySession(await desktopSession());
+    })().catch(() => {
+      if (!stop) {
+        setEngine({
+          generation: generationRef.current,
+          state: "FAILED",
+          message: "The desktop shell could not read engine status.",
+          host: null,
+          port: null,
+          version: null,
+          project: null,
+          notice: null,
+        });
+      }
+    });
     return () => {
       stop = true;
+      unlisten?.();
     };
-  }, [engine?.state]);
+  }, []);
 
   useEffect(() => {
     if (!project) {
@@ -90,7 +120,7 @@ export function App() {
 
   async function retryEngine() {
     setNotice(null);
-    setEngine(await engineRetry());
+    applySession(await engineRetry());
   }
 
   async function chooseCreate() {
@@ -110,15 +140,13 @@ export function App() {
     setNotice(null);
     try {
       const path = await joinProjectPath(naming, name);
-      const created = await createProject(path, name.trim());
-      setProject(created);
-      setFolder(path);
-      setJobs([]);
+      await createProject(path, name.trim());
       setNaming(null);
       setPollToken((value) => value + 1);
     } catch (error) {
       setNotice(asFailure(error));
     } finally {
+      applySession(await desktopSession());
       setBusy(false);
     }
   }
@@ -131,13 +159,12 @@ export function App() {
     }
     setBusy(true);
     try {
-      const opened = await openProject(selected);
-      setProject(opened);
-      setFolder(selected);
+      await openProject(selected);
       setPollToken((value) => value + 1);
     } catch (error) {
       setNotice(asFailure(error));
     } finally {
+      applySession(await desktopSession());
       setBusy(false);
     }
   }
@@ -150,12 +177,10 @@ export function App() {
     setNotice(null);
     try {
       await closeProject(project.handle);
-      setProject(null);
-      setFolder(null);
-      setJobs([]);
     } catch (error) {
       setNotice(asFailure(error));
     } finally {
+      applySession(await desktopSession());
       setBusy(false);
     }
   }
@@ -276,7 +301,13 @@ export function App() {
                 <p className="muted">
                   Attempt {job.attempt} · {progressPercent(job.progress_bp)}%
                 </p>
-                {job.error_message ? <p>{job.error_message}</p> : null}
+                {job.error_code || job.error_message ? <p>{jobProblemMessage(job.error_code)}</p> : null}
+                {import.meta.env.DEV && job.error_message ? (
+                  <details>
+                    <summary>Details</summary>
+                    <div>{job.error_message}</div>
+                  </details>
+                ) : null}
                 <div className="actions">
                   <button type="button" disabled={!canCancel(job.status)} onClick={() => void onCancel(job.job_id)}>
                     Cancel

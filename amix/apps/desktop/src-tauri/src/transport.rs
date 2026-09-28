@@ -26,13 +26,55 @@ pub fn validate_request(method: &str, path: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Finite connect and read limits for every engine call. Close is slower than a status read.
+#[derive(Clone, Copy, Debug)]
+pub struct HttpTimeouts {
+    pub connect: Duration,
+    pub read: Duration,
+}
+
+impl HttpTimeouts {
+    pub const CONNECT: Duration = Duration::from_secs(3);
+
+    pub fn standard() -> Self {
+        Self {
+            connect: Self::CONNECT,
+            read: Duration::from_secs(15),
+        }
+    }
+
+    pub fn close() -> Self {
+        Self {
+            connect: Self::CONNECT,
+            read: Duration::from_secs(8),
+        }
+    }
+
+    pub fn health() -> Self {
+        Self {
+            connect: Self::CONNECT,
+            read: Duration::from_secs(5),
+        }
+    }
+}
+
+pub fn timeouts_for(method: &str, path: &str) -> HttpTimeouts {
+    if method == "POST" && path.ends_with("/close") {
+        HttpTimeouts::close()
+    } else if path == "/v1/health" {
+        HttpTimeouts::health()
+    } else {
+        HttpTimeouts::standard()
+    }
+}
+
 pub fn engine_http(
     port: u16,
     token: &str,
     method: &str,
     path: &str,
     body: Option<&str>,
-    timeout: Duration,
+    timeouts: HttpTimeouts,
 ) -> Result<RawHttp, String> {
     validate_request(method, path)?;
     if port == 0 {
@@ -40,8 +82,8 @@ pub fn engine_http(
     }
     let url = format!("http://{LOOPBACK_HOST}:{port}{path}");
     let agent = ureq::AgentBuilder::new()
-        .timeout_connect(Duration::from_secs(3))
-        .timeout_read(timeout)
+        .timeout_connect(timeouts.connect)
+        .timeout_read(timeouts.read)
         .redirects(0)
         .build();
     let request = agent
@@ -105,5 +147,43 @@ mod tests {
         let redacted = redact(line, Some("session-token"));
         assert!(!redacted.contains("session-token"));
         assert!(!redacted.contains("Authorization"));
+    }
+
+    #[test]
+    fn close_uses_a_longer_read_timeout_than_health() {
+        assert!(timeouts_for("POST", "/v1/projects/abc/close").read > timeouts_for("GET", "/v1/health").read);
+        assert_eq!(timeouts_for("GET", "/v1/health").connect, HttpTimeouts::CONNECT);
+    }
+
+    #[test]
+    fn a_silent_peer_hits_the_read_timeout() {
+        use std::net::TcpListener;
+        use std::thread;
+        use std::time::Instant;
+
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        thread::spawn(move || {
+            if let Ok((mut stream, _)) = listener.accept() {
+                let _ = std::io::Read::read(&mut stream, &mut [0; 8]);
+                thread::sleep(Duration::from_secs(2));
+            }
+        });
+        let started = Instant::now();
+        let result = engine_http(
+            port,
+            "test-token",
+            "GET",
+            "/v1/health",
+            None,
+            HttpTimeouts {
+                connect: Duration::from_millis(300),
+                read: Duration::from_millis(200),
+            },
+        );
+        let elapsed = started.elapsed();
+        assert!(result.is_err());
+        assert!(elapsed < Duration::from_secs(2), "request blocked for {elapsed:?}");
+        assert!(elapsed >= Duration::from_millis(150));
     }
 }

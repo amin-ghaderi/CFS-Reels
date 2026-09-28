@@ -76,6 +76,24 @@ If that interpreter is missing, the window shows Engine unavailable and Retry en
 
 Connection states are `STARTING`, `READY`, `FAILED`, and `STOPPED`. Project actions stay hidden until `READY`.
 
+## Desktop session
+
+Rust is authoritative for the process-lifetime engine and project session. That state stays in memory. It is not written to disk, `localStorage`, or `project.sqlite`.
+
+Each Python process that reaches ready is one engine generation. A project handle belongs to that generation only. The snapshot (`desktop_session_snapshot`, and the `amix-session` event) carries the generation, engine phase, and the open project if there is one. It never carries the session token.
+
+On launch, and after a WebView reload, React hydrates from that snapshot. If this desktop process already has a project open, the screen restores it. React does not call project-open again.
+
+If the owned Python process exits unexpectedly, Rust marks the engine failed, drops the project session for that generation, and emits the snapshot. The old handle is not sent to the next process. Retry Engine starts a new generation and asks the user to reopen the project. A normal application exit increments the generation before the process is stopped, so that stop is not reported as a crash.
+
+A project close that returns `project_close_timeout` leaves the Rust project session in place. The engine still holds the lock.
+
+## Engine requests
+
+`engine_request` is an async Tauri command. The blocking `ureq` call runs on a worker, so a slow engine response does not freeze the window. Connect timeout is 3 seconds. Health reads use 5 seconds, ordinary reads 15 seconds, and project close 8 seconds.
+
+Job progress still uses REST polling. The session event is only for engine and project lifetime, not for job progress.
+
 ## Shutdown
 
 On exit the shell closes the current project through `POST /v1/projects/{handle}/close` when it still has a handle, then terminates the engine process. The close call has a few seconds to finish. The process is then stopped so the operating-system project lock is released. A new engine start also stops the previous process first.
@@ -100,11 +118,11 @@ The shell has a header, workspace navigation, an empty workspace, a job inspecto
 
 The only job action is `project_integrity_check`. Progress stays in basis points in the engine. The UI displays `progress_bp / 100` as a percent. Jobs are polled about once a second while a project is open and at least one job is non-terminal. Retry adds a new job row.
 
-Stable engine error codes are mapped to short sentences. The details disclosure shows the code only.
+Stable engine error codes are mapped to short sentences. Job rows show that sentence. A development build can also show the raw engine text inside the job's details. The alert details show the stable code.
 
 ## Tests
 
-- Rust: ready-record parsing, path joins, the loopback URL allowlist, and a development lifecycle test that creates a project, runs the integrity job, closes it, stops the process, and checks that the project lock can be taken again.
+- Rust: ready-record parsing, path joins, the loopback URL allowlist, session generation and crash recovery, a non-blocking request check, and a development lifecycle test that creates a project, runs the integrity job, closes it, stops the process, and checks that the project lock can be taken again.
 - Vitest: error-code mapping and progress/cancel/retry helpers.
 
 The Python suite is unchanged.

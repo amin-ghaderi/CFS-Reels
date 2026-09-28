@@ -12,10 +12,13 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(engine::EngineState::new())
         .setup(|app| {
+            app.state::<engine::EngineState>()
+                .attach_app(app.handle().clone());
             engine::schedule_start(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            engine::desktop_session_snapshot,
             engine::engine_status,
             engine::engine_retry,
             engine::engine_request,

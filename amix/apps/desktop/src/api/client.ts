@@ -8,8 +8,12 @@ interface RawResponse {
   body: string;
 }
 
+export async function desktopSession(): Promise<EngineStatus> {
+  return invoke<EngineStatus>("desktop_session_snapshot");
+}
+
 export async function engineStatus(): Promise<EngineStatus> {
-  return invoke<EngineStatus>("engine_status");
+  return desktopSession();
 }
 
 export async function engineRetry(): Promise<EngineStatus> {
