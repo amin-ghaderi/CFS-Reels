@@ -1,0 +1,101 @@
+{
+  "source_video": "data/inbox/Edited.mp4",
+  "source_duration_s": 9079.964399,
+  "raw_source_timestamps_used": false,
+  "reaction_timestamps_reused": false,
+  "turns_v3": "data/speakers/Edited.turns_v3.json",
+  "protected": [
+    {
+      "start": 0.0,
+      "end": 31.5,
+      "duration_s": 31.5,
+      "state": "PROTECTED_MASTER",
+      "reason": "INTRO",
+      "full_frame_mean": 36.54
+    },
+    {
+      "start": 3667.5,
+      "end": 3676.0,
+      "duration_s": 8.5,
+      "state": "PROTECTED_MASTER",
+      "reason": "FULLSCREEN_TEXT",
+      "full_frame_mean": 8.64
+    },
+    {
+      "start": 6260.5,
+      "end": 6284.0,
+      "duration_s": 23.5,
+      "state": "PROTECTED_MASTER",
+      "reason": "NON_PROGRAM_LAYOUT",
+      "full_frame_mean": 76.08
+    },
+    {
+      "start": 9072.0,
+      "end": 9079.964,
+      "duration_s": 7.964,
+      "state": "PROTECTED_MASTER",
+      "reason": "ENDING",
+      "full_frame_mean": 153.61
+    }
+  ],
+  "directable": [
+    {
+      "start": 31.5,
+      "end": 3667.5,
+      "duration_s": 3636.0,
+      "state": "DIRECTABLE_PROGRAM"
+    },
+    {
+      "start": 3676.0,
+      "end": 6260.5,
+      "duration_s": 2584.5,
+      "state": "DIRECTABLE_PROGRAM"
+    },
+    {
+      "start": 6284.0,
+      "end": 9072.0,
+      "duration_s": 2788.0,
+      "state": "DIRECTABLE_PROGRAM"
+    }
+  ],
+  "summary": {
+    "shot_count": 900,
+    "camera_edits": 899,
+    "counts": {
+      "PROTECTED_MASTER": 4,
+      "ORIGINAL_WIDE": 417,
+      "FULL_C": 214,
+      "FULL_A": 154,
+      "FULL_B": 111
+    },
+    "durations_s": {
+      "PROTECTED_MASTER": 71.464,
+      "ORIGINAL_WIDE": 2009.43,
+      "FULL_C": 3667.69,
+      "FULL_A": 2100.25,
+      "FULL_B": 1231.11
+    },
+    "diarized_turns": 1649,
+    "meaningful_turns_used": 694,
+    "overlap_regions": 267
+  },
+  "problems": [],
+  "output": {
+    "path": "data/director_tests/Edited_multicam_v1.mp4",
+    "video": "h264 1920x1080 30 fps",
+    "video_duration_s": 9079.989583,
+    "video_frames": 272400,
+    "audio": "aac lc 44100 Hz stereo, stream-copied from Edited.mp4",
+    "audio_duration_s": 9079.964399,
+    "audio_matches_master": true,
+    "ending_hold_s": 0.025
+  },
+  "checks": {
+    "intro_protected": true,
+    "middle_text_protected": true,
+    "ending_protected": true,
+    "directing_only_on_program": true,
+    "raw_source_timestamps_reused": false,
+    "audio_stream_copied": true
+  }
+}
