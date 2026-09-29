@@ -18,6 +18,7 @@ import type {
   MulticamReadiness,
   OverlapState,
   ShotPlanState,
+  ConversationState,
   ExportRecord,
   TimelineState,
 } from "./types";
@@ -236,6 +237,14 @@ export function resetEdit(handle: string, assetId: string, sequenceId: string): 
   return request("POST", `/v1/projects/${handle}/media/${assetId}/sequence/reset`, {
     sequence_id: sequenceId,
   });
+}
+
+export function conversationState(handle: string, assetId: string): Promise<ConversationState> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/conversation`);
+}
+
+export function checkSemanticProvider(handle: string): Promise<unknown> {
+  return request("POST", `/v1/projects/${handle}/semantic/provider/check`);
 }
 
 export function preparePlayback(sourceMediaAssetId: string, requestId: number): Promise<PreparedPlayback> {

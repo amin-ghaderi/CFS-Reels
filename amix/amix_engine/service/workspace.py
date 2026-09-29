@@ -6,6 +6,9 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 
+from amix.amix_engine.semantic.errors import SemanticError
+from amix.amix_engine.semantic.read import conversation_view
+from amix.amix_engine.semantic.registry import check_provider
 from amix.amix_engine.editorial.sequence import (
     SequenceRejected,
     create_sequence,
@@ -47,6 +50,8 @@ from amix.amix_engine.service.schemas import (
     ShotOverrideRequest,
     ShotPlanStateResponse,
     ShotResponse,
+    ConversationStateResponse,
+    SemanticProviderStatusResponse,
     SplitClipRequest,
     ClipRequest,
     ResetSequenceRequest,
@@ -210,6 +215,16 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
     def reset_edit(handle: str, asset_id: str, body: ResetSequenceRequest, request: Request) -> TimelineResponse:
         authorize(request)
         return call(lambda: _reset_edit(runtime, handle, asset_id, body))
+
+    @app.get("/v1/projects/{handle}/media/{asset_id}/conversation", response_model=ConversationStateResponse)
+    def conversation_state(handle: str, asset_id: str, request: Request) -> ConversationStateResponse:
+        authorize(request)
+        return call(lambda: _conversation(runtime, handle, asset_id))
+
+    @app.post("/v1/projects/{handle}/semantic/provider/check", response_model=SemanticProviderStatusResponse)
+    def check_semantic_provider(handle: str, request: Request) -> SemanticProviderStatusResponse:
+        authorize(request)
+        return call(lambda: _check_semantic(runtime, handle))
 
 
 def _store(runtime: EngineRuntime, handle: str) -> ProjectStore:
@@ -733,6 +748,20 @@ def _reset_edit(runtime: EngineRuntime, handle: str, asset_id: str, body: ResetS
     except SequenceRejected as exc:
         raise ApiError(400, exc.code, exc.message) from exc
     return _timeline(runtime, handle, asset_id)
+
+
+def _conversation(runtime: EngineRuntime, handle: str, asset_id: str) -> ConversationStateResponse:
+    store = _store(runtime, handle)
+    return ConversationStateResponse.model_validate(conversation_view(store, asset_id))
+
+
+def _check_semantic(runtime: EngineRuntime, handle: str) -> SemanticProviderStatusResponse:
+    _store(runtime, handle)
+    try:
+        status = check_provider()
+    except SemanticError as exc:
+        raise ApiError(400, exc.code, exc.message) from exc
+    return SemanticProviderStatusResponse.model_validate(status)
 
 
 def _sequence_asset(store, asset_id: str, sequence_id: str) -> None:

@@ -11,6 +11,7 @@ from amix.amix_engine.jobs.handlers import ProjectIntegrityCheck
 from amix.amix_engine.jobs.media import GenerateProxyJob, MediaProbeJob
 from amix.amix_engine.jobs.diarize import DiarizeAudioJob
 from amix.amix_engine.jobs.multicam import BuildMulticamPlanJob
+from amix.amix_engine.jobs.conversation import MapConversationJob
 from amix.amix_engine.jobs.render import RenderMulticamJob
 from amix.amix_engine.jobs.overlap import DetectOverlapJob
 from amix.amix_engine.jobs.transcribe import TranscribeJob
@@ -69,6 +70,7 @@ class EngineRuntime:
             DetectOverlapJob.kind: DetectOverlapJob(),
             BuildMulticamPlanJob.kind: BuildMulticamPlanJob(),
             RenderMulticamJob.kind: RenderMulticamJob(),
+            MapConversationJob.kind: MapConversationJob(),
         }
         for kind, handler in (extra_handlers or {}).items():
             if kind in handlers:

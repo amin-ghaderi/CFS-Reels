@@ -50,7 +50,7 @@ class SchemaTests(unittest.TestCase):
             root = Path(tmp) / "Empty"
             store = create_project(root, "Empty")
             try:
-                self.assertEqual(head_revision(), "0006_editorial_sequence")
+                self.assertEqual(head_revision(), "0007_conversation_map")
                 self.assertEqual(store.alembic_revision(), head_revision())
                 self.assertEqual(store.pragma("foreign_keys"), "1")
                 self.assertEqual(store.pragma("journal_mode"), "delete")
@@ -81,13 +81,13 @@ class SchemaTests(unittest.TestCase):
                 }
             finally:
                 connection.close()
-            self.assertEqual(revision, "0006_editorial_sequence")
+            self.assertEqual(revision, "0007_conversation_map")
             self.assertIn("project", tables)
             self.assertIn("diarization_segment", tables)
             self.assertIn("word", tables)
             self.assertIn("shot", tables)
             self.assertIn("processing_job", tables)
-            self.assertNotIn("conversation_thread", tables)
+            self.assertIn("conversation_thread", tables)
             self.assertNotIn("render_job", tables)
 
     def test_revision_0001_upgrades_to_processing_jobs(self) -> None:
@@ -115,7 +115,7 @@ class SchemaTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(revision, "0006_editorial_sequence")
+            self.assertEqual(revision, "0007_conversation_map")
             self.assertNotIn("REAL", sql.upper())
             self.assertNotIn("BLOB", sql.upper())
 

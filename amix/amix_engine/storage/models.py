@@ -343,6 +343,30 @@ class SequenceClipRow(Base):
     source_end_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
 
+class ConversationThreadRow(Base):
+    """One topic span anchored to turns and words. Times are derived by AMIX."""
+
+    __tablename__ = "conversation_thread"
+    __table_args__ = (
+        UniqueConstraint("analysis_run_id", "order_index", name="uq_conversation_thread_order"),
+        CheckConstraint("end_us > start_us", name="ck_conversation_thread_range"),
+        Index("ix_conversation_thread_run", "analysis_run_id"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
+    analysis_run_id: Mapped[str] = mapped_column(ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False)
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    first_turn_id: Mapped[str] = mapped_column(Text, nullable=False)
+    last_turn_id: Mapped[str] = mapped_column(Text, nullable=False)
+    first_word_id: Mapped[str] = mapped_column(ForeignKey("word.id", ondelete="RESTRICT"), nullable=False)
+    last_word_id: Mapped[str] = mapped_column(ForeignKey("word.id", ondelete="RESTRICT"), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    topic: Mapped[str | None] = mapped_column(Text)
+    start_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    end_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+
 class ActiveAnalysisRow(Base):
     __tablename__ = "active_analysis"
     __table_args__ = (

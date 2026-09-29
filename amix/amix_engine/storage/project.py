@@ -59,6 +59,7 @@ from amix.amix_engine.storage.jobs import (
 )
 from amix.amix_engine.storage.kinds import (
     ANALYSIS_KINDS,
+    CONVERSATION_MAP,
     DIARIZATION,
     OVERLAP,
     PARTICIPANT_ASSIGNMENT,
@@ -73,6 +74,7 @@ from amix.amix_engine.storage.models import (
     ActiveAnalysisRow,
     AnalysisDependencyRow,
     AnalysisRunRow,
+    ConversationThreadRow,
     DiarizationSegmentRow,
     LayoutBindingRow,
     ManualCorrectionRow,
@@ -1267,6 +1269,74 @@ class ProjectStore:
                     tuple(word_ids),
                 ))
             return loaded
+
+    def publish_conversation_map(
+        self,
+        *,
+        asset_id: str,
+        threads: list[dict],
+        transcript_run_id: str,
+        turns_run_id: str,
+        fingerprint: str,
+        window: TimeRange,
+        config: dict,
+        origin: str,
+    ) -> str:
+        """Store one complete map and switch the active pointer in the same commit."""
+        self._require_write()
+        run_id = str(uuid.uuid4())
+        with self._session() as session:
+            self._asset(session, asset_id)
+            session.add(self._run(
+                run_id, asset_id, CONVERSATION_MAP, "amix.conversation.map.v1", "1",
+                origin, config, window, fingerprint,
+            ))
+            session.flush()
+            for parent in (transcript_run_id, turns_run_id):
+                session.add(AnalysisDependencyRow(run_id=run_id, depends_on_run_id=parent))
+            session.flush()
+            for index, thread in enumerate(threads):
+                session.add(ConversationThreadRow(
+                    id=str(uuid.uuid4()),
+                    analysis_run_id=run_id,
+                    order_index=index,
+                    first_turn_id=thread["first_turn_id"],
+                    last_turn_id=thread["last_turn_id"],
+                    first_word_id=thread["first_word_id"],
+                    last_word_id=thread["last_word_id"],
+                    title=thread["title"],
+                    summary=thread["summary"],
+                    topic=thread.get("topic"),
+                    start_us=thread["start_us"],
+                    end_us=thread["end_us"],
+                ))
+            self._point_active(session, asset_id, CONVERSATION_MAP, run_id)
+            session.commit()
+        return run_id
+
+    def load_conversation_threads(self, run_id: str) -> list[dict]:
+        with self._session() as session:
+            rows = session.scalars(
+                select(ConversationThreadRow)
+                .where(ConversationThreadRow.analysis_run_id == run_id)
+                .order_by(ConversationThreadRow.order_index)
+            ).all()
+            return [
+                {
+                    "thread_id": row.id,
+                    "order_index": int(row.order_index),
+                    "first_turn_id": row.first_turn_id,
+                    "last_turn_id": row.last_turn_id,
+                    "first_word_id": row.first_word_id,
+                    "last_word_id": row.last_word_id,
+                    "title": row.title,
+                    "summary": row.summary,
+                    "topic": row.topic,
+                    "start_us": int(row.start_us),
+                    "end_us": int(row.end_us),
+                }
+                for row in rows
+            ]
 
     def save_overlaps(
         self,

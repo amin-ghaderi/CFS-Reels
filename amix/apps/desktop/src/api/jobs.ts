@@ -87,6 +87,9 @@ export function jobTitle(kind: string, spec?: Record<string, unknown> | null): s
   if (kind === "build_multicam_plan") {
     return "Build multicam plan";
   }
+  if (kind === "map_conversation") {
+    return "Map conversation";
+  }
   if (kind === "render_multicam") {
     const preset = spec && typeof spec.preset === "string" ? PRESET_LABELS[spec.preset] : "";
     return preset ? `Render multicam · ${preset}` : "Render multicam";

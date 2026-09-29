@@ -28,6 +28,7 @@ describe("job display helpers", () => {
     expect(jobTitle("diarize_audio")).toBe("Analyze speakers");
     expect(jobTitle("detect_overlap")).toBe("Detect overlap");
     expect(jobTitle("build_multicam_plan")).toBe("Build multicam plan");
+    expect(jobTitle("map_conversation")).toBe("Map conversation");
     expect(jobTitle("render_multicam", { preset: "portrait_1080" })).toBe("Render multicam · Portrait 1080");
     expect(jobTitle("render_multicam")).toBe("Render multicam");
   });

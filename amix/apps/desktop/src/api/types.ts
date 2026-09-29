@@ -302,6 +302,39 @@ export interface TimelineState {
   protected: TimelineRange[];
 }
 
+export interface ConversationThread {
+  thread_id: string;
+  order_index: number;
+  first_turn_id: string;
+  last_turn_id: string;
+  first_word_id: string;
+  last_word_id: string;
+  title: string;
+  summary: string;
+  topic: string | null;
+  start_us: number;
+  end_us: number;
+  duration_us: number;
+  participant_names: string[];
+}
+
+export interface ConversationState {
+  transcript_present: boolean;
+  turns_ready: boolean;
+  blocking_reason: string | null;
+  provider_configured: boolean;
+  provider_display_name: string | null;
+  provider_model_id: string | null;
+  provider_execution: string | null;
+  capability_ready: boolean;
+  offline_blocked: boolean;
+  network_mode: string;
+  map_present: boolean;
+  map_stale: boolean;
+  conversation_map_run_id: string | null;
+  threads: ConversationThread[];
+}
+
 export interface ExportRecord {
   job_id: string;
   filename: string;

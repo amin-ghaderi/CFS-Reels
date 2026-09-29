@@ -9,6 +9,7 @@ PARTICIPANT_ASSIGNMENT = "participant_assignment"
 TURNS = "turns"
 OVERLAP = "overlap"
 SHOT_PLAN = "shot_plan"
+CONVERSATION_MAP = "conversation_map"
 
 ANALYSIS_KINDS = frozenset({
     TRANSCRIPT,
@@ -17,6 +18,7 @@ ANALYSIS_KINDS = frozenset({
     TURNS,
     OVERLAP,
     SHOT_PLAN,
+    CONVERSATION_MAP,
 })
 
 WORD_TEXT = "word_text"

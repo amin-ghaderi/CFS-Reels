@@ -384,3 +384,48 @@ class ClipRequest(_Model):
 
 class ResetSequenceRequest(_Model):
     sequence_id: str
+
+
+class ConversationThreadResponse(_Model):
+    thread_id: str
+    order_index: int
+    first_turn_id: str
+    last_turn_id: str
+    first_word_id: str
+    last_word_id: str
+    title: str
+    summary: str
+    topic: str | None = None
+    start_us: int
+    end_us: int
+    duration_us: int
+    participant_names: list[str]
+
+
+class ConversationStateResponse(_Model):
+    transcript_present: bool
+    turns_ready: bool
+    blocking_reason: str | None = None
+    provider_configured: bool
+    provider_display_name: str | None = None
+    provider_model_id: str | None = None
+    provider_execution: str | None = None
+    capability_ready: bool
+    offline_blocked: bool
+    network_mode: str
+    map_present: bool
+    map_stale: bool
+    conversation_map_run_id: str | None = None
+    threads: list[ConversationThreadResponse]
+
+
+class SemanticProviderStatusResponse(_Model):
+    configured: bool
+    network_mode: str
+    execution: str | None = None
+    display_name: str | None = None
+    model_id: str | None = None
+    provider_id: str | None = None
+    capability_ready: bool
+    offline_blocked: bool
+    reachable: bool | None = None
