@@ -63,6 +63,7 @@ from amix.amix_engine.storage.kinds import (
     DIARIZATION,
     OVERLAP,
     PARTICIPANT_ASSIGNMENT,
+    REEL_DISCOVERY,
     SHOT_PLAN,
     SPEAKER_OVERRIDE,
     TURNS,
@@ -75,6 +76,7 @@ from amix.amix_engine.storage.models import (
     AnalysisDependencyRow,
     AnalysisRunRow,
     ConversationThreadRow,
+    ReelCandidateRow,
     DiarizationSegmentRow,
     LayoutBindingRow,
     ManualCorrectionRow,
@@ -1314,6 +1316,99 @@ class ProjectStore:
             session.commit()
         return run_id
 
+    def publish_reel_discovery(
+        self,
+        *,
+        asset_id: str,
+        candidates: list[dict],
+        parents: list[str],
+        window: TimeRange,
+        config: dict,
+        origin: str,
+    ) -> str:
+        """Store one complete candidate set and switch the active pointer in the same commit."""
+        self._require_write()
+        run_id = str(uuid.uuid4())
+        with self._session() as session:
+            self._asset(session, asset_id)
+            session.add(self._run(
+                run_id, asset_id, REEL_DISCOVERY, "amix.reel.discover.v1", "1",
+                origin, config, window, config["text_fingerprint"],
+            ))
+            session.flush()
+            for parent in parents:
+                session.add(AnalysisDependencyRow(run_id=run_id, depends_on_run_id=parent))
+            session.flush()
+            for index, candidate in enumerate(candidates):
+                session.add(ReelCandidateRow(
+                    id=str(uuid.uuid4()),
+                    analysis_run_id=run_id,
+                    order_index=index,
+                    conversation_thread_id=candidate["conversation_thread_id"],
+                    first_turn_id=candidate["first_turn_id"],
+                    last_turn_id=candidate["last_turn_id"],
+                    first_word_id=candidate["first_word_id"],
+                    last_word_id=candidate["last_word_id"],
+                    start_us=candidate["start_us"],
+                    end_us=candidate["end_us"],
+                    title=candidate["title"],
+                    summary=candidate["summary"],
+                    hook=candidate["hook"],
+                ))
+            self._point_active(session, asset_id, REEL_DISCOVERY, run_id)
+            session.commit()
+        return run_id
+
+    def load_reel_candidates(self, run_id: str) -> list[dict]:
+        with self._session() as session:
+            rows = session.scalars(
+                select(ReelCandidateRow)
+                .where(ReelCandidateRow.analysis_run_id == run_id)
+                .order_by(ReelCandidateRow.order_index)
+            ).all()
+            return [
+                {
+                    "candidate_id": row.id,
+                    "order_index": int(row.order_index),
+                    "conversation_thread_id": row.conversation_thread_id,
+                    "first_turn_id": row.first_turn_id,
+                    "last_turn_id": row.last_turn_id,
+                    "first_word_id": row.first_word_id,
+                    "last_word_id": row.last_word_id,
+                    "start_us": int(row.start_us),
+                    "end_us": int(row.end_us),
+                    "title": row.title,
+                    "summary": row.summary,
+                    "hook": row.hook,
+                }
+                for row in rows
+            ]
+
+    def load_reel_candidate(self, candidate_id: str) -> dict | None:
+        with self._session() as session:
+            row = session.get(ReelCandidateRow, candidate_id)
+            if row is None:
+                return None
+            run = session.get(AnalysisRunRow, row.analysis_run_id)
+            if run is None or run.project_id != self.project_id:
+                return None
+            return {
+                "candidate_id": row.id,
+                "analysis_run_id": row.analysis_run_id,
+                "media_asset_id": run.media_asset_id,
+                "order_index": int(row.order_index),
+                "conversation_thread_id": row.conversation_thread_id,
+                "first_turn_id": row.first_turn_id,
+                "last_turn_id": row.last_turn_id,
+                "first_word_id": row.first_word_id,
+                "last_word_id": row.last_word_id,
+                "start_us": int(row.start_us),
+                "end_us": int(row.end_us),
+                "title": row.title,
+                "summary": row.summary,
+                "hook": row.hook,
+            }
+
     def load_conversation_threads(self, run_id: str) -> list[dict]:
         with self._session() as session:
             rows = session.scalars(
@@ -1548,14 +1643,30 @@ class ProjectStore:
                 session.delete(current)
                 session.commit()
 
-    def load_editorial_sequence(self, asset_id: str) -> dict | None:
+    def load_primary_sequence(self, asset_id: str) -> dict | None:
+        """The source's primary edit, if one exists. A reel sequence is never returned."""
         with self._session() as session:
             row = session.scalar(
-                select(EditorialSequenceRow).where(EditorialSequenceRow.media_asset_id == asset_id)
+                select(EditorialSequenceRow).where(
+                    EditorialSequenceRow.media_asset_id == asset_id,
+                    EditorialSequenceRow.purpose == "primary",
+                )
             )
             if row is None:
                 return None
             return _sequence_view(session, row)
+
+    def load_editorial_sequence(self, asset_id: str) -> dict | None:
+        """Primary sequence only. Callers that mean the main edit use this or load_primary_sequence."""
+        return self.load_primary_sequence(asset_id)
+
+    def list_sequences(self, asset_id: str, purpose: str | None = None) -> list[dict]:
+        with self._session() as session:
+            query = select(EditorialSequenceRow).where(EditorialSequenceRow.media_asset_id == asset_id)
+            if purpose is not None:
+                query = query.where(EditorialSequenceRow.purpose == purpose)
+            rows = session.scalars(query.order_by(EditorialSequenceRow.created_at, EditorialSequenceRow.id)).all()
+            return [_sequence_view(session, row) for row in rows]
 
     def load_editorial_sequence_by_id(self, sequence_id: str) -> dict:
         with self._session() as session:
@@ -1572,19 +1683,36 @@ class ProjectStore:
         source_start_us: int,
         source_end_us: int,
         clips: list[tuple[int, int]],
+        purpose: str = "primary",
+        origin_candidate_id: str | None = None,
     ) -> str:
         self._require_write()
         from amix.amix_engine.editorial.sequence import validate_clips
 
+        if purpose not in {"primary", "reel"}:
+            raise ProjectDatabaseInvalid(f"unknown sequence purpose {purpose}")
+        if purpose == "reel" and not origin_candidate_id:
+            raise ProjectDatabaseInvalid("A reel sequence needs its origin candidate.")
         validate_clips(clips, source_start_us, source_end_us)
         sequence_id = str(uuid.uuid4())
         now = _now()
         with self._session() as session:
             self._asset(session, asset_id)
+            if purpose == "primary":
+                existing = session.scalar(
+                    select(EditorialSequenceRow.id).where(
+                        EditorialSequenceRow.media_asset_id == asset_id,
+                        EditorialSequenceRow.purpose == "primary",
+                    )
+                )
+                if existing is not None:
+                    raise ProjectDatabaseInvalid("This source already has a primary sequence.")
             session.add(EditorialSequenceRow(
                 id=sequence_id,
                 project_id=self.project_id,
                 media_asset_id=asset_id,
+                purpose=purpose,
+                origin_candidate_id=origin_candidate_id,
                 display_name=display_name,
                 source_start_us=source_start_us,
                 source_end_us=source_end_us,
@@ -2208,6 +2336,8 @@ def _sequence_view(session, row: EditorialSequenceRow) -> dict:
     return {
         "sequence_id": row.id,
         "media_asset_id": row.media_asset_id,
+        "purpose": row.purpose,
+        "origin_candidate_id": row.origin_candidate_id,
         "display_name": row.display_name,
         "source_start_us": int(row.source_start_us),
         "source_end_us": int(row.source_end_us),

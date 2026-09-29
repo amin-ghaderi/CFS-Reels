@@ -148,6 +148,48 @@ def reset_sequence(store: ProjectStore, sequence_id: str) -> dict:
     return store.load_editorial_sequence_by_id(sequence_id)
 
 
+def create_reel_draft(store: ProjectStore, asset_id: str, candidate_id: str) -> dict:
+    """A new reel sequence. The primary edit and the shot plan are left alone."""
+    candidate = store.load_reel_candidate(candidate_id)
+    if candidate is None or candidate["media_asset_id"] != asset_id:
+        raise SequenceRejected("unknown_candidate", "That reel candidate is not in this project.")
+    start_us = int(candidate["start_us"])
+    end_us = int(candidate["end_us"])
+    name = str(candidate["title"]).strip() or "Reel"
+    sequence_id = store.insert_editorial_sequence(
+        asset_id=asset_id,
+        display_name=name[:120],
+        source_start_us=start_us,
+        source_end_us=end_us,
+        clips=[(start_us, end_us)],
+        purpose="reel",
+        origin_candidate_id=candidate_id,
+    )
+    return store.load_editorial_sequence_by_id(sequence_id)
+
+
+def sequence_as_timeline(sequence: dict) -> dict:
+    pairs = _pairs(sequence)
+    return {
+        "sequence_id": sequence["sequence_id"],
+        "revision": sequence["revision"],
+        "fingerprint": sequence_fingerprint(sequence["source_start_us"], sequence["source_end_us"], pairs),
+        "source_start_us": sequence["source_start_us"],
+        "source_end_us": sequence["source_end_us"],
+        "duration_us": sequence_duration_us(pairs),
+        "clips": [
+            {**clip, "sequence_start_us": source_to_sequence_us(pairs, clip["source_start_us"])}
+            for clip in sequence["clips"]
+        ],
+        "removed": [
+            {"source_start_us": start, "source_end_us": end}
+            for start, end in removed_ranges(sequence["source_start_us"], sequence["source_end_us"], pairs)
+        ],
+        "camera": [],
+        "protected": [],
+    }
+
+
 def timeline_snapshot(store: ProjectStore, asset_id: str) -> dict:
     sequence = store.load_editorial_sequence(asset_id)
     described = describe_shots(store, asset_id)

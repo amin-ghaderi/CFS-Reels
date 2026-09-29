@@ -94,11 +94,14 @@ const MESSAGES: Record<string, string> = {
   semantic_provider_unavailable: "The semantic provider could not be reached.",
   offline_provider_forbidden: "Offline mode does not send this project to a remote provider.",
   semantic_timeout: "The semantic provider took too long.",
-  semantic_invalid_output: "The conversation map could not be validated.",
+  semantic_invalid_output: "The semantic result could not be validated.",
+  conversation_map_required: "Map the conversation before discovering reels.",
+  conversation_map_stale: "The conversation map is out of date.",
+  unknown_candidate: "That reel candidate is not in this project.",
   semantic_context_too_large: "This conversation is too large for the current semantic profile.",
   semantic_request_failed: "The semantic provider rejected the request.",
   semantic_capability_missing: "This provider cannot produce structured output.",
-  invalid_semantic_profile: "That conversation profile is not available.",
+  invalid_semantic_profile: "That semantic profile is not available.",
 };
 
 export function mapEngineFailure(status: number, body: string): EngineFailure {

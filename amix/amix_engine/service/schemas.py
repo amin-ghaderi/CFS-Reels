@@ -419,6 +419,62 @@ class ConversationStateResponse(_Model):
     threads: list[ConversationThreadResponse]
 
 
+class ReelCandidateResponse(_Model):
+    candidate_id: str
+    order_index: int
+    conversation_thread_id: str
+    first_turn_id: str
+    last_turn_id: str
+    first_word_id: str
+    last_word_id: str
+    start_us: int
+    end_us: int
+    duration_us: int
+    title: str
+    summary: str
+    hook: str
+    thread_title: str | None = None
+    participant_names: list[str]
+
+
+class ReelClipResponse(_Model):
+    clip_id: str
+    order_index: int
+    source_start_us: int
+    source_end_us: int
+
+
+class ReelDraftResponse(_Model):
+    sequence_id: str
+    display_name: str
+    revision: int
+    source_start_us: int
+    source_end_us: int
+    duration_us: int
+    origin_candidate_id: str | None = None
+    clips: list[ReelClipResponse]
+
+
+class ReelStateResponse(_Model):
+    transcript_present: bool
+    turns_ready: bool
+    blocking_reason: str | None = None
+    provider_configured: bool
+    capability_ready: bool
+    offline_blocked: bool
+    map_present: bool
+    map_stale: bool
+    discovery_present: bool
+    discovery_stale: bool
+    reel_discovery_run_id: str | None = None
+    candidates: list[ReelCandidateResponse]
+    drafts: list[ReelDraftResponse]
+
+
+class CreateReelDraftRequest(_Model):
+    candidate_id: str
+
+
 class SemanticProviderStatusResponse(_Model):
     configured: bool
     network_mode: str

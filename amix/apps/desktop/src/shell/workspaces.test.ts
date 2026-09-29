@@ -10,6 +10,7 @@ describe("workspace navigation", () => {
     expect(isPlaceholder("Transcript")).toBe(false);
     expect(isPlaceholder("Multicam")).toBe(false);
     expect(isPlaceholder("Conversation")).toBe(false);
-    expect(isPlaceholder("Reels")).toBe(true);
+    expect(isPlaceholder("Reels")).toBe(false);
+    expect(isPlaceholder("Export")).toBe(true);
   });
 });

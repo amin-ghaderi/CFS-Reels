@@ -11,12 +11,15 @@ from amix.amix_engine.semantic.read import conversation_view
 from amix.amix_engine.semantic.registry import check_provider
 from amix.amix_engine.editorial.sequence import (
     SequenceRejected,
+    create_reel_draft,
     create_sequence,
     remove_clip,
     reset_sequence,
+    sequence_as_timeline,
     split_clip,
     timeline_snapshot,
 )
+from amix.amix_engine.semantic.reels import reel_view
 from amix.amix_engine.layout import COORDINATE_SPACE, LayoutRejected, validate_layout
 from amix.amix_engine.multicam.effective import OverrideRejected, describe_shots, set_shot_override
 from amix.amix_engine.multicam.profile import PRESETS
@@ -51,6 +54,8 @@ from amix.amix_engine.service.schemas import (
     ShotPlanStateResponse,
     ShotResponse,
     ConversationStateResponse,
+    CreateReelDraftRequest,
+    ReelStateResponse,
     SemanticProviderStatusResponse,
     SplitClipRequest,
     ClipRequest,
@@ -215,6 +220,16 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
     def reset_edit(handle: str, asset_id: str, body: ResetSequenceRequest, request: Request) -> TimelineResponse:
         authorize(request)
         return call(lambda: _reset_edit(runtime, handle, asset_id, body))
+
+    @app.get("/v1/projects/{handle}/media/{asset_id}/reels", response_model=ReelStateResponse)
+    def reel_state(handle: str, asset_id: str, request: Request) -> ReelStateResponse:
+        authorize(request)
+        return call(lambda: _reels(runtime, handle, asset_id))
+
+    @app.post("/v1/projects/{handle}/media/{asset_id}/reel-drafts", response_model=ReelStateResponse)
+    def create_reel(handle: str, asset_id: str, body: CreateReelDraftRequest, request: Request) -> ReelStateResponse:
+        authorize(request)
+        return call(lambda: _create_reel(runtime, handle, asset_id, body))
 
     @app.get("/v1/projects/{handle}/media/{asset_id}/conversation", response_model=ConversationStateResponse)
     def conversation_state(handle: str, asset_id: str, request: Request) -> ConversationStateResponse:
@@ -726,7 +741,7 @@ def _split_edit(runtime: EngineRuntime, handle: str, asset_id: str, body: SplitC
     except SequenceRejected as exc:
         status = 404 if exc.code in {"unknown_clip", "unknown_sequence"} else 400
         raise ApiError(status, exc.code, exc.message) from exc
-    return _timeline(runtime, handle, asset_id)
+    return _edited_timeline(store, asset_id, body.sequence_id)
 
 
 def _remove_edit(runtime: EngineRuntime, handle: str, asset_id: str, body: ClipRequest) -> TimelineResponse:
@@ -737,7 +752,7 @@ def _remove_edit(runtime: EngineRuntime, handle: str, asset_id: str, body: ClipR
     except SequenceRejected as exc:
         status = 404 if exc.code in {"unknown_clip", "unknown_sequence"} else 400
         raise ApiError(status, exc.code, exc.message) from exc
-    return _timeline(runtime, handle, asset_id)
+    return _edited_timeline(store, asset_id, body.sequence_id)
 
 
 def _reset_edit(runtime: EngineRuntime, handle: str, asset_id: str, body: ResetSequenceRequest) -> TimelineResponse:
@@ -747,7 +762,29 @@ def _reset_edit(runtime: EngineRuntime, handle: str, asset_id: str, body: ResetS
         reset_sequence(store, body.sequence_id)
     except SequenceRejected as exc:
         raise ApiError(400, exc.code, exc.message) from exc
-    return _timeline(runtime, handle, asset_id)
+    return _edited_timeline(store, asset_id, body.sequence_id)
+
+
+def _edited_timeline(store, asset_id: str, sequence_id: str) -> TimelineResponse:
+    sequence = store.load_editorial_sequence_by_id(sequence_id)
+    if sequence["purpose"] == "reel":
+        return TimelineResponse.model_validate(sequence_as_timeline(sequence))
+    return TimelineResponse.model_validate(timeline_snapshot(store, asset_id))
+
+
+def _reels(runtime: EngineRuntime, handle: str, asset_id: str) -> ReelStateResponse:
+    store = _store(runtime, handle)
+    return ReelStateResponse.model_validate(reel_view(store, asset_id))
+
+
+def _create_reel(runtime: EngineRuntime, handle: str, asset_id: str, body: CreateReelDraftRequest) -> ReelStateResponse:
+    store = _store(runtime, handle)
+    try:
+        create_reel_draft(store, asset_id, body.candidate_id)
+    except SequenceRejected as exc:
+        status = 404 if exc.code == "unknown_candidate" else 400
+        raise ApiError(status, exc.code, exc.message) from exc
+    return ReelStateResponse.model_validate(reel_view(store, asset_id))
 
 
 def _conversation(runtime: EngineRuntime, handle: str, asset_id: str) -> ConversationStateResponse:
@@ -765,7 +802,12 @@ def _check_semantic(runtime: EngineRuntime, handle: str) -> SemanticProviderStat
 
 
 def _sequence_asset(store, asset_id: str, sequence_id: str) -> None:
-    current = store.load_editorial_sequence(asset_id)
-    if current is None or current["sequence_id"] != sequence_id:
+    from amix.amix_engine.storage.errors import ProjectDatabaseInvalid
+
+    try:
+        current = store.load_editorial_sequence_by_id(sequence_id)
+    except ProjectDatabaseInvalid as exc:
+        raise ApiError(404, "unknown_sequence", "That sequence is not in this project.") from exc
+    if current["media_asset_id"] != asset_id:
         raise ApiError(404, "unknown_sequence", "That sequence is not in this project.")
 

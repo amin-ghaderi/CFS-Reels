@@ -10,6 +10,7 @@ TURNS = "turns"
 OVERLAP = "overlap"
 SHOT_PLAN = "shot_plan"
 CONVERSATION_MAP = "conversation_map"
+REEL_DISCOVERY = "reel_discovery"
 
 ANALYSIS_KINDS = frozenset({
     TRANSCRIPT,
@@ -19,6 +20,7 @@ ANALYSIS_KINDS = frozenset({
     OVERLAP,
     SHOT_PLAN,
     CONVERSATION_MAP,
+    REEL_DISCOVERY,
 })
 
 WORD_TEXT = "word_text"

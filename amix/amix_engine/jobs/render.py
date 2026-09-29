@@ -57,8 +57,10 @@ class RenderMulticamJob:
         overrides = ctx.store.list_shot_overrides(plan_id)
         effective = resolve_effective(records, overrides)
         rate = output_frame_rate(asset.fps_num, asset.fps_den)
-        sequence = ctx.store.load_editorial_sequence(asset_id)
+        sequence = ctx.store.load_primary_sequence(asset_id)
         requested_sequence, requested_revision = _sequence_spec(ctx.spec)
+        if requested_sequence is not None and (sequence is None or requested_sequence != sequence["sequence_id"]):
+            raise JobFailed("sequence_changed", "That edit is no longer current.")
         if sequence is not None:
             if requested_sequence is not None and requested_sequence != sequence["sequence_id"]:
                 raise JobFailed("sequence_changed", "That edit is no longer current.")

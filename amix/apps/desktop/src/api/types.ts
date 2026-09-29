@@ -335,6 +335,58 @@ export interface ConversationState {
   threads: ConversationThread[];
 }
 
+export interface ReelCandidate {
+  candidate_id: string;
+  order_index: number;
+  conversation_thread_id: string;
+  first_turn_id: string;
+  last_turn_id: string;
+  first_word_id: string;
+  last_word_id: string;
+  start_us: number;
+  end_us: number;
+  duration_us: number;
+  title: string;
+  summary: string;
+  hook: string;
+  thread_title: string | null;
+  participant_names: string[];
+}
+
+export interface ReelClip {
+  clip_id: string;
+  order_index: number;
+  source_start_us: number;
+  source_end_us: number;
+}
+
+export interface ReelDraft {
+  sequence_id: string;
+  display_name: string;
+  revision: number;
+  source_start_us: number;
+  source_end_us: number;
+  duration_us: number;
+  origin_candidate_id: string | null;
+  clips: ReelClip[];
+}
+
+export interface ReelState {
+  transcript_present: boolean;
+  turns_ready: boolean;
+  blocking_reason: string | null;
+  provider_configured: boolean;
+  capability_ready: boolean;
+  offline_blocked: boolean;
+  map_present: boolean;
+  map_stale: boolean;
+  discovery_present: boolean;
+  discovery_stale: boolean;
+  reel_discovery_run_id: string | null;
+  candidates: ReelCandidate[];
+  drafts: ReelDraft[];
+}
+
 export interface ExportRecord {
   job_id: string;
   filename: string;

@@ -35,3 +35,5 @@ The map is stale when the active transcript changes, the compatible turns change
 The Conversation workspace reads this project. It distinguishes missing media, missing transcript, missing turns, a missing provider, an offline block, a running map, a ready map, a stale map, and a failed run. Map Conversation starts the first map. Rebuild Map starts another analysis and explains that the previous map is kept until the new one succeeds. Choosing a thread seeks the existing source preview to the thread’s derived start. There is no Create Reel action in this phase.
 
 A real local model is optional and is not required for the test suite. Set `AMIX_AI_INTEGRATION=1` plus a loopback `AMIX_AI_BASE_URL` and `AMIX_AI_MODEL` to run that check. The normal suite uses a deterministic fake provider.
+
+Reel discovery is an optional later consumer of a current conversation map. It does not change the map, and the conversation workspace does not create reel drafts.

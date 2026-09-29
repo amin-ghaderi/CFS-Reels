@@ -19,6 +19,7 @@ import type {
   OverlapState,
   ShotPlanState,
   ConversationState,
+  ReelState,
   ExportRecord,
   TimelineState,
 } from "./types";
@@ -237,6 +238,14 @@ export function resetEdit(handle: string, assetId: string, sequenceId: string): 
   return request("POST", `/v1/projects/${handle}/media/${assetId}/sequence/reset`, {
     sequence_id: sequenceId,
   });
+}
+
+export function reelState(handle: string, assetId: string): Promise<ReelState> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/reels`);
+}
+
+export function createReelDraft(handle: string, assetId: string, candidateId: string): Promise<ReelState> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/reel-drafts`, { candidate_id: candidateId });
 }
 
 export function conversationState(handle: string, assetId: string): Promise<ConversationState> {

@@ -6,7 +6,9 @@ The sequence answers one question: which source ranges are present in the output
 
 ## V1 limit
 
-One sequence belongs to one source media asset. Clips stay in source order. They may leave gaps out of the output. They may not reorder source time, overlap, or repeat a source span. A later version can add reordering, more than one source, or B-roll without changing the meaning of canonical source time.
+A source has at most one primary sequence and any number of reel sequences. Clips stay in source order. They may leave gaps out of the output. They may not reorder source time, overlap, or repeat a source span. A later version can add reordering, more than one source, or B-roll without changing the meaning of canonical source time.
+
+Editing is by sequence id. The primary sequence is resolved explicitly for multicam. A reel sequence is a separate manual edit of a discovered source range. Split, remove, and reset use the same operations for both. Reset restores that sequence's own source range.
 
 There is no persistent undo. Session undo was not added.
 

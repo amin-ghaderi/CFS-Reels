@@ -17,6 +17,7 @@ from sqlalchemy import (
     Integer,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -310,13 +311,22 @@ class EditorialSequenceRow(Base):
 
     __tablename__ = "editorial_sequence"
     __table_args__ = (
-        UniqueConstraint("media_asset_id", name="uq_sequence_media"),
         CheckConstraint("source_end_us > source_start_us", name="ck_sequence_source_range"),
+        CheckConstraint("purpose IN ('primary', 'reel')", name="ck_sequence_purpose"),
+        Index(
+            "uq_sequence_primary",
+            "media_asset_id",
+            unique=True,
+            sqlite_where=text("purpose = 'primary'"),
+        ),
+        Index("ix_sequence_asset", "media_asset_id"),
     )
 
     id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
     project_id: Mapped[str] = mapped_column(ForeignKey("project.id", ondelete="RESTRICT"), nullable=False)
     media_asset_id: Mapped[str] = mapped_column(ForeignKey("media_asset.id", ondelete="RESTRICT"), nullable=False)
+    purpose: Mapped[str] = mapped_column(Text, nullable=False, default="primary")
+    origin_candidate_id: Mapped[str | None] = mapped_column(Text)
     display_name: Mapped[str] = mapped_column(Text, nullable=False)
     source_start_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
     source_end_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
@@ -341,6 +351,31 @@ class SequenceClipRow(Base):
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
     source_start_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
     source_end_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+
+class ReelCandidateRow(Base):
+    """One contiguous source range suggested for a reel. Times are derived by AMIX."""
+
+    __tablename__ = "reel_candidate"
+    __table_args__ = (
+        UniqueConstraint("analysis_run_id", "order_index", name="uq_reel_candidate_order"),
+        CheckConstraint("end_us > start_us", name="ck_reel_candidate_range"),
+        Index("ix_reel_candidate_run", "analysis_run_id"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
+    analysis_run_id: Mapped[str] = mapped_column(ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False)
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    conversation_thread_id: Mapped[str] = mapped_column(Text, nullable=False)
+    first_turn_id: Mapped[str] = mapped_column(Text, nullable=False)
+    last_turn_id: Mapped[str] = mapped_column(Text, nullable=False)
+    first_word_id: Mapped[str] = mapped_column(ForeignKey("word.id", ondelete="RESTRICT"), nullable=False)
+    last_word_id: Mapped[str] = mapped_column(ForeignKey("word.id", ondelete="RESTRICT"), nullable=False)
+    start_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    end_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    hook: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
 
 class ConversationThreadRow(Base):

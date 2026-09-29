@@ -13,12 +13,14 @@ export function TimelineCanvas({
   selectedClipId,
   onSeek,
   onSelect,
+  showCamera = true,
 }: {
   timeline: TimelineState;
   playheadUs: number;
   selectedClipId: string | null;
   onSeek: (sourceUs: number) => void;
   onSelect: (clipId: string | null) => void;
+  showCamera?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewRef = useRef<Viewport | null>(null);
@@ -32,8 +34,8 @@ export function TimelineCanvas({
     }
     const width = Math.max(1, canvas.clientWidth);
     viewRef.current = fitRange(start, end, width);
-    draw(canvas, timeline, playheadUs, selectedClipId, viewRef.current);
-  }, [start, end]);
+    draw(canvas, timeline, playheadUs, selectedClipId, viewRef.current, showCamera);
+  }, [start, end, showCamera]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -41,8 +43,8 @@ export function TimelineCanvas({
     if (!canvas || !view) {
       return;
     }
-    draw(canvas, timeline, playheadUs, selectedClipId, view);
-  }, [playheadUs, timeline, selectedClipId, start, end]);
+    draw(canvas, timeline, playheadUs, selectedClipId, view, showCamera);
+  }, [playheadUs, timeline, selectedClipId, start, end, showCamera]);
 
   function zoom(factor: number) {
     const canvas = canvasRef.current;
@@ -59,7 +61,7 @@ export function TimelineCanvas({
     const x = timeToX(anchor, view);
     next.originUs = Math.round(anchor - (x * next.spanUs) / next.widthPx);
     viewRef.current = next;
-    draw(canvas, timeline, playheadUs, selectedClipId, next);
+    draw(canvas, timeline, playheadUs, selectedClipId, next, showCamera);
   }
 
   return (
@@ -74,7 +76,7 @@ export function TimelineCanvas({
           }
           const fitted = fitRange(start, end, canvas.clientWidth);
           viewRef.current = fitted;
-          draw(canvas, timeline, playheadUs, selectedClipId, fitted);
+          draw(canvas, timeline, playheadUs, selectedClipId, fitted, showCamera);
         }}>Fit source</button>
       </div>
       <canvas
@@ -104,10 +106,11 @@ function draw(
   playheadUs: number,
   selectedClipId: string | null,
   view: Viewport,
+  showCamera: boolean,
 ) {
   const ratio = window.devicePixelRatio || 1;
   const width = Math.max(1, canvas.clientWidth);
-  const height = RULER + GAP + TRACK + GAP + TRACK + 8;
+  const height = showCamera ? RULER + GAP + TRACK + GAP + TRACK + 8 : RULER + GAP + TRACK + 8;
   canvas.width = Math.floor(width * ratio);
   canvas.height = Math.floor(height * ratio);
   canvas.style.height = `${height}px`;
@@ -145,7 +148,7 @@ function draw(
   timeline.protected.forEach((region) => {
     paintRange(context, fitted, region.source_start_us, region.source_end_us, editTop, 6, "#d4a017");
   });
-  timeline.camera.forEach((fragment) => {
+  if (showCamera) timeline.camera.forEach((fragment) => {
     paintRange(context, fitted, fragment.source_start_us, fragment.source_end_us, cameraTop, TRACK, fragment.locked ? "#6a5a2a" : "#3a4d6e");
     const x = timeToX(fragment.source_start_us, fitted);
     const right = timeToX(fragment.source_end_us, fitted);
