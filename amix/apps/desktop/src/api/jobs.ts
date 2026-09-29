@@ -97,6 +97,12 @@ export function jobTitle(kind: string, spec?: Record<string, unknown> | null): s
     const preset = spec && typeof spec.preset === "string" ? PRESET_LABELS[spec.preset] : "";
     return preset ? `Render multicam · ${preset}` : "Render multicam";
   }
+  if (kind === "render_sequence") {
+    const profile = spec && typeof spec.render_profile_id === "string" ? spec.render_profile_id : "";
+    const preset = PRESET_LABELS[profile] ?? "";
+    const picture = spec && spec.visual_treatment === "source_program" ? "Source / Program" : "Multicam";
+    return ["Render", picture, preset].filter(Boolean).join(" · ");
+  }
   return "Background job";
 }
 

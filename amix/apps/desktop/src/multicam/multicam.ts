@@ -164,17 +164,24 @@ export function renderJobSpec(
   shotPlanRunId: string,
   sequence?: { sequenceId: string; revision: number },
 ) {
-  const spec: Record<string, unknown> = {
-    preset: presetId(format, resolution),
-    shot_plan_run_id: shotPlanRunId,
-  };
+  const profile = presetId(format, resolution);
   if (sequence) {
-    spec.sequence_id = sequence.sequenceId;
-    spec.sequence_revision = sequence.revision;
+    return {
+      kind: "render_sequence" as const,
+      spec: {
+        sequence_id: sequence.sequenceId,
+        sequence_revision: sequence.revision,
+        visual_treatment: "multicam",
+        render_profile_id: profile,
+      },
+    };
   }
   return {
     kind: "render_multicam" as const,
-    spec,
+    spec: {
+      preset: profile,
+      shot_plan_run_id: shotPlanRunId,
+    },
   };
 }
 

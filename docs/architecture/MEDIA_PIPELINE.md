@@ -117,7 +117,7 @@ Heuristic Reel mining (keyword windows) is a local stage with no provider. It ma
 - **Inputs.** Plan, source asset, encoder config.
 - **Outputs.** Export asset, log, `RenderJob`.
 - **16:9.** For `full`, crop the bound region and scale **without changing its aspect ratio**. CFS migration regions are already 16:9, so a direct scale to 1920×1080 is valid for those regions only. For `program_wide` and `protected_master`, emit the source frame with no participant crop. Audio stream-copy when the source codec is acceptable; otherwise encode. Record which happened.
-- **9:16.** Legacy Reel renderer (static/frozen vertical layouts, subtitles, stack order) is the behavioral reference. It stays a separate renderer from 16:9. Shared code is limited to FFmpeg invocation, time formatting, and asset records.
+- **Output canvas.** 16:9 and 9:16 are render profiles of one sequence renderer. The picture treatment is either the whole source frame or multicam. The legacy 9:16 renderer (frozen layouts, subtitles, stack order) remains a historical pipeline in `legacy/`, not a second AMIX renderer.
 - **Cache.** Plan hash + source hash + encoder config + FFmpeg version. Re-render is explicit if the user wants a new file anyway.
 
 ## Jobs

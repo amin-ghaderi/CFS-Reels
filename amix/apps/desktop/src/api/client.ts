@@ -20,6 +20,7 @@ import type {
   ShotPlanState,
   ConversationState,
   ReelState,
+  SequenceRenderReadiness,
   ExportRecord,
   TimelineState,
 } from "./types";
@@ -207,8 +208,13 @@ export function saveShotOverride(
   return request("POST", `/v1/projects/${handle}/media/${assetId}/shot-overrides`, body);
 }
 
-export function listExports(handle: string, assetId: string): Promise<ExportRecord[]> {
-  return request("GET", `/v1/projects/${handle}/media/${assetId}/exports`);
+export function listExports(handle: string, assetId: string, sequenceId?: string): Promise<ExportRecord[]> {
+  const query = sequenceId ? `?sequence_id=${encodeURIComponent(sequenceId)}` : "";
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/exports${query}`);
+}
+
+export function sequenceRenderReadiness(handle: string, assetId: string, sequenceId: string): Promise<SequenceRenderReadiness> {
+  return request("GET", `/v1/projects/${handle}/media/${assetId}/sequences/${sequenceId}/render-readiness`);
 }
 
 export function timelineState(handle: string, assetId: string): Promise<TimelineState> {

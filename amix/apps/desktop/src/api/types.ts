@@ -387,6 +387,14 @@ export interface ReelState {
   drafts: ReelDraft[];
 }
 
+export interface SequenceRenderReadiness {
+  source_program_ready: boolean;
+  multicam_ready: boolean;
+  source_program_reason: string | null;
+  multicam_reason: string | null;
+  ffmpeg_ready: boolean;
+}
+
 export interface ExportRecord {
   job_id: string;
   filename: string;
@@ -395,6 +403,8 @@ export interface ExportRecord {
   height: number | null;
   aspect: string | null;
   preset_id: string | null;
+  visual_treatment?: string | null;
+  sequence_id?: string | null;
   created_at: string | null;
   status: string;
 }

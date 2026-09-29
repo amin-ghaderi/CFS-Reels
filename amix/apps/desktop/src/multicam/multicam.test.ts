@@ -147,15 +147,16 @@ describe("multicam review", () => {
     const sequence = { sequenceId: "seq-1", revision: 4 };
     const landscape = renderJobSpec("16:9", "1080", "plan-1", sequence);
     const portrait = renderJobSpec("9:16", "720", "plan-1", sequence);
-    expect(landscape.kind).toBe("render_multicam");
-    expect(portrait.kind).toBe("render_multicam");
+    expect(landscape.kind).toBe("render_sequence");
+    expect(portrait.kind).toBe("render_sequence");
     expect(landscape.spec.sequence_id).toBe("seq-1");
     expect(portrait.spec.sequence_id).toBe(landscape.spec.sequence_id);
     expect(portrait.spec.sequence_revision).toBe(4);
     expect(landscape.spec.sequence_revision).toBe(portrait.spec.sequence_revision);
-    expect(landscape.spec.shot_plan_run_id).toBe(portrait.spec.shot_plan_run_id);
-    expect(landscape.spec.preset).toBe("landscape_1080");
-    expect(portrait.spec.preset).toBe("portrait_720");
+    expect(landscape.spec.visual_treatment).toBe("multicam");
+    expect(portrait.spec.visual_treatment).toBe("multicam");
+    expect(landscape.spec.render_profile_id).toBe("landscape_1080");
+    expect(portrait.spec.render_profile_id).toBe("portrait_720");
     expect(landscape.kind).not.toBe("build_multicam_plan");
     expect(renderBlockReason({
       planPresent: true, planStale: true, sourceAvailable: true, ffmpegReady: true, presetKnown: true,

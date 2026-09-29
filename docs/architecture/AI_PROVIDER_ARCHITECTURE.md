@@ -82,7 +82,7 @@ Each task defines input schema, output schema, required capabilities, validation
 | Output | Candidates as word-id or turn-id spans plus a reason string. |
 | Capabilities | `GENERATE_STRUCTURED`, or none when the heuristic miner runs. |
 | Validation | Spans snap with the deterministic word snapper. Duration limits applied after snap. |
-| Fallback | Heuristic miner only (legacy keyword windows). That path is local and does not need a provider. |
+| Fallback | Heuristic miner only (legacy keyword windows). That path is local and does not need a provider. Current discovery does not persist a score or an aspect. |
 
 ### `reel_candidate_scoring`
 
@@ -92,7 +92,7 @@ Each task defines input schema, output schema, required capabilities, validation
 | Output | Score per candidate id. |
 | Capabilities | `SCORE` or `CHOOSE`. |
 | Validation | Unknown ids ignored. Scores stored with provider id. Missing scores do not delete candidates. |
-| Fallback | Heuristic score only. |
+| Fallback | Heuristic score only. This task is not part of V1 discovery. A candidate is valid with no score. |
 
 ### `final_reel_edit`
 

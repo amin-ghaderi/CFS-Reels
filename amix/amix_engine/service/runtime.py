@@ -13,7 +13,7 @@ from amix.amix_engine.jobs.diarize import DiarizeAudioJob
 from amix.amix_engine.jobs.multicam import BuildMulticamPlanJob
 from amix.amix_engine.jobs.conversation import MapConversationJob
 from amix.amix_engine.jobs.reels import DiscoverReelsJob
-from amix.amix_engine.jobs.render import RenderMulticamJob
+from amix.amix_engine.jobs.render import RenderMulticamJob, RenderSequenceJob
 from amix.amix_engine.jobs.overlap import DetectOverlapJob
 from amix.amix_engine.jobs.transcribe import TranscribeJob
 from amix.amix_engine.jobs.runner import JobManager
@@ -71,6 +71,7 @@ class EngineRuntime:
             DetectOverlapJob.kind: DetectOverlapJob(),
             BuildMulticamPlanJob.kind: BuildMulticamPlanJob(),
             RenderMulticamJob.kind: RenderMulticamJob(),
+            RenderSequenceJob.kind: RenderSequenceJob(),
             MapConversationJob.kind: MapConversationJob(),
             DiscoverReelsJob.kind: DiscoverReelsJob(),
         }

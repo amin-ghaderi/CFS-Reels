@@ -332,8 +332,18 @@ class ExportResponse(_Model):
     height: int | None = None
     aspect: str | None = None
     preset_id: str | None = None
+    visual_treatment: str | None = None
+    sequence_id: str | None = None
     created_at: str | None = None
     status: str
+
+
+class SequenceRenderReadinessResponse(_Model):
+    source_program_ready: bool
+    multicam_ready: bool
+    source_program_reason: str | None = None
+    multicam_reason: str | None = None
+    ffmpeg_ready: bool
 
 
 class TimelineClipResponse(_Model):

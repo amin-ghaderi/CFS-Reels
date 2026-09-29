@@ -79,7 +79,7 @@ Pixel layout is out of scope. Each workspace reads domain data; it does not inve
 | Transcript | Active `Transcript`, immutable `Word`s, active text revision, playback time |
 | Conversation | Participants, active speaker assignments, `Turn`s, `OverlapRegion`s, `ConversationThread`s |
 | Multicam | Layout spans, protected regions, active `ShotPlan` / `Shot`s, render status |
-| Reels | `ReelCandidate`s, active `ReelPlan`s, 9:16 render jobs |
+| Reels | `ReelCandidate`s, reel `EditorialSequence` drafts, render jobs for any output profile |
 | Export | Render outputs, destination paths, job history |
 | Settings / Models | Provider assignments, model manager, mode (offline / hybrid / best / custom), no secrets in the project file |
 
@@ -99,7 +99,7 @@ DIARIZE (analysis window) ──┼→ SHOT PLAN → 16:9 RENDER
 OVERLAP (video, layout,     │
          analysis window) ──┘
 
-NORMALIZE → SEMANTIC TASKS → REEL PLAN → 9:16 RENDER
+NORMALIZE → SEMANTIC TASKS → REEL DISCOVERY → REEL DRAFT → RENDER PROFILE
 ```
 
 Overlap does not depend on turns. The analysis window is part of diarize and overlap identity: a 10-minute span is not the same job as the whole episode. Normalize (text only) feeds semantic tasks and does not feed clocks. Detail: [MEDIA_PIPELINE.md](MEDIA_PIPELINE.md).
@@ -136,7 +136,7 @@ Reviewed before freezing this spec:
 | Storing both float seconds and integer ticks | Integer microseconds only. Display and FFmpeg convert at the boundary. |
 | Microservices for diarize vs render | One Python process, staged jobs, filesystem cache. |
 | Plugin API | Provider and model registries are enough until a third-party contract is real. |
-| Merging Reel and multicam into one “edit graph” framework | Two plans (`ShotPlan`, `ReelPlan`) sharing time, words, and turns. A unified NLE graph waits until both products need the same operations. |
+| Merging Reel and multicam into one “edit graph” framework | One editorial sequence model. Multicam is a visual treatment of that sequence, not a second timeline. |
 
 ## Self-review
 

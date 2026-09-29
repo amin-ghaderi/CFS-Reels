@@ -192,29 +192,25 @@ Active assignments are whichever run the project points at.
 
 ## ReelCandidate
 
-**Purpose.** A proposed vertical excerpt before it is an edit plan.
+**Purpose.** A proposed contiguous source selection. It is not an output format and it is not inherently vertical.
 
 **Identity.** `candidate_id`.
 
-**Fields.** Score, score breakdown, reason, anchor (`turn_id` or `word_id` span), `analysis_run_id`, producer (`heuristic` or a decision provider).
+**Fields.** Anchor (`conversation_thread_id`, `first_turn_id`, `last_turn_id`), title, summary, hook, `analysis_run_id`. Source time and word ids are derived by the engine from those turns.
 
-**Does not hold.** FFmpeg commands, burned-in subtitles, a claim that the score is comparable across unlike providers (store provider id beside the score).
+**Does not hold.** A required numeric score, aspect ratio, canvas size, render preset, FFmpeg commands, or burned-in subtitles. A later decision provider may rank candidates; V1 does not store a score.
 
-## ReelPlan
+## Reel draft
 
-**Purpose.** An ordered 9:16 edit that can render.
+**Purpose.** An independent `EditorialSequence` with purpose `reel`, created from one candidate. It is the kept source content, not a 9:16 plan.
 
-**Identity.** `reel_plan_id`.
+**Identity.** The sequence id. A source may have many reel drafts and at most one primary sequence.
 
-**Fields.** Title, ordered segments. Each segment: `start_word_id`, `end_word_id` (inclusive ids, expanded to a half-open time range from those words), source `asset_id`, optional thread id. Estimated duration is derived.
-
-**Validation.** Word ids exist on the active transcript. Expanded time range is inside the asset. Duration limits are config. A model may suggest ids; the validator drops unknown ids.
-
-**Does not hold.** Free-float in/out as the authority. Legacy plans that only have timestamps import by snapping to words, then the ids are authority.
+**Does not hold.** Visual treatment, aspect ratio, or render preset. Those are chosen when rendering. See ADR 0013.
 
 ## ShotPlan
 
-**Purpose.** A complete 16:9 directing decision for a master, from start to end, with no gaps.
+**Purpose.** A complete directing decision for a master, from start to end, with no gaps. The output canvas is chosen later.
 
 **Identity.** `shot_plan_id`.
 

@@ -7,9 +7,16 @@ import {
   draftTimeline,
   draftsRemain,
   editorActions,
+  exportsForSequence,
+  FORMAT_LABELS,
+  PICTURE_LABELS,
   reelPhase,
+  reelRenderSpec,
+  renderEnabled,
+  treatmentReason,
   workspaceOffers,
 } from "./reels";
+import type { ExportRecord, SequenceRenderReadiness } from "../api/types";
 
 const ready: ReelState = {
   transcript_present: true,
@@ -90,9 +97,47 @@ describe("reel workspace", () => {
     expect(editorActions()).toEqual(["Split at Playhead", "Remove Clip", "Reset"]);
   });
 
-  it("does not offer rendering, aspect, score, or ranking", () => {
-    expect(workspaceOffers()).toEqual({ render: false, aspectChoice: false, score: false, jev: false });
-    expect(JSON.stringify(candidate)).not.toMatch(/9:16|portrait|width|height|score/);
-    expect(JSON.stringify(draft)).not.toMatch(/9:16|portrait|preset/);
+  it("does not store aspect, score, or ranking on the draft", () => {
+    expect(workspaceOffers()).toEqual({ renderSection: true, aspectOnDraft: false, score: false, jev: false, captions: false });
+    expect(JSON.stringify(candidate)).not.toMatch(/portrait|score|jev/i);
+    expect(JSON.stringify(draft)).not.toMatch(/portrait|preset|caption/);
+  });
+
+  it("keeps picture, format, and sequence identity independent", () => {
+    const sourceLandscape = reelRenderSpec("reel-a", 4, "source_program", "16:9", "1080");
+    const sourcePortrait = reelRenderSpec("reel-a", 4, "source_program", "9:16", "1080");
+    const multicamPortrait = reelRenderSpec("reel-a", 4, "multicam", "9:16", "720");
+    expect(sourceLandscape.spec.sequence_id).toBe(sourcePortrait.spec.sequence_id);
+    expect(sourceLandscape.spec.sequence_revision).toBe(4);
+    expect(sourcePortrait.spec.sequence_revision).toBe(multicamPortrait.spec.sequence_revision);
+    expect(sourceLandscape.spec.visual_treatment).toBe("source_program");
+    expect(multicamPortrait.spec.visual_treatment).toBe("multicam");
+    expect(sourceLandscape.spec.render_profile_id).toBe("landscape_1080");
+    expect(sourcePortrait.spec.render_profile_id).toBe("portrait_1080");
+    expect(multicamPortrait.spec.render_profile_id).toBe("portrait_720");
+    expect(draft.revision).toBe(2);
+    expect(FORMAT_LABELS["16:9"]).toBe("Landscape 16:9");
+    expect(FORMAT_LABELS["9:16"]).toBe("Portrait 9:16");
+    expect(PICTURE_LABELS.source_program).toBe("Source / Program");
+    expect(JSON.stringify(FORMAT_LABELS)).not.toMatch(/Reel format|TikTok|Instagram|caption/i);
+  });
+
+  it("offers source picture without a shot plan and scopes export history", () => {
+    const readiness: SequenceRenderReadiness = {
+      source_program_ready: true,
+      multicam_ready: false,
+      source_program_reason: null,
+      multicam_reason: "shot_plan_missing",
+      ffmpeg_ready: true,
+    };
+    expect(renderEnabled(readiness, "source_program")).toBe(true);
+    expect(renderEnabled(readiness, "multicam")).toBe(false);
+    expect(treatmentReason(readiness.multicam_reason)).toMatch(/shot plan/);
+    const rows: ExportRecord[] = [
+      { job_id: "a", filename: "a.mp4", relative_path: "exports/a.mp4", width: 1920, height: 1080, aspect: "16:9", preset_id: "landscape_1080", visual_treatment: "source_program", sequence_id: "reel-a", created_at: "t", status: "succeeded" },
+      { job_id: "b", filename: "b.mp4", relative_path: "exports/b.mp4", width: 1080, height: 1920, aspect: "9:16", preset_id: "portrait_1080", visual_treatment: "multicam", sequence_id: "reel-b", created_at: "t", status: "succeeded" },
+    ];
+    expect(exportsForSequence(rows, "reel-a").map((row) => row.job_id)).toEqual(["a"]);
+    expect(exportsForSequence(rows, "reel-b").map((row) => row.job_id)).toEqual(["b"]);
   });
 });

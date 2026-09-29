@@ -201,7 +201,7 @@ class StoredMedia:
     source_media_asset_id: str | None = None
     proxy_profile: str | None = None
     proxy_tool: str | None = None
-    proxy_job_id: str | None = None
+    producing_job_id: str | None = None
     proxy_source_size: int | None = None
     proxy_source_mtime_ns: int | None = None
     proxy_created_at: str | None = None
@@ -762,7 +762,7 @@ class ProjectStore:
             row.source_media_asset_id = source_asset_id
             row.proxy_profile = profile
             row.proxy_tool = proxy_tool
-            row.proxy_job_id = job_id
+            row.producing_job_id = job_id
             row.proxy_source_size = source_size
             row.proxy_source_mtime_ns = source_mtime_ns
             row.proxy_created_at = _now()
@@ -1763,7 +1763,7 @@ class ProjectStore:
                 location_kind="project",
                 relative_path=relative_path.replace("\\", "/"),
                 source_media_asset_id=source_asset_id,
-                proxy_job_id=job_id,
+                producing_job_id=job_id,
                 proxy_created_at=_now(),
             )
             _write_probe(row, record)
@@ -2257,7 +2257,7 @@ def _media(row: MediaAssetRow) -> StoredMedia:
         source_media_asset_id=row.source_media_asset_id,
         proxy_profile=row.proxy_profile,
         proxy_tool=row.proxy_tool,
-        proxy_job_id=row.proxy_job_id,
+        producing_job_id=row.producing_job_id,
         proxy_source_size=row.proxy_source_size,
         proxy_source_mtime_ns=row.proxy_source_mtime_ns,
         proxy_created_at=row.proxy_created_at,

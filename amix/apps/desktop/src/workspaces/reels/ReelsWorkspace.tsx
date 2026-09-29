@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 
-import { createJob, createReelDraft, listJobs, reelState, removeEditClip, resetEdit, splitEdit } from "../../api/client";
+import { createJob, createReelDraft, listExports, listJobs, reelState, removeEditClip, resetEdit, sequenceRenderReadiness, splitEdit } from "../../api/client";
 import { asFailure } from "../../api/errors";
 import { isTerminal } from "../../api/jobs";
-import type { JobInfo, ProjectInfo, ReelCandidate, ReelDraft, ReelState } from "../../api/types";
+import type { ExportRecord, JobInfo, ProjectInfo, ReelCandidate, ReelDraft, ReelState, SequenceRenderReadiness } from "../../api/types";
+import type { OutputFormat, OutputResolution } from "../../multicam/multicam";
 import { usePlayback } from "../../playback/PlaybackSession";
 import { PreviewPlayer } from "../../playback/PreviewPlayer";
 import { useProjectData } from "../../project/ProjectData";
@@ -13,7 +14,13 @@ import {
   discoveryAction,
   draftTimeline,
   editorActions,
+  FORMAT_LABELS,
+  PICTURE_LABELS,
   reelPhase,
+  reelRenderSpec,
+  renderEnabled,
+  treatmentReason,
+  type PictureTreatment,
 } from "../../reels/reels";
 import { formatMicroseconds } from "../../time/format";
 import { TimelineCanvas } from "../../timeline/TimelineCanvas";
@@ -45,6 +52,11 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [clipId, setClipId] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [format, setFormat] = useState<OutputFormat>("16:9");
+  const [resolution, setResolution] = useState<OutputResolution>("1080");
+  const [picture, setPicture] = useState<PictureTreatment>("source_program");
+  const [readiness, setReadiness] = useState<SequenceRenderReadiness | null>(null);
+  const [exportsForDraft, setExportsForDraft] = useState<ExportRecord[]>([]);
 
   useEffect(() => {
     if (!asset) {
@@ -81,11 +93,38 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
   }, [asset, data, project.handle]);
 
   const discovering = jobs.some((job) => job.kind === "discover_reels" && job.media_asset_id === asset?.asset_id && !isTerminal(job.status));
+  const rendering = jobs.some((job) => job.kind === "render_sequence" && job.spec?.sequence_id === draftId && !isTerminal(job.status));
   const failed = jobs.some((job) => job.kind === "discover_reels" && job.media_asset_id === asset?.asset_id && job.status === "FAILED");
   const phase = reelPhase({ hasMedia: Boolean(asset), state, discovering, failed });
   const action = discoveryAction(phase);
   const selectedCandidate = state.candidates.find((item) => item.candidate_id === candidateId) ?? null;
   const selectedDraft = state.drafts.find((item) => item.sequence_id === draftId) ?? null;
+  useEffect(() => {
+    if (!asset || !draftId) {
+      setReadiness(null);
+      setExportsForDraft([]);
+      return;
+    }
+    let cancel = false;
+    void sequenceRenderReadiness(project.handle, asset.asset_id, draftId)
+      .then((next) => {
+        if (!cancel) {
+          setReadiness(next);
+        }
+      })
+      .catch(() => undefined);
+    void listExports(project.handle, asset.asset_id, draftId)
+      .then((next) => {
+        if (!cancel) {
+          setExportsForDraft(next);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancel = true;
+    };
+  }, [asset, draftId, jobs, project.handle, state.drafts]);
+
   const timeline = selectedDraft ? draftTimeline(selectedDraft) : null;
   const selectedClip = timeline?.clips.find((clip) => clip.clip_id === clipId) ?? null;
 
@@ -121,6 +160,19 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
       if (created) {
         setDraftId(created.sequence_id);
       }
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    }
+  }
+
+  async function renderDraft() {
+    if (!asset || !selectedDraft || !readiness || !renderEnabled(readiness, picture)) {
+      return;
+    }
+    const request = reelRenderSpec(selectedDraft.sequence_id, selectedDraft.revision, picture, format, resolution);
+    data.setNotice(null);
+    try {
+      await createJob(project.handle, request.kind, { mediaAssetId: asset.asset_id, spec: request.spec });
     } catch (error) {
       data.setNotice(asFailure(error));
     }
@@ -237,6 +289,50 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
               </button>
             ))}
           </div>
+        ) : null}
+        {selectedDraft && readiness ? (
+          <section aria-label="Render">
+            <h2>Render</h2>
+            <label>
+              Picture
+              <select value={picture} onChange={(event) => setPicture(event.target.value as PictureTreatment)}>
+                <option value="source_program">{PICTURE_LABELS.source_program}</option>
+                <option value="multicam" disabled={!readiness.multicam_ready}>{PICTURE_LABELS.multicam}</option>
+              </select>
+            </label>
+            {!readiness.multicam_ready ? <p>{treatmentReason(readiness.multicam_reason)}</p> : null}
+            <label>
+              Format
+              <select value={format} onChange={(event) => setFormat(event.target.value as OutputFormat)}>
+                <option value="16:9">{FORMAT_LABELS["16:9"]}</option>
+                <option value="9:16">{FORMAT_LABELS["9:16"]}</option>
+              </select>
+            </label>
+            <label>
+              Resolution
+              <select value={resolution} onChange={(event) => setResolution(event.target.value as OutputResolution)}>
+                <option value="1080">1080</option>
+                <option value="720">720</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              disabled={!renderEnabled(readiness, picture) || rendering}
+              onClick={() => void renderDraft()}
+            >
+              Render
+            </button>
+            {exportsForDraft.length === 0 ? <p>No completed exports for this draft.</p> : (
+              <ul className="review-list">
+                {exportsForDraft.map((row) => (
+                  <li key={row.job_id}>
+                    {row.filename} · {row.visual_treatment === "source_program" ? PICTURE_LABELS.source_program : PICTURE_LABELS.multicam}
+                    {" · "}{row.width ?? "?"}×{row.height ?? "?"} · {row.aspect ?? ""} · {row.status}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         ) : null}
         {confirmReset ? (
           <div className="row">

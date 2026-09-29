@@ -1,7 +1,10 @@
 /** Reel workspace state. A reel is a source selection, not an output format. */
 
-import type { ReelCandidate, ReelDraft, ReelState, TimelineClip, TimelineState } from "../api/types";
+import type { ExportRecord, ReelCandidate, ReelDraft, ReelState, SequenceRenderReadiness, TimelineClip, TimelineState } from "../api/types";
+import { presetId, type OutputFormat, type OutputResolution } from "../multicam/multicam";
 import { removedRanges } from "../timeline/timeline";
+
+export type PictureTreatment = "source_program" | "multicam";
 
 export type ReelPhase =
   | "no_media"
@@ -97,10 +100,65 @@ export function editorActions(): readonly string[] {
   return ["Split at Playhead", "Remove Clip", "Reset"];
 }
 
-export function workspaceOffers(): { render: false; aspectChoice: false; score: false; jev: false } {
-  return { render: false, aspectChoice: false, score: false, jev: false };
+export function workspaceOffers(): { renderSection: true; aspectOnDraft: false; score: false; jev: false; captions: false } {
+  return { renderSection: true, aspectOnDraft: false, score: false, jev: false, captions: false };
 }
 
 export function draftsRemain(state: ReelState): ReelDraft[] {
   return state.drafts;
 }
+
+export function reelRenderSpec(
+  sequenceId: string,
+  revision: number,
+  treatment: PictureTreatment,
+  format: OutputFormat,
+  resolution: OutputResolution,
+) {
+  return {
+    kind: "render_sequence" as const,
+    spec: {
+      sequence_id: sequenceId,
+      sequence_revision: revision,
+      visual_treatment: treatment,
+      render_profile_id: presetId(format, resolution),
+    },
+  };
+}
+
+export function treatmentReason(code: string | null): string {
+  switch (code) {
+    case "shot_plan_missing":
+      return "Multicam needs a current shot plan.";
+    case "shot_plan_stale":
+      return "The shot plan is out of date.";
+    case "layout_incompatible":
+      return "The layout no longer matches the shot plan.";
+    case "source_missing":
+      return "The original source media is missing.";
+    case "ffmpeg_missing":
+      return "FFmpeg is not available.";
+    case "empty_sequence":
+      return "This reel draft has no kept picture.";
+    default:
+      return "";
+  }
+}
+
+export function renderEnabled(readiness: SequenceRenderReadiness, treatment: PictureTreatment): boolean {
+  return treatment === "source_program" ? readiness.source_program_ready : readiness.multicam_ready;
+}
+
+export function exportsForSequence(rows: readonly ExportRecord[], sequenceId: string): ExportRecord[] {
+  return rows.filter((row) => row.sequence_id === sequenceId);
+}
+
+export const PICTURE_LABELS = {
+  source_program: "Source / Program",
+  multicam: "Multicam",
+} as const;
+
+export const FORMAT_LABELS = {
+  "16:9": "Landscape 16:9",
+  "9:16": "Portrait 9:16",
+} as const;

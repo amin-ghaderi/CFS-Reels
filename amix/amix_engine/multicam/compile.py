@@ -144,6 +144,47 @@ def compile_kept_render(
             has_audio=has_audio,
         )
     pieces = _kept_pieces(shots, clips, bindings, preset.width, preset.height, source_width, source_height)
+    return _finish_kept(
+        pieces, clips, preset, fps_num, fps_den, container_start_us, has_audio,
+    )
+
+
+def compile_source_program(
+    *,
+    clips: list[tuple[int, int]],
+    preset: RenderPreset,
+    fps_num: int,
+    fps_den: int,
+    container_start_us: int,
+    source_width: int,
+    source_height: int,
+    has_audio: bool,
+) -> RenderPlan:
+    """One fitted source picture per kept clip. Camera cuts are not consulted."""
+    if source_width <= 0 or source_height <= 0:
+        raise FramingError("render_requires_probe", "Probe this media before rendering.")
+    if not clips:
+        raise FramingError("empty_plan", "This edit has no output frames.")
+    pieces = [
+        {
+            "start_us": start_us,
+            "end_us": end_us,
+            "presentation": "source_program",
+            "participant_id": None,
+            "framing": FIT,
+            "crop_x": None,
+            "crop_y": None,
+            "crop_w": None,
+            "crop_h": None,
+        }
+        for start_us, end_us in clips
+    ]
+    return _finish_kept(
+        pieces, clips, preset, fps_num, fps_den, container_start_us, has_audio,
+    )
+
+
+def _finish_kept(pieces, clips, preset, fps_num, fps_den, container_start_us, has_audio) -> RenderPlan:
     duration = sum(end - start for start, end in clips)
     segments: list[RenderSegment] = []
     sequence_origin = 0

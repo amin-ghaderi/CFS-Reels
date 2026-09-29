@@ -85,7 +85,7 @@ class MediaAssetRow(Base):
     )
     proxy_profile: Mapped[str | None] = mapped_column(Text)
     proxy_tool: Mapped[str | None] = mapped_column(Text)
-    proxy_job_id: Mapped[str | None] = mapped_column(Text)
+    producing_job_id: Mapped[str | None] = mapped_column(Text)
     proxy_source_size: Mapped[int | None] = mapped_column(BigInteger)
     proxy_source_mtime_ns: Mapped[int | None] = mapped_column(BigInteger)
     proxy_created_at: Mapped[str | None] = mapped_column(Text)

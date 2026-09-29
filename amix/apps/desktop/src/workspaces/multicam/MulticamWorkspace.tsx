@@ -123,7 +123,9 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
   const overlapJob = asset ? runningJob(jobs, asset.asset_id, "detect_overlap") : null;
   const planJob = asset ? runningJob(jobs, asset.asset_id, "build_multicam_plan") : null;
   const failed = asset ? latestFailure(jobs, asset.asset_id) : null;
-  const renderJob = asset ? runningJob(jobs, asset.asset_id, "render_multicam") : null;
+  const renderJob = asset
+    ? runningJob(jobs, asset.asset_id, "render_sequence") ?? runningJob(jobs, asset.asset_id, "render_multicam")
+    : null;
   const chosenPreset = presetId(format, resolution);
   const block = readiness ? renderBlockReason({
     planPresent: Boolean(plan.run_id),

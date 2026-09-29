@@ -50,6 +50,7 @@ from amix.amix_engine.service.schemas import (
     OverlapRegionResponse,
     OverlapStateResponse,
     ExportResponse,
+    SequenceRenderReadinessResponse,
     ShotOverrideRequest,
     ShotPlanStateResponse,
     ShotResponse,
@@ -64,6 +65,7 @@ from amix.amix_engine.service.schemas import (
 )
 from amix.amix_engine.speakers import SpeakerMapRejected, apply_cluster_map, speaker_status
 from amix.amix_engine.jobs.media import proxy_state
+from amix.amix_engine.jobs.render import sequence_render_readiness
 from amix.amix_engine.multicam.apply import multicam_readiness
 from amix.amix_engine.storage.errors import NoActiveTranscript
 from amix.amix_engine.storage.kinds import DEFAULT_MEDIA_ROLE, MEDIA_ROLES, WORD_PAGE_LIMIT
@@ -191,10 +193,18 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
         authorize(request)
         return call(lambda: _save_override(runtime, handle, asset_id, body))
 
-    @app.get("/v1/projects/{handle}/media/{asset_id}/exports", response_model=list[ExportResponse])
-    def list_exports(handle: str, asset_id: str, request: Request) -> list[ExportResponse]:
+    @app.get(
+        "/v1/projects/{handle}/media/{asset_id}/sequences/{sequence_id}/render-readiness",
+        response_model=SequenceRenderReadinessResponse,
+    )
+    def sequence_readiness(handle: str, asset_id: str, sequence_id: str, request: Request) -> SequenceRenderReadinessResponse:
         authorize(request)
-        return call(lambda: _exports(runtime, handle, asset_id))
+        return call(lambda: _render_readiness(runtime, handle, asset_id, sequence_id))
+
+    @app.get("/v1/projects/{handle}/media/{asset_id}/exports", response_model=list[ExportResponse])
+    def list_exports(handle: str, asset_id: str, request: Request, sequence_id: str | None = None) -> list[ExportResponse]:
+        authorize(request)
+        return call(lambda: _exports(runtime, handle, asset_id, sequence_id))
 
     @app.get("/v1/projects/{handle}/media/{asset_id}/timeline", response_model=TimelineResponse)
     def timeline_state(handle: str, asset_id: str, request: Request) -> TimelineResponse:
@@ -692,18 +702,37 @@ def _shot_plan_view(described: dict) -> ShotPlanStateResponse:
     )
 
 
-def _exports(runtime: EngineRuntime, handle: str, asset_id: str) -> list[ExportResponse]:
+def _render_readiness(runtime: EngineRuntime, handle: str, asset_id: str, sequence_id: str) -> SequenceRenderReadinessResponse:
+    from amix.amix_engine.storage.errors import ProjectDatabaseInvalid
+
+    store = _store(runtime, handle)
+    try:
+        payload = sequence_render_readiness(store, asset_id, sequence_id)
+    except ProjectDatabaseInvalid as exc:
+        raise ApiError(404, "unknown_sequence", "That sequence is not in this project.") from exc
+    return SequenceRenderReadinessResponse.model_validate(payload)
+
+
+def _exports(runtime: EngineRuntime, handle: str, asset_id: str, sequence_id: str | None = None) -> list[ExportResponse]:
     store = _store(runtime, handle)
     store.get_media(asset_id)
     rows = []
     for job in store.list_processing_jobs():
-        if job.kind != "render_multicam" or job.media_asset_id != asset_id:
+        if job.kind not in {"render_multicam", "render_sequence"} or job.media_asset_id != asset_id:
             continue
         if job.status != "succeeded" or not isinstance(job.result, dict):
+            continue
+        result_sequence = job.result.get("sequence_id")
+        purpose = job.result.get("sequence_purpose")
+        if sequence_id is not None:
+            if result_sequence != sequence_id:
+                continue
+        elif purpose == "reel":
             continue
         preset_id = job.result.get("preset_id")
         preset = PRESETS.get(preset_id) if isinstance(preset_id, str) else None
         relative = job.result.get("relative_path")
+        treatment = job.result.get("visual_treatment")
         rows.append(ExportResponse(
             job_id=job.job_id,
             filename=str(relative).rsplit("/", 1)[-1] if isinstance(relative, str) else job.job_id,
@@ -712,6 +741,8 @@ def _exports(runtime: EngineRuntime, handle: str, asset_id: str) -> list[ExportR
             height=job.result.get("height"),
             aspect=None if preset is None else preset.aspect,
             preset_id=preset_id if isinstance(preset_id, str) else None,
+            visual_treatment=treatment if isinstance(treatment, str) else ("multicam" if job.kind == "render_multicam" else None),
+            sequence_id=result_sequence if isinstance(result_sequence, str) else None,
             created_at=job.finished_at,
             status=job.status,
         ))

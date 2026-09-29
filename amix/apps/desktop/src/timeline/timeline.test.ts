@@ -84,8 +84,8 @@ describe("output aspect", () => {
     const portrait = renderJobSpec("9:16", "1080", "plan", sequence);
     expect(landscape.spec.sequence_id).toBe(portrait.spec.sequence_id);
     expect(landscape.spec.sequence_revision).toBe(portrait.spec.sequence_revision);
-    expect(landscape.spec.preset).not.toBe(portrait.spec.preset);
-    expect(landscape.kind).toBe("render_multicam");
+    expect(landscape.spec.render_profile_id).not.toBe(portrait.spec.render_profile_id);
+    expect(landscape.kind).toBe("render_sequence");
     expect(portrait.kind).not.toBe("build_multicam_plan");
   });
 });

@@ -63,17 +63,19 @@ The filter graph is one constant-frame-rate conversion, then per-segment frame t
 
 ## Job, cancellation, export
 
-The job kind is `render_multicam`. The request is the source media id, the active shot-plan id, and a preset id. If an editorial sequence exists for that source, the render uses its kept clips. Optional `sequence_id` and `sequence_revision` must match that sequence or the job fails `sequence_changed`. Encoding starts only when the source is present, probed, and the plan belongs to it and is not stale. FFmpeg must be available.
+Multicam rendering is one visual treatment of the generic sequence renderer. Prefer the job kind `render_sequence` with `visual_treatment=multicam`, the primary sequence when one exists, and a render profile id. Historic `render_multicam` jobs remain readable and still encode through the same compiler.
+
+The Multicam workspace submits `render_sequence`. Encoding starts only when the source is present, probed, and the plan belongs to it and is not stale. FFmpeg must be available. Optional `sequence_id` and `sequence_revision` must match the primary sequence or the job fails `sequence_changed`.
 
 Progress is FFmpeg `-progress` mapped to 0..10000 of the render range. It stays under 10000 until the file has been checked with ffprobe, moved into place, and stored as an export asset. 10000 means that export exists.
 
 The file is written under `exports/.tmp/` and moved to `exports/<job id>.mp4` only after that check. The project folder is the only destination. Cancel stops the FFmpeg process tree, deletes the temp file, and does not add an export. The shot plan and the overrides stay. Shutdown cancels the same way before the project lock is released. A crash leaves the job `INTERRUPTED` on the next writable open. There is no resume. A retry is a new job.
 
-The job result records the source, the shot-plan run, the override fingerprint, the effective-plan fingerprint, the editorial sequence id, revision, and fingerprint when a sequence exists, the profile and preset, the canvas, the frame-rate rational, the framing policy, the FFmpeg version, a lightweight source identity, and the export media id. The export asset stores the probed file, not the requested numbers alone. A later sequence edit does not delete an older export.
+The job result records the source, the visual treatment, the shot-plan run, the override fingerprint, the effective-plan fingerprint, the editorial sequence id, purpose, revision, and fingerprint when a sequence exists, the profile and preset, the canvas, the frame-rate rational, the framing policy, the FFmpeg version, a lightweight source identity, and the export media id. The export asset stores the probed file, not the requested numbers alone. A later sequence edit does not delete an older export.
 
-Completed exports are listed on the Multicam workspace. Playback of those files is not part of this phase. The proxy player is unchanged.
+Completed exports are listed on the Multicam workspace. Reel exports are listed under their own sequence. Playback of those files is not part of this phase. The proxy player is unchanged.
 
-Switching 16:9 and 9:16 does not rebuild turns, overlap, the shot plan, or the editorial sequence.
+Switching 16:9 and 9:16 does not rebuild turns, overlap, the shot plan, or the editorial sequence. See `SEQUENCE_RENDERING.md`.
 
 ## Sequence cuts
 
@@ -85,4 +87,4 @@ Camera changes still do not cut audio. Editorial clip boundaries do.
 
 ## Not in this phase
 
-Reels, a stacked portrait layout, reaction inserts, crossfades, clip reordering, multiple sources, face-tracked framing, and publication are not implemented. A later framing policy can replace center-fill. This renderer does not have to change its job shape for a different canvas size.
+A stacked portrait layout, reaction inserts, crossfades, clip reordering, multiple sources, face-tracked framing, reel-local camera overrides, captions, and publication are not implemented. A later framing policy can replace center-fill. This renderer does not have to change its job shape for a different canvas size.

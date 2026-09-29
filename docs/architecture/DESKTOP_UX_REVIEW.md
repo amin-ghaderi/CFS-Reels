@@ -39,7 +39,7 @@ The six destinations map onto the workspaces in `PRODUCT_ARCHITECTURE.md` and ea
 | Transcript | Words, text revisions | Keep. |
 | Conversation | Turns, overlap, threads | Keep for now. It shares preview and time navigation with Transcript. Decide whether it becomes a mode of Transcript only after Transcript exists and the overlap is visible in use. |
 | Multicam | `ShotPlan` / `Shot` | Keep. |
-| Reels | `ReelCandidate` / `ReelPlan` | Keep. Candidate browser, preview, and plan editing are one workflow, not three destinations. |
+| Reels | `ReelCandidate` and reel drafts | Keep. Candidate browser, draft editing, and render are one workflow. Output aspect is not the reel itself. |
 | Export | Render outputs and render history | Keep as a destination for the render queue and outputs. Render actions must also be reachable from Multicam and Reels, so Export is not the only way to render. |
 
 Six to seven destinations will not clutter a switcher. Clutter would come from promoting sub-views (candidate list, participant setup, render queue) to top-level entries. They should stay inside their workspace.

@@ -72,8 +72,8 @@ The core structure is sound for a small team: one engine process, SQLite plus fi
 
 ### I-03 Word-ID anchors cannot express real editorial cuts
 
-- **Severity:** IMPORTANT
-- **Affected:** `DOMAIN_MODEL.md` (ReelPlan), `TIMELINE_MODEL.md`, ADR 0009
+- **Severity:** IMPORTANT (superseded for reels: AMIX V1 reel drafts are EditorialSequences on source microseconds; word-id ReelPlan is not the current product model — see ADR 0013)
+- **Affected:** `DOMAIN_MODEL.md` (historical ReelPlan), `TIMELINE_MODEL.md`, ADR 0009
 - **Current decision:** A Reel segment is `start_word_id..end_word_id`, expanded to the words’ times. Legacy timestamp-only plans snap to words.
 - **Problem:** Whisper word boundaries are routinely early or late by 100–300 ms. Legacy padded them (`snap_range_to_words`, `pad_s=0.04`). Editors also cut inside the silence between words, add a breath of head or tail, or trim a clipped plosive. None of that can be expressed with ids alone. The documents also say both that the UI “writes edits back as integer microseconds” and that the player’s float “is not written as authority”, so a playhead-based trim has no defined home.
 - **Failure scenario:** Every rendered Reel starts or ends clipped on a mistimed word. The first user request (“start 200 ms earlier”) forces either a schema change or reintroduces free timestamps, which ADR 0009 was written to prevent.

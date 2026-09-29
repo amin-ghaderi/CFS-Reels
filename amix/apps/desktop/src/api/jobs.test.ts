@@ -32,6 +32,10 @@ describe("job display helpers", () => {
     expect(jobTitle("discover_reels")).toBe("Discover reels");
     expect(jobTitle("render_multicam", { preset: "portrait_1080" })).toBe("Render multicam · Portrait 1080");
     expect(jobTitle("render_multicam")).toBe("Render multicam");
+    expect(jobTitle("render_sequence", {
+      visual_treatment: "source_program",
+      render_profile_id: "portrait_1080",
+    })).toBe("Render · Source / Program · Portrait 1080");
   });
 
   it("lists active jobs before terminal history", () => {
