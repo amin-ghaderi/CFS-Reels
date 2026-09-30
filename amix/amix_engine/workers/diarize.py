@@ -11,6 +11,8 @@ import sys
 import time
 from pathlib import Path
 
+from amix.amix_engine.adapters.media.publish import publish_pid, publish_text
+
 _MODES = frozenset({"diarize", "wait", "fail", "emit"})
 
 
@@ -35,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     pid_path = spec.get("pid_path")
     if isinstance(pid_path, str) and pid_path:
         try:
-            Path(pid_path).write_text(str(os.getpid()), encoding="ascii")
+            publish_pid(pid_path, os.getpid())
         except OSError:
             _fail("diarization_failed")
             return 1
@@ -107,7 +109,7 @@ def _diarize(spec: dict) -> int:
         },
     }
     try:
-        Path(result_path).write_text(json.dumps(payload), encoding="utf-8")
+        publish_text(result_path, json.dumps(payload))
     except OSError:
         _fail("diarization_failed")
         return 1
@@ -150,7 +152,7 @@ def _emit_fixture(spec: dict) -> int:
     payload.setdefault("window_end_us", origin)
     _emit({"type": "progress", "bp": 9000})
     try:
-        Path(result_path).write_text(json.dumps(payload), encoding="utf-8")
+        publish_text(result_path, json.dumps(payload))
     except OSError:
         _fail("diarization_failed")
         return 1

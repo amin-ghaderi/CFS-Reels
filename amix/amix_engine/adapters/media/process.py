@@ -1,9 +1,16 @@
-"""Run one media tool as an argument list. There is no shell."""
+"""Run one media tool as an argument list. There is no shell.
+
+A child is registered with this module in the same transition that creates it.
+Cancellation and shutdown can then terminate it. There is no interval where
+the OS process exists and this owner cannot find it, except inside ``Popen``
+itself, which is waited out before shutdown finishes.
+"""
 from __future__ import annotations
 
 import os
 import subprocess
 import threading
+import time
 from dataclasses import dataclass
 from queue import Empty, Queue
 from typing import Callable, Protocol
@@ -13,6 +20,10 @@ from amix.amix_engine.adapters.media.errors import ProcessCancelled
 _STDERR_CAP = 4000
 _POLL_S = 0.05
 _GRACE_S = 0.4
+_lifecycle_hook: Callable[[str], None] | None = None
+_owned: dict[int, subprocess.Popen] = {}
+_spawning = 0
+_ownership = threading.Condition(threading.Lock())
 
 
 class CancelSignal(Protocol):
@@ -27,6 +38,40 @@ class ProcessResult:
     stderr_tail: str
 
 
+def set_lifecycle_hook(hook: Callable[[str], None] | None) -> None:
+    """Test-only observation of spawn stages. Not a product API."""
+    global _lifecycle_hook
+    _lifecycle_hook = hook
+
+
+def owned_pids() -> list[int]:
+    with _ownership:
+        return list(_owned)
+
+
+def terminate_owned_processes(timeout_s: float) -> None:
+    """Finish any spawn transition, then stop every registered child."""
+    deadline = time.monotonic() + max(0.0, timeout_s)
+    announced = False
+    while True:
+        with _ownership:
+            if not _spawning or time.monotonic() >= deadline:
+                processes = list(_owned.values())
+                break
+            remaining = deadline - time.monotonic()
+        if not announced:
+            announced = True
+            _note("shutdown_waiting")
+        with _ownership:
+            if not _spawning or time.monotonic() >= deadline:
+                processes = list(_owned.values())
+                break
+            _ownership.wait(min(remaining, 30.0))
+    for process in processes:
+        _terminate_tree(process)
+        _reap(process)
+
+
 def run_process(
     args: list[str],
     cancel: CancelSignal | None,
@@ -36,14 +81,7 @@ def run_process(
 ) -> ProcessResult:
     if not args or not isinstance(args, list):
         raise ValueError("media tools take an argument list")
-    process = subprocess.Popen(
-        args,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=False,
-        **_spawn_kwargs(),
-    )
+    process = _spawn_owned(args, cancel)
     stdout_lines: Queue[bytes | None] = Queue()
     stderr_tail = bytearray()
     stderr_lock = threading.Lock()
@@ -90,10 +128,8 @@ def run_process(
     finally:
         if process.poll() is None:
             _terminate_tree(process)
-            try:
-                process.wait(timeout=2)
-            except subprocess.TimeoutExpired:
-                pass
+            _reap(process)
+        _release(process)
         stdout_thread.join(timeout=1)
         stderr_thread.join(timeout=1)
         with stderr_lock:
@@ -131,6 +167,94 @@ def _read_stderr(pipe, tail: bytearray, lock: threading.Lock) -> None:
             pipe.close()
 
 
+def _note(stage: str) -> None:
+    hook = _lifecycle_hook
+    if hook is not None:
+        hook(stage)
+
+
+def _begin_spawn() -> None:
+    global _spawning
+    with _ownership:
+        _spawning += 1
+
+
+def _end_spawn() -> None:
+    global _spawning
+    with _ownership:
+        _spawning -= 1
+        if _spawning == 0:
+            _ownership.notify_all()
+
+
+def _register(process: subprocess.Popen) -> None:
+    with _ownership:
+        _owned[process.pid] = process
+
+
+def _release(process: subprocess.Popen) -> None:
+    with _ownership:
+        current = _owned.get(process.pid)
+        if current is process:
+            _owned.pop(process.pid, None)
+
+
+def _spawn_owned(args: list[str], cancel: CancelSignal | None) -> subprocess.Popen:
+    """Create the child and register it before returning to the caller."""
+    _begin_spawn()
+    process: subprocess.Popen | None = None
+    try:
+        _note("before_spawn")
+        if cancel is not None and cancel.is_cancelled():
+            raise ProcessCancelled()
+        process = subprocess.Popen(
+            args,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False,
+            **_spawn_kwargs(),
+        )
+        _register(process)
+        _note("after_register")
+        if cancel is not None and cancel.is_cancelled():
+            _terminate_tree(process)
+            _reap(process)
+            _close_pipes(process)
+            _release(process)
+            process = None
+            raise ProcessCancelled()
+        return process
+    except ProcessCancelled:
+        raise
+    except Exception:
+        if process is not None:
+            _terminate_tree(process)
+            _reap(process)
+            _close_pipes(process)
+            _release(process)
+        raise
+    finally:
+        _end_spawn()
+
+
+def _reap(process: subprocess.Popen) -> None:
+    try:
+        process.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        return
+
+
+def _close_pipes(process: subprocess.Popen) -> None:
+    for pipe in (process.stdout, process.stderr, process.stdin):
+        if pipe is None:
+            continue
+        try:
+            pipe.close()
+        except OSError:
+            continue
+
+
 def _spawn_kwargs() -> dict:
     if os.name == "nt":
         return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
@@ -138,6 +262,7 @@ def _spawn_kwargs() -> dict:
 
 
 def _terminate_tree(process: subprocess.Popen) -> None:
+    """Stop one process tree. A second caller is a no-op once it has exited."""
     if process.poll() is not None:
         return
     if os.name == "nt":
@@ -146,20 +271,23 @@ def _terminate_tree(process: subprocess.Popen) -> None:
             process.wait(timeout=_GRACE_S)
             return
         except subprocess.TimeoutExpired:
-            _taskkill(process.pid, force=True)
+            if process.poll() is None:
+                _taskkill(process.pid, force=True)
         return
     import signal
 
     try:
         os.killpg(process.pid, signal.SIGTERM)
-    except ProcessLookupError:
+    except (ProcessLookupError, PermissionError, OSError):
         return
     try:
         process.wait(timeout=_GRACE_S)
     except subprocess.TimeoutExpired:
+        if process.poll() is not None:
+            return
         try:
             os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
+        except (ProcessLookupError, PermissionError, OSError):
             return
 
 

@@ -135,10 +135,15 @@ class JobManager:
             time.sleep(0.01)
 
     def shutdown(self, stores: list[ProjectStore], timeout_s: float) -> bool:
+        from amix.amix_engine.adapters.media.process import terminate_owned_processes
+
         self._accepting = False
         for store in stores:
             self.cancel_all(store)
-        deadline = time.monotonic() + timeout_s
+        started = time.monotonic()
+        terminate_owned_processes(timeout_s)
+        remaining = max(0.0, timeout_s - (time.monotonic() - started))
+        deadline = time.monotonic() + remaining
         while time.monotonic() < deadline:
             if all(not self._busy(store) for store in stores):
                 break

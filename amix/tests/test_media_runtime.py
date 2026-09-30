@@ -14,6 +14,7 @@ from unittest.mock import patch
 from amix.amix_engine.adapters.media.discovery import MediaTools, discover_tools
 from amix.amix_engine.adapters.media.errors import MediaToolMissing, ProbeFailed
 from amix.amix_engine.adapters.media.process import ProcessResult, run_process
+from amix.amix_engine.adapters.media.publish import read_pid
 from amix.amix_engine.adapters.media.probe import parse_probe_document, parse_probe_json
 from amix.amix_engine.adapters.media.proxy import preview_size, progress_basis_points, proxy_command
 from amix.amix_engine.adapters.media.timeparse import seconds_text_to_us
@@ -30,6 +31,24 @@ from amix.amix_engine.storage.project import (
     open_project,
 )
 from amix.amix_engine.storage.jobs import CANCELLED
+
+_PID_SCRIPT = (
+    "import os, sys, time; from pathlib import Path; "
+    "from amix.amix_engine.adapters.media.publish import publish_pid; "
+    "publish_pid(Path(sys.argv[1]), os.getpid()); time.sleep(60)"
+)
+
+
+def _wait_complete_pid(path: Path, timeout: float = 5) -> int:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if path.is_file():
+            pid = read_pid(path)
+            if pid is None:
+                raise AssertionError(f"incomplete pid marker: {path.read_text(encoding='utf-8')!r}")
+            return pid
+        time.sleep(0.02)
+    raise AssertionError(f"pid marker did not appear: {path}")
 
 
 def _probe(**overrides) -> dict:
@@ -370,11 +389,10 @@ class StoreAndJobTests(unittest.TestCase):
                     ))
                 self.assertIsNone(session.store.find_proxy(asset_id))
                 pid_path = root / "pid.txt"
-                script = "import os, pathlib, sys, time; pathlib.Path(sys.argv[1]).write_text(str(os.getpid()), encoding='ascii'); time.sleep(60)"
                 tools = MediaTools(Path("ffmpeg"), Path("ffprobe"), "ffmpeg test", "ffprobe test")
                 with patch("amix.amix_engine.jobs.media.discover_tools", return_value=tools), patch(
                     "amix.amix_engine.jobs.media.proxy_command",
-                    return_value=[sys.executable, "-c", script, str(pid_path)],
+                    return_value=[sys.executable, "-c", _PID_SCRIPT, str(pid_path)],
                 ):
                     job = runtime.jobs.submit(
                         session.store,
@@ -382,11 +400,7 @@ class StoreAndJobTests(unittest.TestCase):
                         {"profile": "amix.proxy.v1"},
                         asset_id,
                     )
-                    deadline = time.monotonic() + 5
-                    while not pid_path.is_file() and time.monotonic() < deadline:
-                        time.sleep(0.02)
-                    self.assertTrue(pid_path.is_file())
-                    pid = int(pid_path.read_text(encoding="ascii"))
+                    pid = _wait_complete_pid(pid_path)
                     self.assertTrue(_alive(pid))
                     runtime.jobs.cancel(session.store, job.job_id)
                     self.assertTrue(runtime.jobs.wait_until_idle(session.store, 5))
@@ -413,18 +427,14 @@ class StoreAndJobTests(unittest.TestCase):
             )
             session.store.apply_probe(asset_id, _record(byte_size=4))
             pid_path = root / "pid.txt"
-            script = "import os, pathlib, sys, time; pathlib.Path(sys.argv[1]).write_text(str(os.getpid()), encoding='ascii'); time.sleep(60)"
             tools = MediaTools(Path("ffmpeg"), Path("ffprobe"), "ffmpeg test", "ffprobe test")
             try:
                 with patch("amix.amix_engine.jobs.media.discover_tools", return_value=tools), patch(
                     "amix.amix_engine.jobs.media.proxy_command",
-                    return_value=[sys.executable, "-c", script, str(pid_path)],
+                    return_value=[sys.executable, "-c", _PID_SCRIPT, str(pid_path)],
                 ):
                     runtime.jobs.submit(session.store, GENERATE_PROXY, {"profile": "amix.proxy.v1"}, asset_id)
-                    deadline = time.monotonic() + 5
-                    while not pid_path.is_file() and time.monotonic() < deadline:
-                        time.sleep(0.02)
-                    pid = int(pid_path.read_text(encoding="ascii"))
+                    pid = _wait_complete_pid(pid_path)
                     runtime.shutdown()
                     self.assertFalse(_alive(pid))
             finally:

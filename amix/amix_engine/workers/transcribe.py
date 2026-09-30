@@ -11,6 +11,8 @@ import sys
 import time
 from pathlib import Path
 
+from amix.amix_engine.adapters.media.publish import publish_pid, publish_text
+
 os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
 os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
@@ -39,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     pid_path = spec.get("pid_path")
     if isinstance(pid_path, str) and pid_path:
         try:
-            Path(pid_path).write_text(str(os.getpid()), encoding="ascii")
+            publish_pid(pid_path, os.getpid())
         except OSError:
             _fail("speech_transcription_failed")
             return 1
@@ -88,7 +90,7 @@ def _transcribe(spec: dict) -> int:
             compute_type=compute,
             on_segment_end_us=on_segment,
         )
-        Path(result_path).write_text(dump_evidence(evidence), encoding="utf-8")
+        publish_text(result_path, dump_evidence(evidence))
     except SttEvidenceError:
         _fail("speech_transcription_failed")
         return 1
@@ -107,7 +109,7 @@ def _emit_fixture(spec: dict) -> int:
         return 1
     try:
         text = Path(evidence_path).read_text(encoding="utf-8")
-        Path(result_path).write_text(text, encoding="utf-8")
+        publish_text(result_path, text)
     except OSError:
         _fail("speech_transcription_failed")
         return 1

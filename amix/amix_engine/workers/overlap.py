@@ -11,6 +11,8 @@ import sys
 import time
 from pathlib import Path
 
+from amix.amix_engine.adapters.media.publish import publish_pid, publish_text
+
 _MODES = frozenset({"extract", "wait", "fail", "emit"})
 
 
@@ -35,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     pid_path = spec.get("pid_path")
     if isinstance(pid_path, str) and pid_path:
         try:
-            Path(pid_path).write_text(str(os.getpid()), encoding="ascii")
+            publish_pid(pid_path, os.getpid())
         except OSError:
             _fail("overlap_failed")
             return 1
@@ -60,7 +62,7 @@ def _wait(spec: dict) -> int:
         stderr=subprocess.DEVNULL,
     )
     if isinstance(child_path, str) and child_path:
-        Path(child_path).write_text(str(child.pid), encoding="ascii")
+        publish_pid(child_path, child.pid)
     _emit({"type": "ready"})
     while True:
         time.sleep(0.05)
@@ -82,7 +84,7 @@ def _emit_fixture(spec: dict) -> int:
         return 1
     payload["opencv_version"] = payload.get("opencv_version") or "test"
     try:
-        Path(result_path).write_text(json.dumps(payload), encoding="utf-8")
+        publish_text(result_path, json.dumps(payload))
     except OSError:
         _fail("overlap_failed")
         return 1
@@ -184,7 +186,7 @@ def _extract_media(spec: dict) -> int:
         "sample_fps": SAMPLE_FPS,
         "audio_rate": AUDIO_RATE,
     }
-    Path(result_path).write_text(json.dumps(payload), encoding="utf-8")
+    publish_text(result_path, json.dumps(payload))
     _emit({"type": "progress", "bp": 9500})
     return 0
 

@@ -55,7 +55,9 @@ Stdout is NDJSON progress and status. The transcript is a temporary JSON file, n
 
 Progress uses the existing 0..10000 scale and never moves backward. Segment end divided by the known source duration can advance it, capped at 9999. If the duration is unknown, progress stays put instead of inventing a percentage. 10000 is recorded only after the new transcript is persisted and activated.
 
-Cancellation uses the same process-tree termination as FFmpeg. On Windows that is `taskkill /T`, then a forced kill. On macOS and Linux it is the process group. A cancelled job does not publish words, does not switch the active transcript, and deletes the temporary result. Engine shutdown cancels the worker through the same job cancellation path and does not release the project lock while that work can still write.
+Cancellation uses the same process-tree termination as FFmpeg. The worker is registered when it is spawned, so shutdown cannot miss a process that is still starting, and it does not release the project lock until that spawn has finished and the child is gone. On Windows that is `taskkill /T`, then a forced kill. On macOS and Linux it is the process group. A cancelled job does not publish words, does not switch the active transcript, and deletes the temporary result. If cancellation arrives after the transcript has already been persisted and activated, the successful activation stands.
+
+The worker publishes its diagnostic pid, and the result JSON, by writing a temporary sibling and replacing the final path only after the bytes are flushed. Seeing the final path means the payload is complete. A partial result is not a transcript.
 
 A crashed worker leaves a job that the next writable open marks `INTERRUPTED`. A partial result file is not a transcript and is not resumed. Retry creates a new ProcessingJob from the stored spec.
 

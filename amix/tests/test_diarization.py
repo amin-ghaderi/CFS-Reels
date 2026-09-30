@@ -77,10 +77,15 @@ def _wait_job(store, job_id: str, timeout: float = 5):
 
 
 def _wait_pid(path: Path, timeout: float = 5) -> int:
+    from amix.amix_engine.adapters.media.publish import read_pid
+
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if path.is_file():
-            return int(path.read_text(encoding="ascii"))
+            pid = read_pid(path)
+            if pid is None:
+                raise AssertionError(f"incomplete pid marker: {path.read_text(encoding='utf-8')!r}")
+            return pid
         time.sleep(0.02)
     raise AssertionError("diarization worker did not start")
 

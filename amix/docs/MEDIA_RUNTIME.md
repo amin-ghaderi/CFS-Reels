@@ -79,7 +79,9 @@ FFmpeg progress is read from `-progress pipe:1`, not from human stderr. `out_tim
 
 Stderr is kept to a short tail in the engine log. The job error shown in the desktop is a stable code such as `media_proxy_failed`.
 
-Cancel sets the job token, then the process helper stops the FFmpeg process tree. Windows uses `taskkill /T`, then `/F` if it is still alive. Other platforms signal the process group, then kill it. Engine shutdown uses the same cancel path, so a desktop exit does not leave the encoder running or hold the project lock. A cancelled or crashed encode does not become the proxy row. The next proxy job deletes leftover files in `proxy/.tmp`. An interrupted job stays interrupted until the user retries, which creates a new job.
+Cancel sets the job token, then the process helper stops the FFmpeg process tree. The child is registered in the same transition that creates it. A cancel that arrives during that transition still terminates the new process; it is not left running until the next poll. Windows uses `taskkill /T`, then `/F` if it is still alive. Other platforms signal the process group, then kill it. A second cancel or shutdown may notice the same process; stopping it again is a no-op once it has exited.
+
+Engine shutdown cancels active jobs, waits until any in-progress spawn has registered or been abandoned, then stops every owned child before the project lock is released. A cancelled or crashed encode does not become the proxy row. The proxy file is published with a replace from `proxy/.tmp` only after the encode succeeds. The next proxy job deletes leftover files in `proxy/.tmp`. An interrupted job stays interrupted until the user retries, which creates a new job. Diagnostic pid markers, when a test or worker writes one, are replaced into place only after the pid text is flushed. An empty file is not a ready process.
 
 ### Stale proxy
 
