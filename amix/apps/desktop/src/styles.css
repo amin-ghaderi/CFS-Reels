@@ -499,6 +499,38 @@ details {
   background: #111;
 }
 
+.preview-frame {
+  position: relative;
+}
+
+.caption-overlay {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 8%;
+  text-align: center;
+  pointer-events: none;
+}
+
+.caption-overlay p {
+  display: inline-block;
+  margin: 0;
+  padding: 0.15rem 0.45rem;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  line-height: 1.35;
+}
+
+.caption-cues {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-2) 0 0;
+}
+
+.caption-cues li.is-current button {
+  outline: 1px solid var(--text-secondary);
+}
+
 .preview video.hidden {
   display: none;
 }

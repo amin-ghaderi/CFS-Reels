@@ -40,4 +40,4 @@ The Multicam workspace remains the camera-directed path. Internally it asks for 
 
 ## Deferred
 
-Reel-local camera overrides, captions, music, smart portrait reframing, social templates, and publication are later work.
+Reel-local camera overrides, caption burn-in, music, smart portrait reframing, social templates, and publication are later work. Sequence-scoped caption tracks and SRT/WebVTT sidecars are described in [CAPTIONS.md](CAPTIONS.md). This renderer does not draw captions.

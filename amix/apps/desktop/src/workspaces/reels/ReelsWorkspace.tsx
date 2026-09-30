@@ -25,6 +25,8 @@ import {
 import { formatMicroseconds } from "../../time/format";
 import { TimelineCanvas } from "../../timeline/TimelineCanvas";
 import { splitAllowed } from "../../timeline/timeline";
+import { CaptionOverlay } from "../../captions/CaptionOverlay";
+import { CaptionPanel, useCaptionTrack } from "../../captions/CaptionPanel";
 
 const EMPTY: ReelState = {
   transcript_present: false,
@@ -126,6 +128,7 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
   }, [asset, draftId, jobs, project.handle, state.drafts]);
 
   const timeline = selectedDraft ? draftTimeline(selectedDraft) : null;
+  const captions = useCaptionTrack(project.handle, selectedDraft?.sequence_id ?? null, selectedDraft?.revision ?? null);
   const selectedClip = timeline?.clips.find((clip) => clip.clip_id === clipId) ?? null;
 
   async function discover() {
@@ -258,7 +261,10 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
         </ul>
       </section>
       <section className="reels-main">
-        <PreviewPlayer project={project} />
+        <PreviewPlayer
+          project={project}
+          overlay={<CaptionOverlay cues={captions.state?.cues ?? []} playheadUs={playback.playheadUs} />}
+        />
         {timeline ? (
           <TimelineCanvas
             timeline={timeline}
@@ -290,6 +296,12 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
             ))}
           </div>
         ) : null}
+        <CaptionPanel
+          project={project}
+          sequenceId={selectedDraft?.sequence_id ?? null}
+          state={captions.state}
+          onChange={captions.setState}
+        />
         {selectedDraft && readiness ? (
           <section aria-label="Render">
             <h2>Render</h2>

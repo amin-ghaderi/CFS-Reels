@@ -467,7 +467,7 @@ class MigrationTests(unittest.TestCase):
                 tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             finally:
                 connection.close()
-            self.assertEqual(revision, "0009_producing_job")
+            self.assertEqual(revision, "0010_caption_track")
             self.assertIn("shot_override", tables)
             self.assertIn("editorial_sequence", tables)
             self.assertIn("sequence_clip", tables)
@@ -480,7 +480,7 @@ class MigrationTests(unittest.TestCase):
             root = Path(tmp) / "Fresh"
             store = create_project(root, "Fresh")
             try:
-                self.assertEqual(store.alembic_revision(), "0009_producing_job")
+                self.assertEqual(store.alembic_revision(), "0010_caption_track")
             finally:
                 store.close()
 

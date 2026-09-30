@@ -63,6 +63,7 @@ describe("media presentation", () => {
     expect(proxyLabel("stale")).toBe("Stale");
     expect(proxyLabel(null)).toBe("Not generated");
     const proxy: MediaAsset = { ...asset, asset_id: "p", role: "proxy", source_media_asset_id: "a" };
-    expect(sourceAssets([probed, proxy]).map((item) => item.asset_id)).toEqual(["a"]);
+    const sidecar: MediaAsset = { ...asset, asset_id: "s", role: "sidecar", source_media_asset_id: "a" };
+    expect(sourceAssets([probed, proxy, sidecar]).map((item) => item.asset_id)).toEqual(["a"]);
   });
 });

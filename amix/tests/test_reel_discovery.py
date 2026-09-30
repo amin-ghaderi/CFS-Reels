@@ -322,7 +322,7 @@ class ReelMigrationTests(unittest.TestCase):
                 tables = {item[0] for item in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
             finally:
                 connection.close()
-            self.assertEqual(revision, "0009_producing_job")
+            self.assertEqual(revision, "0010_caption_track")
             self.assertEqual(row, ("seq", "primary", 4))
             self.assertEqual(clip, ("clip", 30))
             self.assertIn("reel_candidate", tables)

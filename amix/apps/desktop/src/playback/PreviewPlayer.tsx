@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { createJob } from "../api/client";
 import { asFailure } from "../api/errors";
@@ -10,7 +10,7 @@ import { canonicalToCurrentTime } from "./time";
 
 const GENERATABLE = new Set(["not_generated", "failed", "stale", "missing"]);
 
-export function PreviewPlayer({ project }: { project: ProjectInfo }) {
+export function PreviewPlayer({ project, overlay }: { project: ProjectInfo; overlay?: ReactNode }) {
   const data = useProjectData();
   const playback = usePlayback();
   const selected = data.selected;
@@ -70,28 +70,31 @@ export function PreviewPlayer({ project }: { project: ProjectInfo }) {
 
   return (
     <section className="preview" aria-label="Preview">
-      <video
-        ref={playback.videoRef}
-        className={playable ? undefined : "hidden"}
-        playsInline
-        preload="metadata"
-        onLoadedMetadata={(event) => {
-          const current = playback.view;
-          if (!current?.playable) {
-            return;
-          }
-          event.currentTarget.currentTime = canonicalToCurrentTime(
-            current.canonical_origin_us,
-            playback.playheadUs,
-            current.playback_duration_us,
-          );
-        }}
-        onTimeUpdate={(event) => playback.reportTime(event.currentTarget.currentTime)}
-        onSeeked={(event) => playback.reportTime(event.currentTarget.currentTime)}
-        onPlay={() => playback.setPlaying(true)}
-        onPause={() => playback.setPlaying(false)}
-        onError={() => playback.failMedia()}
-      />
+      <div className="preview-frame">
+        <video
+          ref={playback.videoRef}
+          className={playable ? undefined : "hidden"}
+          playsInline
+          preload="metadata"
+          onLoadedMetadata={(event) => {
+            const current = playback.view;
+            if (!current?.playable) {
+              return;
+            }
+            event.currentTarget.currentTime = canonicalToCurrentTime(
+              current.canonical_origin_us,
+              playback.playheadUs,
+              current.playback_duration_us,
+            );
+          }}
+          onTimeUpdate={(event) => playback.reportTime(event.currentTarget.currentTime)}
+          onSeeked={(event) => playback.reportTime(event.currentTarget.currentTime)}
+          onPlay={() => playback.setPlaying(true)}
+          onPause={() => playback.setPlaying(false)}
+          onError={() => playback.failMedia()}
+        />
+        {overlay}
+      </div>
       {view?.warning ? <p className="warning">{view.warning}</p> : null}
       {!playable ? <p className="muted">{notice ?? (selected ? "Preparing preview." : "Select a media file to preview.")}</p> : null}
       <div className="transport">

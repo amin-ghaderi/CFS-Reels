@@ -208,6 +208,14 @@ Active assignments are whichever run the project points at.
 
 **Does not hold.** Visual treatment, aspect ratio, or render preset. Those are chosen when rendering. See ADR 0013.
 
+## CaptionTrack
+
+**Purpose.** Sequence-scoped caption cues derived from the active transcript. Caption text is a fourth axis, independent of picture treatment and output canvas. See ADR 0014 and `amix/docs/CAPTIONS.md`.
+
+**Identity.** `caption_track_id`, belonging to one `EditorialSequence`. A sequence has one current track. Regeneration keeps the previous track as history.
+
+**Does not hold.** Render profile, aspect ratio, visual treatment, font, or burned-in styling. Manual cue text does not replace machine word text.
+
 ## ShotPlan
 
 **Purpose.** A complete directing decision for a master, from start to end, with no gaps. The output canvas is chosen later.

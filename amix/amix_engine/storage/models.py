@@ -335,6 +335,95 @@ class EditorialSequenceRow(Base):
     updated_at: Mapped[str] = mapped_column(Text, nullable=False)
 
 
+class CaptionTrackRow(Base):
+    """One caption track for one editorial sequence. Not an analysis run."""
+
+    __tablename__ = "caption_track"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_caption_track_revision"),
+        Index(
+            "uq_caption_track_current",
+            "sequence_id",
+            unique=True,
+            sqlite_where=text("superseded_at IS NULL"),
+        ),
+        Index("ix_caption_track_sequence", "sequence_id"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(ForeignKey("project.id", ondelete="RESTRICT"), nullable=False)
+    media_asset_id: Mapped[str] = mapped_column(ForeignKey("media_asset.id", ondelete="RESTRICT"), nullable=False)
+    sequence_id: Mapped[str] = mapped_column(
+        ForeignKey("editorial_sequence.id", ondelete="RESTRICT"), nullable=False,
+    )
+    sequence_revision_at_generation: Mapped[int] = mapped_column(Integer, nullable=False)
+    transcript_analysis_run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False,
+    )
+    effective_text_fingerprint: Mapped[str] = mapped_column(Text, nullable=False)
+    generation_profile: Mapped[str] = mapped_column(Text, nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    superseded_at: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class CaptionCueRow(Base):
+    """One caption cue. Word ids are the source anchors. Times are integer microseconds."""
+
+    __tablename__ = "caption_cue"
+    __table_args__ = (
+        UniqueConstraint("track_id", "order_index", name="uq_caption_cue_order"),
+        CheckConstraint("source_end_us > source_start_us", name="ck_caption_cue_source"),
+        CheckConstraint("sequence_end_us > sequence_start_us", name="ck_caption_cue_sequence"),
+        Index("ix_caption_cue_track", "track_id"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
+    track_id: Mapped[str] = mapped_column(ForeignKey("caption_track.id", ondelete="RESTRICT"), nullable=False)
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    first_word_id: Mapped[str] = mapped_column(ForeignKey("word.id", ondelete="RESTRICT"), nullable=False)
+    last_word_id: Mapped[str] = mapped_column(ForeignKey("word.id", ondelete="RESTRICT"), nullable=False)
+    source_start_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    source_end_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    sequence_start_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    sequence_end_us: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    generated_text: Mapped[str] = mapped_column(Text, nullable=False)
+    manual_text: Mapped[str | None] = mapped_column(Text)
+
+
+class CaptionExportRow(Base):
+    """Provenance for one subtitle sidecar. The file is a project MediaAsset."""
+
+    __tablename__ = "caption_export"
+    __table_args__ = (
+        CheckConstraint("format IN ('srt', 'vtt')", name="ck_caption_export_format"),
+        Index("ix_caption_export_sequence", "sequence_id"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(ForeignKey("project.id", ondelete="RESTRICT"), nullable=False)
+    media_asset_id: Mapped[str] = mapped_column(ForeignKey("media_asset.id", ondelete="RESTRICT"), nullable=False)
+    source_media_asset_id: Mapped[str] = mapped_column(
+        ForeignKey("media_asset.id", ondelete="RESTRICT"), nullable=False,
+    )
+    sequence_id: Mapped[str] = mapped_column(
+        ForeignKey("editorial_sequence.id", ondelete="RESTRICT"), nullable=False,
+    )
+    sequence_purpose: Mapped[str] = mapped_column(Text, nullable=False)
+    sequence_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    sequence_fingerprint: Mapped[str] = mapped_column(Text, nullable=False)
+    caption_track_id: Mapped[str] = mapped_column(
+        ForeignKey("caption_track.id", ondelete="RESTRICT"), nullable=False,
+    )
+    caption_track_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    transcript_analysis_run_id: Mapped[str] = mapped_column(Text, nullable=False)
+    effective_text_fingerprint: Mapped[str] = mapped_column(Text, nullable=False)
+    generation_profile: Mapped[str] = mapped_column(Text, nullable=False)
+    format: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[str] = mapped_column(Text, nullable=False)
+
+
 class SequenceClipRow(Base):
     """One kept source range, in source order."""
 

@@ -328,7 +328,7 @@ class ProducingJobMigrationTests(unittest.TestCase):
                 value = connection.execute("SELECT producing_job_id FROM media_asset WHERE id = 'm'").fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(revision, "0009_producing_job")
+            self.assertEqual(revision, "0010_caption_track")
             self.assertIn("producing_job_id", columns)
             self.assertNotIn("proxy_job_id", columns)
             self.assertEqual(value, "job-1")

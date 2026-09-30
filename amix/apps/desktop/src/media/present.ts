@@ -92,7 +92,7 @@ export function proxyLabel(state: string | null): string {
 }
 
 export function sourceAssets(assets: readonly MediaAsset[]): MediaAsset[] {
-  return assets.filter((asset) => asset.role !== "proxy");
+  return assets.filter((asset) => asset.role !== "proxy" && asset.role !== "sidecar");
 }
 
 export function missingCount(assets: readonly MediaAsset[]): number {

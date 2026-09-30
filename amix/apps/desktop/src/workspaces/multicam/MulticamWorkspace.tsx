@@ -27,6 +27,8 @@ import {
 } from "../../multicam/multicam";
 import { TimelineCanvas } from "../../timeline/TimelineCanvas";
 import { requestReset, splitAllowed } from "../../timeline/timeline";
+import { CaptionOverlay } from "../../captions/CaptionOverlay";
+import { CaptionPanel, useCaptionTrack } from "../../captions/CaptionPanel";
 
 const EMPTY_OVERLAP: OverlapState = {
   run_id: null,
@@ -117,6 +119,7 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
   }, [project.handle, asset?.asset_id]);
 
   const phase = multicamPhase(asset?.asset_id ?? null, readiness, jobs);
+  const captions = useCaptionTrack(project.handle, timeline.sequence_id, timeline.revision);
   const waiting = Boolean(asset) && readiness === null && !runningJob(jobs, asset?.asset_id ?? "", "detect_overlap") && !runningJob(jobs, asset?.asset_id ?? "", "build_multicam_plan");
   const followed = currentShot(plan.shots, playback.playheadUs);
   const shown = followed ?? (picked ? plan.shots.find((shot) => shot.shot_id === picked.shot_id) ?? null : null);
@@ -293,7 +296,10 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
   return (
     <div className="multicam">
       <div className="multicam-main">
-        <PreviewPlayer project={project} />
+        <PreviewPlayer
+          project={project}
+          overlay={<CaptionOverlay cues={captions.state?.cues ?? []} playheadUs={playback.playheadUs} />}
+        />
         <p className="shot-indicator">{shown ? shotLabel(shown) : "Wide"}</p>
         <section className="stack" aria-label="Multicam status">
           <h2>{waiting ? "Loading" : phaseLabel(phase)}</h2>
@@ -368,6 +374,12 @@ export function MulticamWorkspace({ project }: { project: ProjectInfo }) {
             />
           ) : <p>No source range yet.</p>}
         </section>
+        <CaptionPanel
+          project={project}
+          sequenceId={timeline.sequence_id}
+          state={captions.state}
+          onChange={captions.setState}
+        />
         <section aria-label="Render">
           <h2>Render</h2>
           <p>Output size. This does not rebuild the shot plan.</p>

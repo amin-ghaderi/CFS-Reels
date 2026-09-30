@@ -102,6 +102,12 @@ const MESSAGES: Record<string, string> = {
   semantic_request_failed: "The semantic provider rejected the request.",
   semantic_capability_missing: "This provider cannot produce structured output.",
   invalid_semantic_profile: "That semantic profile is not available.",
+  unknown_caption_cue: "That caption is no longer on the current track.",
+  captions_missing: "Generate captions before exporting.",
+  captions_stale: "Regenerate captions before exporting. Manual caption edits on the old track may not carry over.",
+  invalid_caption_text: "Caption text cannot be blank.",
+  invalid_caption_format: "Choose SRT or WebVTT.",
+  invalid_caption_export: "The subtitle file could not be stored in the project.",
 };
 
 export function mapEngineFailure(status: number, body: string): EngineFailure {

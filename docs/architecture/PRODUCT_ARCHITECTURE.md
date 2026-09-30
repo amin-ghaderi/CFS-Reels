@@ -78,8 +78,8 @@ Pixel layout is out of scope. Each workspace reads domain data; it does not inve
 | Media | `MediaAsset`, probe, proxies, `LayoutProfile`, `ProtectedRegion` |
 | Transcript | Active `Transcript`, immutable `Word`s, active text revision, playback time |
 | Conversation | Participants, active speaker assignments, `Turn`s, `OverlapRegion`s, `ConversationThread`s |
-| Multicam | Layout spans, protected regions, active `ShotPlan` / `Shot`s, render status |
-| Reels | `ReelCandidate`s, reel `EditorialSequence` drafts, render jobs for any output profile |
+| Multicam | Layout spans, protected regions, active `ShotPlan` / `Shot`s, the primary sequence's caption track, render status |
+| Reels | `ReelCandidate`s, reel `EditorialSequence` drafts, the same caption track on a selected draft, render jobs for any output profile |
 | Export | Render outputs, destination paths, job history |
 | Settings / Models | Provider assignments, model manager, mode (offline / hybrid / best / custom), no secrets in the project file |
 

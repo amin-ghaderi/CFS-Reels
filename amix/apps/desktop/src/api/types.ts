@@ -408,3 +408,51 @@ export interface ExportRecord {
   created_at: string | null;
   status: string;
 }
+
+export interface CaptionCue {
+  cue_id: string;
+  order_index: number;
+  first_word_id: string;
+  last_word_id: string;
+  source_start_us: number;
+  source_end_us: number;
+  sequence_start_us: number;
+  sequence_end_us: number;
+  generated_text: string;
+  manual_text: string | null;
+  effective_text: string;
+}
+
+export interface CaptionState {
+  sequence_id: string;
+  media_asset_id: string;
+  purpose: string;
+  status: "absent" | "ready" | "stale";
+  track_id: string | null;
+  revision: number | null;
+  profile: string | null;
+  transcript_analysis_run_id: string | null;
+  effective_text_fingerprint: string | null;
+  sequence_revision_at_generation: number | null;
+  stale_reasons: string[];
+  cues: CaptionCue[];
+}
+
+export interface CaptionExport {
+  export_id: string;
+  asset_id: string;
+  relative_path: string | null;
+  role: string | null;
+  source_media_asset_id: string;
+  sequence_id: string;
+  sequence_purpose: string;
+  sequence_revision: number;
+  sequence_fingerprint: string;
+  caption_track_id: string;
+  caption_track_revision: number;
+  transcript_analysis_run_id: string;
+  effective_text_fingerprint: string;
+  generation_profile: string;
+  format: string;
+  created_at: string;
+}

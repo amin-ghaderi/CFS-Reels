@@ -23,6 +23,8 @@ import type {
   SequenceRenderReadiness,
   ExportRecord,
   TimelineState,
+  CaptionExport,
+  CaptionState,
 } from "./types";
 
 interface RawResponse {
@@ -260,6 +262,26 @@ export function conversationState(handle: string, assetId: string): Promise<Conv
 
 export function checkSemanticProvider(handle: string): Promise<unknown> {
   return request("POST", `/v1/projects/${handle}/semantic/provider/check`);
+}
+
+export function captionState(handle: string, sequenceId: string): Promise<CaptionState> {
+  return request("GET", `/v1/projects/${handle}/sequences/${sequenceId}/captions`);
+}
+
+export function generateCaptions(handle: string, sequenceId: string): Promise<CaptionState> {
+  return request("POST", `/v1/projects/${handle}/sequences/${sequenceId}/captions`);
+}
+
+export function editCaptionCue(handle: string, sequenceId: string, cueId: string, text: string): Promise<CaptionState> {
+  return request("POST", `/v1/projects/${handle}/sequences/${sequenceId}/captions/cues/${cueId}/text`, { text });
+}
+
+export function resetCaptionCue(handle: string, sequenceId: string, cueId: string): Promise<CaptionState> {
+  return request("POST", `/v1/projects/${handle}/sequences/${sequenceId}/captions/cues/${cueId}/reset`);
+}
+
+export function exportCaptions(handle: string, sequenceId: string, format: "srt" | "vtt"): Promise<CaptionExport> {
+  return request("POST", `/v1/projects/${handle}/sequences/${sequenceId}/captions/export`, { format });
 }
 
 export function preparePlayback(sourceMediaAssetId: string, requestId: number): Promise<PreparedPlayback> {

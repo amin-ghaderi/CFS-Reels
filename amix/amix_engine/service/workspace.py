@@ -9,6 +9,8 @@ from fastapi import FastAPI, Request
 from amix.amix_engine.semantic.errors import SemanticError
 from amix.amix_engine.semantic.read import conversation_view
 from amix.amix_engine.semantic.registry import check_provider
+from amix.amix_engine.captions.segment import CaptionRejected
+from amix.amix_engine.captions.service import caption_state, edit_cue_text, export_captions, generate_captions, reset_cue_text
 from amix.amix_engine.editorial.sequence import (
     SequenceRejected,
     create_reel_draft,
@@ -62,6 +64,10 @@ from amix.amix_engine.service.schemas import (
     ClipRequest,
     ResetSequenceRequest,
     TimelineResponse,
+    CaptionExportRequest,
+    CaptionExportResponse,
+    CaptionStateResponse,
+    CaptionTextRequest,
 )
 from amix.amix_engine.speakers import SpeakerMapRejected, apply_cluster_map, speaker_status
 from amix.amix_engine.jobs.media import proxy_state
@@ -230,6 +236,44 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
     def reset_edit(handle: str, asset_id: str, body: ResetSequenceRequest, request: Request) -> TimelineResponse:
         authorize(request)
         return call(lambda: _reset_edit(runtime, handle, asset_id, body))
+
+    @app.get("/v1/projects/{handle}/sequences/{sequence_id}/captions", response_model=CaptionStateResponse)
+    def get_captions(handle: str, sequence_id: str, request: Request) -> CaptionStateResponse:
+        authorize(request)
+        return call(lambda: _captions(runtime, handle, sequence_id))
+
+    @app.post("/v1/projects/{handle}/sequences/{sequence_id}/captions", response_model=CaptionStateResponse)
+    def generate_sequence_captions(handle: str, sequence_id: str, request: Request) -> CaptionStateResponse:
+        authorize(request)
+        return call(lambda: _generate_captions(runtime, handle, sequence_id))
+
+    @app.post(
+        "/v1/projects/{handle}/sequences/{sequence_id}/captions/cues/{cue_id}/text",
+        response_model=CaptionStateResponse,
+    )
+    def edit_caption_cue(
+        handle: str, sequence_id: str, cue_id: str, body: CaptionTextRequest, request: Request,
+    ) -> CaptionStateResponse:
+        authorize(request)
+        return call(lambda: _edit_caption(runtime, handle, sequence_id, cue_id, body))
+
+    @app.post(
+        "/v1/projects/{handle}/sequences/{sequence_id}/captions/cues/{cue_id}/reset",
+        response_model=CaptionStateResponse,
+    )
+    def reset_caption_cue(handle: str, sequence_id: str, cue_id: str, request: Request) -> CaptionStateResponse:
+        authorize(request)
+        return call(lambda: _reset_caption(runtime, handle, sequence_id, cue_id))
+
+    @app.post(
+        "/v1/projects/{handle}/sequences/{sequence_id}/captions/export",
+        response_model=CaptionExportResponse,
+    )
+    def export_sequence_captions(
+        handle: str, sequence_id: str, body: CaptionExportRequest, request: Request,
+    ) -> CaptionExportResponse:
+        authorize(request)
+        return call(lambda: _export_captions(runtime, handle, sequence_id, body))
 
     @app.get("/v1/projects/{handle}/media/{asset_id}/reels", response_model=ReelStateResponse)
     def reel_state(handle: str, asset_id: str, request: Request) -> ReelStateResponse:
@@ -794,6 +838,50 @@ def _reset_edit(runtime: EngineRuntime, handle: str, asset_id: str, body: ResetS
     except SequenceRejected as exc:
         raise ApiError(400, exc.code, exc.message) from exc
     return _edited_timeline(store, asset_id, body.sequence_id)
+
+
+def _captions(runtime: EngineRuntime, handle: str, sequence_id: str) -> dict:
+    store = _store(runtime, handle)
+    try:
+        return caption_state(store, sequence_id)
+    except CaptionRejected as exc:
+        raise ApiError(404 if exc.code == "unknown_sequence" else 400, exc.code, exc.message) from exc
+
+
+def _generate_captions(runtime: EngineRuntime, handle: str, sequence_id: str) -> dict:
+    store = _store(runtime, handle)
+    try:
+        return generate_captions(store, sequence_id)
+    except CaptionRejected as exc:
+        status = 404 if exc.code == "unknown_sequence" else 400
+        raise ApiError(status, exc.code, exc.message) from exc
+
+
+def _edit_caption(runtime: EngineRuntime, handle: str, sequence_id: str, cue_id: str, body: CaptionTextRequest) -> dict:
+    store = _store(runtime, handle)
+    try:
+        return edit_cue_text(store, sequence_id, cue_id, body.text)
+    except CaptionRejected as exc:
+        status = 404 if exc.code in {"unknown_sequence", "unknown_caption_cue"} else 400
+        raise ApiError(status, exc.code, exc.message) from exc
+
+
+def _reset_caption(runtime: EngineRuntime, handle: str, sequence_id: str, cue_id: str) -> dict:
+    store = _store(runtime, handle)
+    try:
+        return reset_cue_text(store, sequence_id, cue_id)
+    except CaptionRejected as exc:
+        status = 404 if exc.code in {"unknown_sequence", "unknown_caption_cue"} else 400
+        raise ApiError(status, exc.code, exc.message) from exc
+
+
+def _export_captions(runtime: EngineRuntime, handle: str, sequence_id: str, body: CaptionExportRequest) -> dict:
+    store = _store(runtime, handle)
+    try:
+        return export_captions(store, sequence_id, body.format)
+    except CaptionRejected as exc:
+        status = 404 if exc.code in {"unknown_sequence", "captions_missing"} else 409 if exc.code == "captions_stale" else 400
+        raise ApiError(status, exc.code, exc.message) from exc
 
 
 def _edited_timeline(store, asset_id: str, sequence_id: str) -> TimelineResponse:

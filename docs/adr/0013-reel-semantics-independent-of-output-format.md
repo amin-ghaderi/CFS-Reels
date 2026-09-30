@@ -20,6 +20,7 @@ A reel candidate does not store a score, an aspect, or a canvas. A reel draft do
 - Landscape and portrait presets are output choices, not reel modes.
 - Multicam remains optional. A reel can render the whole source picture with no shot plan.
 - Legacy 9:16 composition, stack order, and burned subtitles stay historical. They are not a second AMIX renderer.
+- Caption text is a separate sequence overlay. See ADR 0014.
 
 ## Status
 

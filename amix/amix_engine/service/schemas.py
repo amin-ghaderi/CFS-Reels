@@ -495,3 +495,59 @@ class SemanticProviderStatusResponse(_Model):
     capability_ready: bool
     offline_blocked: bool
     reachable: bool | None = None
+
+
+class CaptionCueResponse(_Model):
+    cue_id: str
+    order_index: int
+    first_word_id: str
+    last_word_id: str
+    source_start_us: int
+    source_end_us: int
+    sequence_start_us: int
+    sequence_end_us: int
+    generated_text: str
+    manual_text: str | None = None
+    effective_text: str
+
+
+class CaptionStateResponse(_Model):
+    sequence_id: str
+    media_asset_id: str
+    purpose: str
+    status: str
+    track_id: str | None = None
+    revision: int | None = None
+    profile: str | None = None
+    transcript_analysis_run_id: str | None = None
+    effective_text_fingerprint: str | None = None
+    sequence_revision_at_generation: int | None = None
+    stale_reasons: list[str]
+    cues: list[CaptionCueResponse]
+
+
+class CaptionTextRequest(_Model):
+    text: str
+
+
+class CaptionExportRequest(_Model):
+    format: str
+
+
+class CaptionExportResponse(_Model):
+    export_id: str
+    asset_id: str
+    relative_path: str | None = None
+    role: str | None = None
+    source_media_asset_id: str
+    sequence_id: str
+    sequence_purpose: str
+    sequence_revision: int
+    sequence_fingerprint: str
+    caption_track_id: str
+    caption_track_revision: int
+    transcript_analysis_run_id: str
+    effective_text_fingerprint: str
+    generation_profile: str
+    format: str
+    created_at: str
