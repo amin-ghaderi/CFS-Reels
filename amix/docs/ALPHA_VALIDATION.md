@@ -90,6 +90,29 @@ Recorded in the live desktop after the managed local runtime was implemented. Im
 
 The model loads and the provider path is the existing structured-generation adapter. It did not produce a validated conversation map, so reel discovery, drafts, captions, and renders were not run. Validation was not relaxed.
 
+## Semantic efficiency retest
+
+Recorded in the live desktop with the same llama.cpp `version: 1 (ac4cdde)`, the same gemma-3-4b-it GGUF, and the same 45-second Alpha project. No `AMIX_AI_*` variables were set. Imports and project open used the engine routes because the native file dialog cannot be completed by this session. Buttons that do not open a dialog were clicked.
+
+The previous request was one chunk. The server reported 7182 tokens against a 4096 context. Measured character attribution of that payload, without copying transcript text: system prompt 447, payload 9245, effective text 470, turn ids 95, participant names 62, participant ids 360, word ids 3780, JSON syntax 4335. The word-id UUID arrays and the JSON around them were the inflation. Turn ids were already 5 characters.
+
+After the payload change the same chunk is 19 turns and 105 words. Effective text is still 470 characters. Word ids and participant ids in the model payload are 0. Payload is 3749 characters, the compact schema is 332, and the deterministic estimate is 1133 tokens. That is under the 4096 request limit and the 3072 data budget. The desktop job log did not surface the server's own usage counters.
+
+| Item | Result |
+| --- | --- |
+| Conversation map | PASS. One request, no repair, 10 threads, 76 seconds including model load. Threads cover T0001 through T0019 in order. Clicking a thread seeked the source preview to 3.420 seconds. The map was still present after close and reopen. |
+| Reel discovery | PASS. 11 requests, no repair, 1 candidate, about 137 seconds. |
+| Reel draft | PASS. "Question and Answer", source 3.420–4.720 seconds, revision 1, one clip. Split and remove were not used: the only clip is 1.3 seconds and the playhead was on its start. |
+| Captions | PASS. One cue, sequence 0–1.300 seconds, source 3.420–4.720 seconds. SRT and VTT use that same interval. |
+| Source/Program landscape | PASS. 1280×720, 1.300 seconds, revision 1. |
+| Source/Program portrait | PASS. 720×1280, 1.300 seconds, revision 1. |
+| Multicam landscape | PASS. 1280×720, revision 1. Byte-identical to source/program because the covering shot is untouched wide. |
+| Multicam portrait | PASS. 720×1280, revision 1. Byte-identical to source/program portrait for the same reason. |
+| Inspection | The landscape frame is the three-up program. The portrait frame keeps that layout with square pixels and does not stretch the faces. Audio is continuous speech, about −20 dB mean, and is the same on all four files. |
+| Overall | COMPLETE |
+
+Some thread titles name a participant who is not in that thread's participant list. The anchors, order, and coverage still validated. The discovered reel is one short exchange, not a longer selection. Validation was not relaxed.
+
 ## Known issues
 
 - Frame rate is shown as the raw fraction `1366000/45533`.
@@ -98,5 +121,5 @@ The model loads and the provider path is the existing structured-generation adap
 - The activity list is tall and pushes the workspace down until it is hidden.
 - Relink keeps the same asset and clears probe metadata until the file is analyzed again.
 - Analyze overlap in the desktop always uses the full asset. A 2960–3560 s window has to be requested on the job spec.
-- The kept primary edit is 20.213 s, with one Wide override on the first shot. There is no reel draft and no conversation map.
+- The kept primary edit is 20.213 s, with one Wide override on the first shot. The Phase 20.1 retest added a conversation map and one reel draft on the 45-second excerpt.
 - The native open/create folder dialog was not exercised by this session.

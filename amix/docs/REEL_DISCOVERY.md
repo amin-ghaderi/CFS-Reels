@@ -6,13 +6,13 @@ A reel is an optional short-form selection from one source. It is not the primar
 
 A source may have one primary sequence and many reel sequences. A reel draft does not require a primary edit or a shot plan. Creating or editing a reel does not change the primary sequence, another reel, the transcript, turns, the conversation map, overlap, or the shot plan. Rebuilding discovery does not delete drafts. A draft keeps the candidate it was created from as historical provenance. Rendering does not change the draft revision or the discovery set.
 
-Discovery reads the current conversation map, the turns that map covers, and the effective corrected transcript. It does not read the primary sequence, the shot plan, camera overrides, or the render profile. A range removed from the primary edit can still be discovered.
+Discovery reads the current conversation map, the turns that map covers, and the effective corrected transcript. It does not read the primary sequence, the shot plan, camera overrides, or the render profile, and it does not send those to the model. It also does not send word ids. The model sees thread ids, turn ids, participant names when set, and effective text. A range removed from the primary edit can still be discovered. Request size uses the same data budget and total request limit as conversation mapping.
 
 ## Candidates
 
 A version-1 candidate is one contiguous turn range inside one conversation thread. The model returns a thread id, a first turn id, a last turn id, a title, a short summary, and a hook. It does not own time. Python derives `start_us`, `end_us`, the first and last word ids, and the duration from the stored turns. Model timestamps are ignored. Candidates may overlap. An identical anchor range in one run is kept once. Discovery is sparse: most of the source may have no candidate, and an empty result is valid.
 
-Long sources are split on thread boundaries, then on turn boundaries inside a long thread. A turn is never split. A later consolidation sees candidate anchors, titles, summaries, and derived durations, not the whole transcript. Unknown threads, unknown turns, reversed ranges, and timestamp-only replies are rejected. One repair is allowed. A failed or cancelled rebuild does not replace the active discovery.
+Long sources are split on thread boundaries, then on turn boundaries inside a long thread, using the same text and token budgets as conversation mapping. A turn is never split. A later consolidation sees candidate anchors, titles, summaries, and derived durations, not the whole transcript. Unknown threads, unknown turns, reversed ranges, and timestamp-only replies are rejected. One repair is allowed. A parsed draft is repaired from the draft, the error, and the anchor ids, without resending the transcript. A failed or cancelled rebuild does not replace the active discovery.
 
 The task is `amix.reel.discover.v1`. It asks for structured generation only. There is no score, no ranking provider, and no decision provider in V1.
 

@@ -17,6 +17,7 @@ from amix.amix_engine.adapters.ai.openai_compatible import OpenAICompatibleProvi
 from amix.amix_engine.semantic.errors import SemanticError
 from amix.amix_engine.semantic.provider import (
     GENERATE_STRUCTURED,
+    STRICT_JSON_SCHEMA,
     ProviderDescriptor,
     assert_endpoint_allowed,
     endpoint_host,
@@ -102,6 +103,7 @@ def _from_managed(env: dict[str, str], cancel) -> OpenAICompatibleProvider:
         endpoint_host="127.0.0.1",
         runtime_kind="llama.cpp",
         runtime_version=endpoint.runtime_version,
+        structured_transport=STRICT_JSON_SCHEMA,
     )
     return provider
 

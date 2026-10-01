@@ -1,10 +1,11 @@
-"""Deterministic semantic view. The model sees ids and effective text, not rows."""
+"""Deterministic semantic view. The model sees turn ids and effective text, not word rows."""
 from __future__ import annotations
 
 import hashlib
 import json
 from dataclasses import dataclass
 
+from amix.amix_engine.semantic.budget import SEMANTIC_DATA_TOKEN_BUDGET, estimate_tokens
 from amix.amix_engine.semantic.errors import SemanticError
 from amix.amix_engine.semantic.tasks import CHUNK_PROFILE, CHUNK_TEXT_BUDGET, CONTEXT_TURN_COUNT, PROFILE_ID
 from amix.amix_engine.storage.kinds import PARTICIPANT_ASSIGNMENT, TURNS
@@ -95,25 +96,45 @@ def build_semantic_input(store: ProjectStore, asset_id: str) -> SemanticInput:
     )
 
 
+def turn_request_tokens(turn: SemanticTurn) -> int:
+    return estimate_tokens(json.dumps(turn_payload(turn, "primary"), sort_keys=True))
+
+
+def take_primary(
+    ordered: list[SemanticTurn],
+    index: int,
+    *,
+    budget: int = CHUNK_TEXT_BUDGET,
+    token_budget: int = SEMANTIC_DATA_TOKEN_BUDGET,
+) -> tuple[list[SemanticTurn], int]:
+    """Take a whole-turn prefix that fits both the text budget and the data token budget."""
+    primary: list[SemanticTurn] = []
+    size = 0
+    tokens = 0
+    while index < len(ordered):
+        turn = ordered[index]
+        added = turn_request_tokens(turn)
+        if primary and (size + len(turn.text) > budget or tokens + added > token_budget):
+            break
+        primary.append(turn)
+        size += len(turn.text)
+        tokens += added
+        index += 1
+    return primary, index
+
+
 def chunk_turns(
     turns: tuple[SemanticTurn, ...] | list[SemanticTurn],
     *,
     budget: int = CHUNK_TEXT_BUDGET,
+    token_budget: int = SEMANTIC_DATA_TOKEN_BUDGET,
 ) -> list[SemanticChunk]:
-    """Split on turn boundaries only. A turn longer than the budget stays whole."""
+    """Split on turn boundaries only. A turn longer than either budget stays whole."""
     ordered = list(turns)
     chunks: list[SemanticChunk] = []
     index = 0
     while index < len(ordered):
-        primary: list[SemanticTurn] = []
-        size = 0
-        while index < len(ordered):
-            turn = ordered[index]
-            if primary and size + len(turn.text) > budget:
-                break
-            primary.append(turn)
-            size += len(turn.text)
-            index += 1
+        primary, index = take_primary(ordered, index, budget=budget, token_budget=token_budget)
         context: tuple[SemanticTurn, ...] = ()
         if chunks and CONTEXT_TURN_COUNT:
             context = chunks[-1].primary[-CONTEXT_TURN_COUNT:]
@@ -139,11 +160,12 @@ def chunk_fingerprint(chunk_id: str, primary: list[SemanticTurn]) -> str:
 
 
 def turn_payload(turn: SemanticTurn, role: str) -> dict:
-    return {
+    """Model-visible turn. Word ids stay on SemanticTurn and are not sent."""
+    payload = {
         "turn_id": turn.turn_id,
-        "participant_id": turn.participant_id,
-        "participant_name": turn.participant_name,
-        "word_ids": list(turn.word_ids),
         "text": turn.text,
         "role": role,
     }
+    if turn.participant_name:
+        payload["participant_name"] = turn.participant_name
+    return payload

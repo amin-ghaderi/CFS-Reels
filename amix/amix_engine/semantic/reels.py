@@ -7,11 +7,23 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from amix.amix_engine.semantic.budget import (
+    SEMANTIC_DATA_TOKEN_BUDGET,
+    estimate_tokens,
+    repair_payload,
+    request_diagnostics,
+    within_request_budget,
+)
 from amix.amix_engine.semantic.errors import SemanticError
-from amix.amix_engine.semantic.input import SemanticTurn, build_semantic_input, turn_payload
+from amix.amix_engine.semantic.input import SemanticTurn, build_semantic_input, take_primary, turn_payload, turn_request_tokens
 from amix.amix_engine.editorial.sequence import sequence_duration_us
 from amix.amix_engine.semantic.mapping import map_is_stale
-from amix.amix_engine.semantic.provider import GENERATE_STRUCTURED, StructuredRequest, runtime_provenance as _runtime_provenance
+from amix.amix_engine.semantic.provider import (
+    GENERATE_STRUCTURED,
+    STRICT_JSON_SCHEMA,
+    StructuredRequest,
+    runtime_provenance as _runtime_provenance,
+)
 from amix.amix_engine.storage.kinds import CONVERSATION_MAP, REEL_DISCOVERY
 from amix.amix_engine.storage.project import ProjectStore
 from amix.amix_engine.time.clock import TimeRange
@@ -54,6 +66,29 @@ class DiscoveryDraft(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     candidates: list[CandidateDraft] = Field(default_factory=list)
+
+
+REEL_OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "candidates": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "conversation_thread_id": {"type": "string"},
+                    "first_turn_id": {"type": "string"},
+                    "last_turn_id": {"type": "string"},
+                    "title": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "hook": {"type": "string"},
+                },
+                "required": ["conversation_thread_id", "first_turn_id", "last_turn_id", "title"],
+            },
+        }
+    },
+    "required": ["candidates"],
+}
 
 
 @dataclass(frozen=True)
@@ -154,14 +189,18 @@ def discover_reels(store, asset_id: str, provider, cancellation, progress) -> di
             "This provider cannot return the structured output this task needs.",
         )
     prepared = _prepare(store, asset_id)
+    for turn in prepared.semantic_turns:
+        if turn_request_tokens(turn) > SEMANTIC_DATA_TOKEN_BUDGET:
+            raise SemanticError("semantic_context_too_large", "A turn is too large for this semantic profile.")
     progress(1000)
     cancellation.raise_if_cancelled()
     requests = 0
     repairs = 0
+    ordinal = _Ordinal()
     gathered: list[dict] = []
     total = max(1, len(prepared.chunks))
     for index, chunk in enumerate(prepared.chunks):
-        found, used, repaired = _chunk_candidates(provider, chunk, prepared.threads, cancellation)
+        found, used, repaired = _chunk_candidates(provider, chunk, prepared.threads, cancellation, ordinal)
         requests += used
         repairs += repaired
         gathered.extend(found)
@@ -169,7 +208,7 @@ def discover_reels(store, asset_id: str, provider, cancellation, progress) -> di
         cancellation.raise_if_cancelled()
     if len(prepared.chunks) > 1 and gathered:
         progress(7000)
-        final, used, repaired = _consolidate(provider, gathered, prepared.threads, cancellation)
+        final, used, repaired = _consolidate(provider, gathered, prepared.threads, cancellation, ordinal)
         requests += used
         repairs += repaired
     else:
@@ -240,15 +279,7 @@ def _chunk_thread(thread: _Thread, offset: int) -> list[_Chunk]:
     pieces: list[tuple[SemanticTurn, ...]] = []
     index = 0
     while index < len(ordered):
-        primary: list[SemanticTurn] = []
-        size = 0
-        while index < len(ordered):
-            turn = ordered[index]
-            if primary and size + len(turn.text) > CHUNK_TEXT_BUDGET:
-                break
-            primary.append(turn)
-            size += len(turn.text)
-            index += 1
+        primary, index = take_primary(ordered, index, budget=CHUNK_TEXT_BUDGET, token_budget=SEMANTIC_DATA_TOKEN_BUDGET)
         pieces.append(tuple(primary))
     chunks: list[_Chunk] = []
     for primary in pieces:
@@ -278,16 +309,29 @@ def _fingerprint(chunk_id: str, primary: tuple[SemanticTurn, ...]) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def _chunk_candidates(provider, chunk: _Chunk, threads: tuple[_Thread, ...], cancellation):
+def _chunk_candidates(provider, chunk: _Chunk, threads: tuple[_Thread, ...], cancellation, ordinal):
+    context = list(chunk.context)
+    visible = [turn_payload(turn, "context") for turn in context] + [turn_payload(turn, "primary") for turn in chunk.primary]
+    if context and estimate_tokens(json.dumps(visible, sort_keys=True)) > SEMANTIC_DATA_TOKEN_BUDGET:
+        context = []
     payload = {
         "stage": "discover",
         "chunk_id": chunk.chunk_id,
         "conversation_thread_id": chunk.thread_id,
         "thread_title": chunk.thread_title,
-        "turns": [turn_payload(turn, "context") for turn in chunk.context]
+        "turns": [turn_payload(turn, "context") for turn in context]
         + [turn_payload(turn, "primary") for turn in chunk.primary],
     }
-    return _generate(provider, "discover", payload, _limit(threads, chunk), cancellation)
+    words = sum(len(turn.word_ids) for turn in chunk.primary)
+    limited = _limit(threads, chunk)
+    if not context:
+        source = limited[0]
+        primary_ids = {turn.turn_id for turn in chunk.primary}
+        limited = (_Thread(source.thread_id, source.title, tuple(turn for turn in source.turns if turn.turn_id in primary_ids)),)
+    return _generate(
+        provider, "discover", payload, limited, cancellation, ordinal,
+        chunk_id=chunk.chunk_id, turns=len(chunk.primary), words=words, context_turns=len(context),
+    )
 
 
 def _limit(threads: tuple[_Thread, ...], chunk: _Chunk) -> tuple[_Thread, ...]:
@@ -297,7 +341,7 @@ def _limit(threads: tuple[_Thread, ...], chunk: _Chunk) -> tuple[_Thread, ...]:
     return (_Thread(source.thread_id, source.title, kept),)
 
 
-def _consolidate(provider, gathered: list[dict], threads: tuple[_Thread, ...], cancellation):
+def _consolidate(provider, gathered: list[dict], threads: tuple[_Thread, ...], cancellation, ordinal):
     payload = {
         "stage": "consolidate",
         "candidates": [
@@ -313,18 +357,50 @@ def _consolidate(provider, gathered: list[dict], threads: tuple[_Thread, ...], c
             for item in gathered
         ],
     }
-    return _generate(provider, "consolidate", payload, threads, cancellation)
+    words = sum(len(turn.word_ids) for thread in threads for turn in thread.turns)
+    turns = sum(len(thread.turns) for thread in threads)
+    return _generate(
+        provider, "consolidate", payload, threads, cancellation, ordinal,
+        chunk_id=None, turns=turns, words=words, context_turns=0,
+    )
 
 
-def _generate(provider, stage: str, payload: dict, threads: tuple[_Thread, ...], cancellation):
-    first, error = _once(provider, _request(stage, payload))
+class _Ordinal:
+    def __init__(self) -> None:
+        self.value = 0
+
+    def next(self) -> int:
+        self.value += 1
+        return self.value
+
+
+def _anchor_ids(payload: dict) -> list[str]:
+    ids: list[str] = []
+    for turn in payload.get("turns") or []:
+        if isinstance(turn, dict) and turn.get("turn_id"):
+            ids.append(turn["turn_id"])
+    if ids:
+        return ids
+    for item in payload.get("candidates") or []:
+        if isinstance(item, dict):
+            for key in ("first_turn_id", "last_turn_id"):
+                if item.get(key):
+                    ids.append(item[key])
+    return ids
+
+
+def _generate(provider, stage: str, payload: dict, threads: tuple[_Thread, ...], cancellation, ordinal, *, chunk_id, turns, words, context_turns):
+    first, error = _once(provider, _request(provider, stage, payload, ordinal, chunk_id, turns, words, context_turns))
     cancellation.raise_if_cancelled()
+    previous = None
     if error is None and first is not None:
         problem = _range_error(threads, first)
         if problem is None:
             return _resolve(threads, first), 1, 0
         error = problem
-    second, second_error = _once(provider, _request(stage, {**payload, "repair": {"error": error}}))
+        previous = first
+    repaired = repair_payload(payload, error or "The model response could not be used.", previous, _anchor_ids(payload))
+    second, second_error = _once(provider, _request(provider, stage, repaired, ordinal, chunk_id, turns, words, 0))
     cancellation.raise_if_cancelled()
     if second is None or second_error is not None:
         raise SemanticError("semantic_invalid_output", second_error or "The model response could not be used.")
@@ -396,7 +472,21 @@ def _resolve(threads: tuple[_Thread, ...], drafts: list[dict]) -> list[dict]:
     return resolved
 
 
-def _request(stage: str, payload: dict) -> StructuredRequest:
+def _request(provider, stage: str, payload: dict, ordinal, chunk_id, turns: int, words: int, context_turns: int) -> StructuredRequest:
+    schema = REEL_OUTPUT_SCHEMA if getattr(provider.descriptor, "structured_transport", "") == STRICT_JSON_SCHEMA else None
+    diagnostics = request_diagnostics(
+        profile_id=PROFILE_ID,
+        ordinal=ordinal.next(),
+        chunk_id=chunk_id,
+        turns=turns,
+        words=words,
+        context_turns=context_turns,
+        system_prompt=SYSTEM_PROMPT,
+        schema=schema,
+        payload=payload,
+    )
+    if not within_request_budget(diagnostics):
+        raise SemanticError("semantic_context_too_large", "This semantic request is larger than the profile limit.")
     return StructuredRequest(
         task_id=TASK_ID,
         profile_id=PROFILE_ID,
@@ -404,6 +494,8 @@ def _request(stage: str, payload: dict) -> StructuredRequest:
         stage=stage,
         system_prompt=SYSTEM_PROMPT,
         payload=payload,
+        output_schema=schema,
+        diagnostics=diagnostics,
     )
 
 

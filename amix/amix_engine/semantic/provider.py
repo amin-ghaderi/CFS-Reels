@@ -18,6 +18,11 @@ TOOL_CALLING = "TOOL_CALLING"
 VISION = "VISION"
 LONG_CONTEXT = "LONG_CONTEXT"
 
+# Transport behavior for structured generation. These are not product semantic capabilities.
+STRICT_JSON_SCHEMA = "strict_json_schema"
+JSON_OBJECT_ONLY = "json_object_only"
+PROMPT_ONLY_STRUCTURED = "prompt_only_structured"
+
 CAPABILITIES = frozenset({
     GENERATE_TEXT,
     GENERATE_STRUCTURED,
@@ -41,6 +46,7 @@ class ProviderDescriptor:
     endpoint_host: str | None = None
     runtime_kind: str | None = None
     runtime_version: str | None = None
+    structured_transport: str = JSON_OBJECT_ONLY
 
 
 @dataclass(frozen=True)
@@ -51,6 +57,8 @@ class StructuredRequest:
     stage: str
     system_prompt: str
     payload: dict
+    output_schema: dict | None = None
+    diagnostics: dict | None = None
 
 
 def runtime_provenance(descriptor: ProviderDescriptor) -> dict:

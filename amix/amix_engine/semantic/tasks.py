@@ -9,9 +9,8 @@ CHUNK_PROFILE = "amix.conversation.chunk.v1"
 VALIDATION_VERSION = "1"
 TASK_ID = "conversation_map"
 
-# Characters of effective turn text. About four characters per token, so a
-# chunk stays near a few hundred tokens before instructions. This is not a
-# vendor tokenizer.
+# Characters of effective turn text. The total request budget in budget.py is
+# the limit that includes instructions, schema, and serialized turns.
 CHUNK_TEXT_BUDGET = 1200
 CONTEXT_TURN_COUNT = 1
 MAX_TURN_CHARS = 20_000
@@ -42,3 +41,25 @@ class MapDraft(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     threads: list[ThreadDraft] = Field(min_length=1)
+
+
+# Compact transport schema. Application validation in MapDraft stays stricter on lengths.
+MAP_OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "threads": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "start_turn_id": {"type": "string"},
+                    "end_turn_id": {"type": "string"},
+                    "title": {"type": "string"},
+                    "summary": {"type": "string"},
+                },
+                "required": ["start_turn_id", "end_turn_id", "title", "summary"],
+            },
+        }
+    },
+    "required": ["threads"],
+}

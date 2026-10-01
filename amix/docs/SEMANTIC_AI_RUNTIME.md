@@ -10,7 +10,7 @@ AMIX calls a capability to perform a task. It does not call “the LLM” as one
 
 ## Providers
 
-The descriptor carries provider id, display name, adapter kind, model id, capabilities, local or remote execution, and a hostname when one exists. It does not carry secrets.
+The descriptor carries provider id, display name, adapter kind, model id, capabilities, local or remote execution, a hostname when one exists, and a structured-output transport mode. It does not carry secrets. The transport mode is `strict_json_schema`, `json_object_only`, or `prompt_only_structured`. It is not a product capability. The managed llama.cpp descriptor uses `strict_json_schema`. An external OpenAI-compatible provider uses `json_object_only`. Prompt-only omits `response_format`. An unrecognized mode does not send a guessed field.
 
 Phase 14 has one protocol adapter: OpenAI-compatible chat completions. A loopback endpoint is the local provider. Any other host is remote. The application asks the registry for a descriptor. It does not branch on a vendor name.
 
@@ -36,7 +36,7 @@ AMIX can start a registered llama.cpp server for the managed local model. It doe
 
 `network_enabled` and the development alias `development` may call a configured remote OpenAI-compatible endpoint. Entering a remote URL does not change the policy. Network enabled has to be saved explicitly.
 
-There is no semantic telemetry. Logs may include provider id, model id, task id, duration, and success or failure. They do not include the transcript, the API key, or the Authorization header.
+There is no semantic telemetry. Logs may include provider id, model id, task id, duration, success or failure, numeric request diagnostics, and numeric inference counters when the server returns them. They do not include the transcript, the API key, or the Authorization header. Inference counters such as prompt tokens, generated tokens, and tokens per second are diagnostics. The application does not require a llama.cpp-specific metric.
 
 ## Secrets
 
@@ -48,9 +48,11 @@ Saved remote credentials use Windows Credential Manager or macOS Keychain. The m
 
 A task has an input schema, an output schema, required capabilities, a versioned prompt, and a repair policy. Conversation mapping is `amix.conversation.map.v1`. The profile id and version are stored on the analysis run. A mutable prompt filename is not the authority.
 
-Structured output is parsed as JSON and checked with a schema. Markdown wrapped around JSON is invalid. At most one repair request is sent, and the repair count is stored. A second failure fails the job. The previous active map stays active.
+Structured output is parsed as JSON and checked with the application schema. A constrained `response_format` is an output aid. The application still parses the body, checks ids, ranges, conversation coverage, and reel anchors. Markdown wrapped around JSON is invalid. The parser does not strip fences. At most one repair request is sent, and the repair count is stored. A second failure fails the job. The previous active map stays active. When a draft parsed, the repair sends that draft, the error, and the anchor ids. It does not resend the transcript.
 
-Requests use a connect timeout and a read timeout, and responses are size-limited. A remote provider read timeout is 60 seconds. A loopback provider read timeout is 180 seconds, because a local model can spend that long on one structured response. A provider cannot hang the engine forever. Cancellation between calls stops further calls. An in-flight HTTP call ends at its timeout, and cancellation is honored when it returns. A cancelled run does not publish a partial map.
+Requests use a connect timeout and a read timeout, and responses are size-limited. A remote provider read timeout is 60 seconds. A loopback inference timeout is 120 seconds. Loading the managed local model uses a separate 180 second startup timeout. A provider cannot hang the engine forever. Cancellation between calls stops further calls. An in-flight HTTP call ends at its timeout, and cancellation is honored when it returns. A cancelled run does not publish a partial map.
+
+The total semantic request stays under 4096 estimated tokens: instructions and schema, plus at most 3072 estimated tokens of semantic data, plus bounded context. The configured local context window may be 16384. The request budget does not try to fill it. A request over the profile limit fails with `semantic_context_too_large` before it is sent.
 
 The model has no tools, filesystem access, or network tools. Transcript text is sent as data, delimited from the task instructions.
 

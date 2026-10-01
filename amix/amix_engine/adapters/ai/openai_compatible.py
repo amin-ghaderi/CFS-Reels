@@ -8,13 +8,21 @@ from http.client import HTTPConnection, HTTPSConnection
 from urllib.parse import urlparse
 
 from amix.amix_engine.semantic.errors import SemanticError
-from amix.amix_engine.semantic.provider import ProviderDescriptor, StructuredRequest, assert_endpoint_allowed
+from amix.amix_engine.semantic.provider import (
+    JSON_OBJECT_ONLY,
+    PROMPT_ONLY_STRUCTURED,
+    STRICT_JSON_SCHEMA,
+    ProviderDescriptor,
+    StructuredRequest,
+    assert_endpoint_allowed,
+)
 
 log = logging.getLogger("amix.semantic")
 
 CONNECT_TIMEOUT_S = 5
 READ_TIMEOUT_S = 60
-LOCAL_READ_TIMEOUT_S = 180
+# Inference wait. Model startup uses a separate timeout in the local server.
+LOCAL_READ_TIMEOUT_S = 120
 MAX_RESPONSE_BYTES = 1_000_000
 
 
@@ -33,6 +41,7 @@ class OpenAICompatibleProvider:
         self._api_key = api_key or ""
         self._mode = mode
         self._transport = transport or _http_json
+        self.last_inference: dict = {}
 
     def generate_structured(self, request: StructuredRequest) -> dict:
         url = f"{self._base_url}/chat/completions"
@@ -40,12 +49,14 @@ class OpenAICompatibleProvider:
         body = {
             "model": self.descriptor.model_id,
             "temperature": 0,
-            "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": request.system_prompt},
                 {"role": "user", "content": json.dumps(request.payload, sort_keys=True)},
             ],
         }
+        response_format = _response_format(self.descriptor.structured_transport, request.output_schema)
+        if response_format is not None:
+            body["response_format"] = response_format
         started = time.monotonic()
         try:
             read_timeout = LOCAL_READ_TIMEOUT_S if self.descriptor.execution == "local" else READ_TIMEOUT_S
@@ -61,11 +72,12 @@ class OpenAICompatibleProvider:
                 )
             except TimeoutError as exc:
                 raise SemanticError("semantic_timeout", "The semantic provider took too long.") from exc
+            self.last_inference = _inference_metrics(parsed)
             result = _content_json(parsed)
-            _log(self.descriptor, request.task_id, started, True)
+            _log(self.descriptor, request, started, True, self.last_inference)
             return result
         except SemanticError:
-            _log(self.descriptor, request.task_id, started, False)
+            _log(self.descriptor, request, started, False, self.last_inference)
             raise
 
     def check(self) -> None:
@@ -79,6 +91,41 @@ def _headers(api_key: str) -> dict[str, str]:
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     return headers
+
+
+def _response_format(transport: str, schema: dict | None) -> dict | None:
+    if transport == STRICT_JSON_SCHEMA and schema:
+        return {
+            "type": "json_schema",
+            "json_schema": {"name": "amix_structured", "strict": True, "schema": schema},
+        }
+    if transport == JSON_OBJECT_ONLY:
+        return {"type": "json_object"}
+    if transport == PROMPT_ONLY_STRUCTURED:
+        return None
+    return None
+
+
+def _inference_metrics(body: dict) -> dict:
+    metrics: dict = {}
+    if not isinstance(body, dict):
+        return metrics
+    for source in (body.get("usage"), body.get("timings")):
+        if not isinstance(source, dict):
+            continue
+        for key, value in source.items():
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                continue
+            metrics[key] = value
+    prompt_ms = metrics.get("prompt_ms") or metrics.get("prompt_eval_ms")
+    prompt_tokens = metrics.get("prompt_tokens") or metrics.get("prompt_n")
+    if prompt_ms and prompt_tokens and "prompt_per_second" not in metrics:
+        metrics["prompt_per_second"] = round(float(prompt_tokens) / (float(prompt_ms) / 1000), 2)
+    predicted_ms = metrics.get("predicted_ms") or metrics.get("eval_ms")
+    predicted_tokens = metrics.get("completion_tokens") or metrics.get("predicted_n")
+    if predicted_ms and predicted_tokens and "predicted_per_second" not in metrics:
+        metrics["predicted_per_second"] = round(float(predicted_tokens) / (float(predicted_ms) / 1000), 2)
+    return metrics
 
 
 def _content_json(body: dict) -> dict:
@@ -98,14 +145,40 @@ def _content_json(body: dict) -> dict:
     return parsed
 
 
-def _log(descriptor: ProviderDescriptor, task_id: str, started: float, ok: bool) -> None:
+_DIAGNOSTIC_KEYS = (
+    "profile_id",
+    "ordinal",
+    "chunk_id",
+    "turns",
+    "words",
+    "context_turns",
+    "system_chars",
+    "schema_chars",
+    "payload_chars",
+    "text_chars",
+    "turn_id_chars",
+    "word_id_chars",
+    "participant_id_chars",
+    "participant_name_chars",
+    "estimated_tokens",
+    "data_tokens",
+    "instruction_tokens",
+)
+
+
+def _log(descriptor: ProviderDescriptor, request: StructuredRequest, started: float, ok: bool, metrics: dict) -> None:
+    diagnostics = request.diagnostics or {}
+    safe = {key: diagnostics[key] for key in _DIAGNOSTIC_KEYS if key in diagnostics}
+    numbers = {key: value for key, value in metrics.items() if isinstance(value, (int, float)) and not isinstance(value, bool)}
     log.info(
-        "semantic provider=%s model=%s task=%s duration_ms=%s ok=%s",
+        "semantic provider=%s model=%s task=%s duration_ms=%s ok=%s diagnostics=%s inference=%s",
         descriptor.provider_id,
         descriptor.model_id,
-        task_id,
+        request.task_id,
         int((time.monotonic() - started) * 1000),
         ok,
+        safe,
+        numbers,
     )
 
 
