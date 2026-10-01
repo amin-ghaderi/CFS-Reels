@@ -65,6 +65,16 @@ export function showExistingThreads(phase: ConversationPhase, threads: readonly 
   return threads.length > 0 && (phase === "mapping" || phase === "stale" || phase === "mapped" || phase === "failed");
 }
 
+export function mappingActivity(localAiState: string | null | undefined): string {
+  if (localAiState === "STARTING") {
+    return "Starting local model.";
+  }
+  if (localAiState === "LOADING") {
+    return "Loading model.";
+  }
+  return "Mapping conversation.";
+}
+
 export function providerLabel(state: ConversationState | null): string {
   if (!state?.provider_model_id) {
     return "No semantic provider";

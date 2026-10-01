@@ -14,6 +14,7 @@ log = logging.getLogger("amix.semantic")
 
 CONNECT_TIMEOUT_S = 5
 READ_TIMEOUT_S = 60
+LOCAL_READ_TIMEOUT_S = 180
 MAX_RESPONSE_BYTES = 1_000_000
 
 
@@ -47,6 +48,7 @@ class OpenAICompatibleProvider:
         }
         started = time.monotonic()
         try:
+            read_timeout = LOCAL_READ_TIMEOUT_S if self.descriptor.execution == "local" else READ_TIMEOUT_S
             try:
                 parsed = self._transport(
                     "POST",
@@ -54,7 +56,7 @@ class OpenAICompatibleProvider:
                     body,
                     _headers(self._api_key),
                     CONNECT_TIMEOUT_S,
-                    READ_TIMEOUT_S,
+                    read_timeout,
                     MAX_RESPONSE_BYTES,
                 )
             except TimeoutError as exc:
@@ -132,6 +134,9 @@ def _http_json(method: str, url: str, payload: dict | None, headers: dict, conne
         if len(data) > max_bytes:
             raise SemanticError("semantic_request_failed", "The semantic provider response was too large.")
         if response.status >= 400:
+            snippet = data[:800].decode("utf-8", "replace").lower()
+            if "context" in snippet and ("exceed" in snippet or "n_ctx" in snippet):
+                raise SemanticError("semantic_context_too_large", "The model context is too small for this request.")
             raise SemanticError("semantic_request_failed", "The semantic provider rejected the request.")
         try:
             parsed_body = json.loads(data.decode("utf-8"))

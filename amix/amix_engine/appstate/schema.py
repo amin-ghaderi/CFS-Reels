@@ -20,6 +20,11 @@ app_setting = Table(
     Column("ffmpeg_directory", Text),
     Column("speech_device", Text, nullable=False),
     Column("speech_compute_type", Text, nullable=False),
+    Column("semantic_source", Text),
+    Column("selected_llama_runtime_id", Text),
+    Column("selected_gguf_model_id", Text),
+    Column("local_context_size", Integer),
+    Column("local_threads", Integer),
     CheckConstraint("id = 1", name="ck_app_setting_singleton"),
 )
 
@@ -41,6 +46,8 @@ resource_installation = Table(
     Column("installed_at", Text, nullable=False),
     Column("validated_at", Text),
     Column("status", Text, nullable=False),
+    Column("architecture", Text),
+    Column("semantic_compatibility", Text),
 )
 
 provider_configuration = Table(

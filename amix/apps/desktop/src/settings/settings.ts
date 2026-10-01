@@ -85,6 +85,60 @@ export function importSpeechCopy(): string {
   return "AMIX registers this folder in place. Remove unregisters it and does not delete your files.";
 }
 
+export function localAiSummary(input: { runtimeReady: boolean; modelRegistered: boolean; state: string }): string {
+  if (input.state === "READY") {
+    return "Local AI ready";
+  }
+  if (input.state === "STARTING" || input.state === "LOADING") {
+    return "Local AI loading";
+  }
+  if (input.state === "FAILED") {
+    return "Load failed";
+  }
+  if (!input.runtimeReady) {
+    return "Runtime is not registered.";
+  }
+  if (!input.modelRegistered) {
+    return "Model is not registered.";
+  }
+  return "Local AI stopped";
+}
+
+export function byteLabel(size: number | null | undefined): string | null {
+  if (size == null || size < 0) {
+    return null;
+  }
+  if (size >= 1_000_000_000) {
+    return `${(size / 1_000_000_000).toFixed(1)} GB`;
+  }
+  if (size >= 1_000_000) {
+    return `${(size / 1_000_000).toFixed(1)} MB`;
+  }
+  return `${size} bytes`;
+}
+
+export function modelDetail(item: {
+  kind: string;
+  version: string | null;
+  byte_size?: number | null;
+  architecture?: string | null;
+  semantic_compatibility?: string | null;
+}): string {
+  if (item.kind === "llama_runtime") {
+    return item.version ? ` · ${item.version}` : "";
+  }
+  if (item.kind !== "gguf") {
+    return "";
+  }
+  const parts = [
+    byteLabel(item.byte_size),
+    item.version ? `GGUF ${item.version}` : null,
+    item.architecture,
+    `compatibility ${item.semantic_compatibility || "unknown"}`,
+  ].filter(Boolean);
+  return parts.length ? ` · ${parts.join(" · ")}` : "";
+}
+
 export function catalogMessage(count: number): string | null {
   if (count === 0) {
     return "No managed downloads are available.";

@@ -67,6 +67,29 @@ Captions PASS is the primary sequence. Reel captions were not reached.
 
 Cancellation/errors PASS covers a cancelled transcription, a missing source, a stale caption track, and the unconfigured semantic provider. These were not triggered in the UI because the resources were configured for the real runs: missing speech model, missing YuNet. Stale ShotPlan was not triggered. A protected shot was not present. Switching media was not possible (one master). Perceptual lip-sync on a long program was NOT TESTED; the exported span is 20.233 s.
 
+## Semantic / Reels dogfood
+
+Recorded in the live desktop after the managed local runtime was implemented. Imports used the settings import routes because the native file dialog cannot be completed by this session. No `AMIX_AI_*` variables were set. The server was not left running after the window closed.
+
+| Item | Result |
+| --- | --- |
+| Runtime | llama.cpp, reported version `version: 1 (ac4cdde)`. Loopback `127.0.0.1`, application-chosen port, context 16384. |
+| Model identity | gemma-3-4b-it. GGUF version 3, architecture gemma3, about 2.5 GB, semantic compatibility unknown, license unknown. |
+| Local-only | PASS. Offline policy stayed in place. No API key. No remote fallback. |
+| Settings | PASS. Runtime and model registered in place, selected, started to Local AI ready, still present after quit and relaunch, then started again. The screen showed Local AI stopped, then Loading model. |
+| Conversation map | FAIL. Map Conversation showed Loading model, then Mapping conversation. The job ended `semantic_timeout`. |
+| Reel discovery | Not reached. |
+| Reel draft | Not reached. |
+| Captions | Not reached. |
+| Source/Program landscape | Not reached. |
+| Source/Program portrait | Not reached. |
+| Multicam landscape | Not reached. |
+| Multicam portrait | Not reached. |
+| Quality observations | A tiny structured request returned JSON wrapped in Markdown fences. Existing validation rejects that. The 45-second excerpt is one chunk of about 7200 tokens. That request did not return within 300 seconds on this CPU. |
+| Overall | BLOCKED BY MODEL CAPABILITY |
+
+The model loads and the provider path is the existing structured-generation adapter. It did not produce a validated conversation map, so reel discovery, drafts, captions, and renders were not run. Validation was not relaxed.
+
 ## Known issues
 
 - Frame rate is shown as the raw fraction `1366000/45533`.

@@ -132,6 +132,8 @@ class EngineRuntime:
         log.info("closed project %s handle %s", found.store.project_id, handle)
 
     def shutdown(self) -> None:
+        from amix.amix_engine.appstate.local_server import stop_local_server
+        stop_local_server()
         with self._guard:
             if self._shut_down:
                 return

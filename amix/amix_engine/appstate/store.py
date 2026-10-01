@@ -20,6 +20,12 @@ INVALID = "INVALID"
 MISSING = "MISSING"
 INSTALLING = "INSTALLING"
 FAILED = "FAILED"
+_KIND_COLUMN = {
+    "speech": "selected_speech_id",
+    "vision": "selected_vision_id",
+    "llama_runtime": "selected_llama_runtime_id",
+    "gguf": "selected_gguf_model_id",
+}
 
 
 class SettingsRejected(Exception):
@@ -38,6 +44,11 @@ class AppState:
     ffmpeg_directory: str | None
     speech_device: str
     speech_compute_type: str
+    semantic_source: str | None
+    selected_llama_runtime_id: str | None
+    selected_gguf_model_id: str | None
+    local_context_size: int | None
+    local_threads: int | None
 
 
 @dataclass(frozen=True)
@@ -57,6 +68,8 @@ class InstalledResource:
     installed_at: str
     validated_at: str | None
     status: str
+    architecture: str | None = None
+    semantic_compatibility: str | None = None
 
 
 @dataclass(frozen=True)
@@ -111,12 +124,33 @@ class AppStore:
             ffmpeg_directory=row["ffmpeg_directory"],
             speech_device=row["speech_device"],
             speech_compute_type=row["speech_compute_type"],
+            semantic_source=row["semantic_source"],
+            selected_llama_runtime_id=row["selected_llama_runtime_id"],
+            selected_gguf_model_id=row["selected_gguf_model_id"],
+            local_context_size=row["local_context_size"],
+            local_threads=row["local_threads"],
         )
 
     def set_network_policy(self, policy: str) -> None:
         if policy not in {"offline", "network_enabled"}:
             raise SettingsRejected("invalid_network_policy", "That network policy is not available.")
         self._update_setting(network_policy=policy)
+
+    def set_semantic_source(self, source: str) -> None:
+        if source not in {"provider", "managed_local"}:
+            raise SettingsRejected("invalid_provider", "That semantic source is not available.")
+        if source == "managed_local":
+            state = self.state()
+            if not state.selected_llama_runtime_id or not state.selected_gguf_model_id:
+                raise SettingsRejected("local_model_missing", "Choose a llama.cpp runtime and a GGUF model.")
+        self._update_setting(semantic_source=source)
+
+    def set_local_limits(self, context_size: int | None, threads: int | None) -> None:
+        if context_size is not None and (not isinstance(context_size, int) or context_size < 256 or context_size > 131072):
+            raise SettingsRejected("invalid_local_model", "Context size must be between 256 and 131072.")
+        if threads is not None and (not isinstance(threads, int) or threads < 1 or threads > 64):
+            raise SettingsRejected("invalid_local_model", "Thread count must be between 1 and 64.")
+        self._update_setting(local_context_size=context_size, local_threads=threads)
 
     def set_ffmpeg_directory(self, directory: str | None) -> None:
         self._update_setting(ffmpeg_directory=directory)
@@ -154,6 +188,8 @@ class AppStore:
         license_url: str | None = None,
         byte_size: int | None = None,
         status: str = READY,
+        architecture: str | None = None,
+        semantic_compatibility: str | None = None,
     ) -> InstalledResource:
         resource_id = str(uuid.uuid4())
         now = _now()
@@ -174,25 +210,22 @@ class AppStore:
                 installed_at=now,
                 validated_at=now,
                 status=status,
+                architecture=architecture,
+                semantic_compatibility=semantic_compatibility or "unknown",
             ))
         saved = self.resource(resource_id)
         if saved is None:
             raise SettingsRejected("internal_error", "The resource could not be saved.")
-        column = "selected_speech_id" if kind == "speech" else "selected_vision_id"
-        current = self.state()
-        selected = current.selected_speech_id if kind == "speech" else current.selected_vision_id
-        if selected is None:
+        column = _KIND_COLUMN.get(kind)
+        if column is not None and getattr(self.state(), column) is None:
             self._update_setting(**{column: resource_id})
         return saved
 
     def select_resource(self, resource_id: str) -> None:
         found = self.resource(resource_id)
-        if found is None:
+        if found is None or found.kind not in _KIND_COLUMN:
             raise SettingsRejected("unknown_resource", "That resource is not installed.")
-        column = "selected_speech_id" if found.kind == "speech" else "selected_vision_id"
-        if found.kind not in {"speech", "vision"}:
-            raise SettingsRejected("unknown_resource", "That resource is not installed.")
-        self._update_setting(**{column: resource_id})
+        self._update_setting(**{_KIND_COLUMN[found.kind]: resource_id})
 
     def mark_resource(self, resource_id: str, status: str) -> None:
         with self.engine.begin() as connection:
@@ -211,10 +244,23 @@ class AppStore:
             connection.execute(
                 resource_installation.delete().where(resource_installation.c.resource_id == resource_id)
             )
-        if state.selected_speech_id == resource_id:
-            self._update_setting(selected_speech_id=None)
-        if state.selected_vision_id == resource_id:
-            self._update_setting(selected_vision_id=None)
+        cleared = {
+            column: None
+            for column, selected in (
+                ("selected_speech_id", state.selected_speech_id),
+                ("selected_vision_id", state.selected_vision_id),
+                ("selected_llama_runtime_id", state.selected_llama_runtime_id),
+                ("selected_gguf_model_id", state.selected_gguf_model_id),
+            )
+            if selected == resource_id
+        }
+        if cleared:
+            self._update_setting(**cleared)
+        if state.semantic_source == "managed_local" and resource_id in {
+            state.selected_llama_runtime_id,
+            state.selected_gguf_model_id,
+        }:
+            self._update_setting(semantic_source="provider")
         return found
 
     def providers(self) -> list[ProviderRow]:
@@ -277,7 +323,7 @@ class AppStore:
     def select_provider(self, provider_id: str) -> None:
         if self.provider(provider_id) is None:
             raise SettingsRejected("unknown_provider", "That provider is not configured.")
-        self._update_setting(selected_provider_id=provider_id)
+        self._update_setting(selected_provider_id=provider_id, semantic_source="provider")
 
     def delete_provider(self, provider_id: str) -> ProviderRow:
         found = self.provider(provider_id)
@@ -346,6 +392,8 @@ def _resource(row) -> InstalledResource:
         installed_at=row["installed_at"],
         validated_at=row["validated_at"],
         status=row["status"],
+        architecture=row["architecture"],
+        semantic_compatibility=row["semantic_compatibility"] or "unknown",
     )
 
 

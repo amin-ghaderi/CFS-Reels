@@ -3,9 +3,11 @@
 Order, and only this order:
 
 1. ``AMIX_AI_BASE_URL`` or ``AMIX_AI_MODEL`` when either is set. A partial pair
-   does not fall through to the saved provider.
-2. The selected global provider.
-3. Unavailable.
+   does not fall through.
+2. The managed local model, when that source is selected. A failed local start
+   does not fall through to another provider.
+3. The selected external provider.
+4. Unavailable.
 """
 from __future__ import annotations
 
@@ -23,7 +25,7 @@ from amix.amix_engine.semantic.provider import (
 )
 
 
-def resolve_provider(environ: dict[str, str] | None = None) -> OpenAICompatibleProvider:
+def resolve_provider(environ: dict[str, str] | None = None, cancel=None) -> OpenAICompatibleProvider:
     explicit = environ is not None
     env = os.environ if environ is None else environ
     base_url = env.get("AMIX_AI_BASE_URL", "").strip()
@@ -35,6 +37,8 @@ def resolve_provider(environ: dict[str, str] | None = None) -> OpenAICompatibleP
         return _provider(env.get("AMIX_AI_PROVIDER_ID", ""), base_url, model_id, env.get("AMIX_AI_API_KEY", ""), mode)
     if explicit:
         raise SemanticError("semantic_provider_missing", "No semantic provider is configured.")
+    if _semantic_source() == "managed_local":
+        return _from_managed(env, cancel)
     return _from_store(env)
 
 
@@ -78,6 +82,39 @@ def _from_store(env: dict[str, str]) -> OpenAICompatibleProvider:
     return _provider(row.provider_id, row.base_url, row.model_id, secret, mode, row.display_name)
 
 
+def _from_managed(env: dict[str, str], cancel) -> OpenAICompatibleProvider:
+    from amix.amix_engine.appstate.bind import bound_store
+    from amix.amix_engine.appstate.local_server import ensure_local_server
+
+    store = bound_store()
+    if store is None:
+        raise SemanticError("semantic_provider_missing", "No semantic provider is configured.")
+    endpoint = ensure_local_server(store, cancel=cancel)
+    mode = network_mode(env, store.state().network_policy)
+    provider = _provider("", endpoint.base_url, endpoint.model_id, "", mode, endpoint.display_name)
+    provider.descriptor = type(provider.descriptor)(
+        provider_id="managed-local",
+        display_name=endpoint.display_name,
+        adapter_kind="openai_compatible",
+        model_id=endpoint.model_id,
+        capabilities=provider.descriptor.capabilities,
+        execution="local",
+        endpoint_host="127.0.0.1",
+        runtime_kind="llama.cpp",
+        runtime_version=endpoint.runtime_version,
+    )
+    return provider
+
+
+def _semantic_source() -> str | None:
+    from amix.amix_engine.appstate.bind import bound_store
+
+    store = bound_store()
+    if store is None:
+        return None
+    return store.state().semantic_source
+
+
 def _saved_policy() -> str | None:
     from amix.amix_engine.appstate.bind import bound_store
 
@@ -94,6 +131,11 @@ def provider_status(environ: dict[str, str] | None = None) -> dict:
         mode = network_mode(env, None if explicit else _saved_policy())
     except SemanticError as exc:
         return _status(False, "offline", None, False) | {"message": exc.message, "state": "INVALID"}
+    if not explicit and _semantic_source() == "managed_local":
+        described = _describe_managed(mode)
+        if described is not None:
+            return described
+        return _status(False, mode, None, False) | {"local_ai_state": "STOPPED"}
     try:
         provider = resolve_provider(environ)
     except SemanticError as exc:
@@ -114,6 +156,32 @@ def provider_status(environ: dict[str, str] | None = None) -> dict:
         provider_id=descriptor.provider_id,
         capability=GENERATE_STRUCTURED in descriptor.capabilities,
     )
+
+
+def _describe_managed(mode: str) -> dict | None:
+    from amix.amix_engine.appstate.bind import bound_store
+    from amix.amix_engine.appstate.local_server import local_server_snapshot
+
+    store = bound_store()
+    if store is None:
+        return None
+    state = store.state()
+    model = store.resource(state.selected_gguf_model_id or "")
+    if model is None or model.kind != "gguf":
+        return None
+    snapshot = local_server_snapshot()
+    status = _status(
+        True,
+        mode,
+        model.resource_id,
+        False,
+        execution="local",
+        display_name=model.display_name,
+        provider_id="managed-local",
+        capability=True,
+    )
+    status["local_ai_state"] = snapshot["state"]
+    return status
 
 
 def check_provider(environ: dict[str, str] | None = None) -> dict:
@@ -148,4 +216,5 @@ def _status(
         "capability_ready": capability and not offline_blocked,
         "offline_blocked": offline_blocked,
         "reachable": None,
+        "local_ai_state": None,
     }

@@ -14,7 +14,7 @@ The descriptor carries provider id, display name, adapter kind, model id, capabi
 
 Phase 14 has one protocol adapter: OpenAI-compatible chat completions. A loopback endpoint is the local provider. Any other host is remote. The application asks the registry for a descriptor. It does not branch on a vendor name.
 
-The product path is a saved provider in application settings: display name, local or remote placement, base URL, and model id. A remote provider's API key is an OS credential, not a database column. See [SETTINGS_AND_RESOURCES.md](SETTINGS_AND_RESOURCES.md).
+The product path is application settings. See [SETTINGS_AND_RESOURCES.md](SETTINGS_AND_RESOURCES.md). A managed local model is a llama.cpp server and a GGUF file that AMIX starts on loopback. An external local provider is a loopback OpenAI-compatible server the user already runs. A remote provider stores its API key as an OS credential, not a database column. All three become the same provider descriptor. The managed descriptor advertises `GENERATE_STRUCTURED` only. Its identity is the local configuration, runtime kind and version, and the GGUF resource id and display name. The ephemeral port is not provenance.
 
 Development overrides remain when they are set:
 
@@ -28,7 +28,7 @@ Development overrides remain when they are set:
 
 When `AMIX_AI_NETWORK` is unset, the saved policy is used. The saved policy is `offline` until the user chooses Network enabled. `development` is a development alias that permits a remote endpoint. The Settings screen offers only Offline and Network enabled.
 
-The product does not start llama.cpp and does not download a model. Cursor CLI is not a runtime dependency.
+AMIX can start a registered llama.cpp server for the managed local model. It does not download a model in this phase. The managed-download catalog stays empty until a source, checksum, and license are already verified. Cursor CLI is not a runtime dependency. A failed managed start does not switch to another provider.
 
 ## Offline
 
@@ -42,7 +42,7 @@ There is no semantic telemetry. Logs may include provider id, model id, task id,
 
 A development API key is read from `AMIX_AI_API_KEY` only for an environment override. A saved remote provider uses a credential reference. The desktop stores the secret in the OS credential store and pushes it into engine memory for the request. It is not written to `project.sqlite`, `app.sqlite`, job specs, analysis provenance, localStorage, or logs. React can see "API key configured" or "No API key". It cannot read the stored secret. The React client cannot submit a model path or an executable path on a job. It submits the product task `map_conversation` and the profile id. Provider base URL and model id are saved through Settings, not through a project.
 
-Before a user-facing cloud provider is enabled, credentials must come from Windows Credential Manager, macOS Keychain, or the architecture-approved OS credential store. This phase does not add that store.
+Saved remote credentials use Windows Credential Manager or macOS Keychain. The managed local model does not use an API key.
 
 ## Tasks
 
@@ -50,10 +50,10 @@ A task has an input schema, an output schema, required capabilities, a versioned
 
 Structured output is parsed as JSON and checked with a schema. Markdown wrapped around JSON is invalid. At most one repair request is sent, and the repair count is stored. A second failure fails the job. The previous active map stays active.
 
-Requests use a connect timeout and a read timeout, and responses are size-limited. A provider cannot hang the engine forever. Cancellation between calls stops further calls. An in-flight HTTP call ends at its timeout, and cancellation is honored when it returns. A cancelled run does not publish a partial map.
+Requests use a connect timeout and a read timeout, and responses are size-limited. A remote provider read timeout is 60 seconds. A loopback provider read timeout is 180 seconds, because a local model can spend that long on one structured response. A provider cannot hang the engine forever. Cancellation between calls stops further calls. An in-flight HTTP call ends at its timeout, and cancellation is honored when it returns. A cancelled run does not publish a partial map.
 
 The model has no tools, filesystem access, or network tools. Transcript text is sent as data, delimited from the task instructions.
 
 ## Limits
 
-There is no cloud account UI, no key-storage UI, no model manager, no embedding index, and no conversation chat. A future Cursor adapter would still be asked for `GENERATE_STRUCTURED` and would be classified as remote.
+There is no embedding index and no conversation chat. Jev, ranking, and tool calling are not implemented. A future Cursor adapter would still be asked for `GENERATE_STRUCTURED` and would be classified as remote.

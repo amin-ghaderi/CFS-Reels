@@ -15,10 +15,10 @@ Under that directory:
 
 ## Global database
 
-A separate Alembic environment, `amix/alembic_app.ini`, owns this database. The project migration chain is not used. Revision `0001_app_state` creates:
+A separate Alembic environment, `amix/alembic_app.ini`, owns this database. The project migration chain is not used. Revision `0001_app_state` creates the tables. Revision `0002_local_semantic` adds the managed-local columns.
 
-- `app_setting` — one row: network policy, selected speech and vision resources, selected provider, speech device and compute type, FFmpeg directory
-- `resource_installation` — registered or managed resources
+- `app_setting` — one row: network policy, selected speech, vision, llama.cpp runtime, and GGUF model, semantic source, local context and threads, selected provider, speech device and compute type, FFmpeg directory
+- `resource_installation` — registered or managed resources, including optional architecture and semantic compatibility
 - `provider_configuration` — provider rows and a non-secret `credential_ref`
 - `resource_job` — install/download jobs that must run when no project is open
 
@@ -64,15 +64,36 @@ Resolution order:
 
 ## Semantic providers
 
-Settings can save a local or remote OpenAI-compatible provider: display name, base URL, and model id. A local provider must be loopback (`127.0.0.1`, `localhost`, or `::1`). A LAN address is remote. Saving a remote URL does not switch the network policy.
+Settings separates three sources:
 
-Test Connection uses the provider health request (`GET {base}/models`). It does not send a project transcript. AMIX does not poll providers.
+- Managed local model. AMIX imports a llama.cpp server program and a GGUF file, then starts that server itself.
+- External local provider. A loopback OpenAI-compatible server the user already runs (llama.cpp, LM Studio, or another compatible server).
+- Remote provider. A saved remote OpenAI-compatible endpoint and its OS credential.
+
+A local provider must be loopback (`127.0.0.1`, `localhost`, or `::1`). A LAN address is remote. Saving a remote URL does not switch the network policy. Managed local settings are not API keys.
+
+Test Connection for an external or remote provider uses `GET {base}/models`. It does not send a project transcript. Start / Test on the managed local model starts the local server and waits until it is ready. AMIX does not poll remote providers.
 
 Resolution order:
 
 1. `AMIX_AI_BASE_URL` and `AMIX_AI_MODEL` when either is set. Both are required. An incomplete or invalid override does not fall through. The development key is `AMIX_AI_API_KEY` only.
-2. The selected saved provider. Its secret, if any, comes from engine memory filled by the desktop.
-3. Unavailable.
+2. The managed local model, when that source is selected. A failed start does not fall through to a saved provider.
+3. The selected saved provider. Its secret, if any, comes from engine memory filled by the desktop.
+4. Unavailable.
+
+## Managed local model
+
+Import llama.cpp program, or a folder that contains `llama-server` / `llama-server.exe`. AMIX runs `--version` (then help if needed) with `shell=False`, a short timeout, and bounded output. A filename is not enough.
+
+Import local GGUF model registers the file in place. AMIX checks that it is a regular file with a GGUF header. It records size, GGUF version when the header parses, and architecture when that metadata key parses. It does not guess parameter count, quantization, license, or context length from the filename. License stays unknown unless the import supplies one AMIX can store as given. Semantic compatibility starts as `unknown`. It becomes `validated` or `incompatible` only from a later explicit result, not from the model name.
+
+The selected runtime, selected model, optional context size (256–131072), and optional thread count (1–64) are saved in `app.sqlite`. A blank context uses 16384. That is large enough for one AMIX semantic chunk and small enough that a model whose own context is very large does not allocate that cache on a normal computer. A blank thread count leaves the runtime's CPU default. There is no free-form argument field and no GPU-layer control in this phase.
+
+Start / Test, or the first Conversation Map or Reel Discovery that needs the model, starts `llama-server` on `127.0.0.1` and an application-chosen free port. The port is not saved and is not the model identity. Readiness is `GET /v1/models`. States are STARTING, LOADING, READY, FAILED, and STOPPED. They are runtime status, not project jobs. Load timeout is 180 seconds. Stop Local AI stops the process. Engine shutdown stops it as well. Quit and restart keeps the registered files and the selection; the server is not left running.
+
+The managed server is an owned child: spawn and registration happen together, stop ends the process tree, and a second start uses a new process and a new port. Conversation Mapping and Reel Discovery still request `GENERATE_STRUCTURED` through the existing provider. They do not receive an executable path or a GGUF path.
+
+Managed local inference is offline-safe. It does not download a model, look up a license, send telemetry, or fall back to a remote provider.
 
 Application tasks still consume a provider descriptor. They do not persist a provider per project. AnalysisRun provenance records the non-secret descriptor used for that run.
 
@@ -109,8 +130,8 @@ A download, when a catalog entry exists, is a global background job. Bytes land 
 
 ## Removal
 
-Remove of a register-in-place resource unregisters it and leaves the user's files. Remove of an AMIX-owned resource deletes those bytes only after confirmation, and only when the path is inside the app-data directory. The selected speech resource cannot be removed while a transcribe job is queued, running, or cancel-requested. The selected vision resource cannot be removed while overlap detection is in those states.
+Remove of a register-in-place resource unregisters it and leaves the user's files. Remove of an AMIX-owned resource deletes those bytes only after confirmation, and only when the path is inside the app-data directory. The selected speech resource cannot be removed while a transcribe job is queued, running, or cancel-requested. The selected vision resource cannot be removed while overlap detection is in those states. A llama.cpp runtime or GGUF model cannot be removed while local AI is starting, loading, or ready.
 
 ## Portability
 
-Projects do not move with global resources. Another machine configures its own speech model, YuNet file, provider, and FFmpeg folder. Development environment variables remain supported and stay higher priority than saved settings. They are not the normal product path.
+Projects do not move with global resources. Another machine configures its own speech model, YuNet file, llama.cpp runtime, GGUF model, provider, and FFmpeg folder. Development environment variables remain supported and stay higher priority than saved settings. They are not the normal product path.

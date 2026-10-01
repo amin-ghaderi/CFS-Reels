@@ -5,6 +5,7 @@ import type { ConversationState, ConversationThread } from "../api/types";
 import {
   conversationActions,
   conversationPhase,
+  mappingActivity,
   providerLabel,
   showExistingThreads,
   threadSeekUs,
@@ -77,6 +78,10 @@ describe("conversation workspace", () => {
     expect(showExistingThreads("failed", [thread])).toBe(true);
     expect(conversationActions("mapped")).toEqual(["Rebuild Map"]);
     expect(conversationActions("ready")).toEqual(["Map Conversation"]);
+    expect(mappingActivity("STARTING")).toBe("Starting local model.");
+    expect(mappingActivity("LOADING")).toBe("Loading model.");
+    expect(mappingActivity("READY")).toBe("Mapping conversation.");
+    expect(mappingActivity(null)).toBe("Mapping conversation.");
     expect(conversationActions("mapped").join(" ")).not.toMatch(/Reel/);
     expect(providerLabel(state())).toBe("Local model — demo");
     expect(providerLabel(state())).not.toMatch(/sk-|api_key|127\.0\.0\.1/);

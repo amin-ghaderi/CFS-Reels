@@ -2,20 +2,27 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useState } from "react";
 
 import {
+  importGgufModel,
+  importLlamaRuntime,
   importSpeechModel,
   importVisionModel,
   removeProvider,
   removeProviderCredential,
   removeResource,
   runtimeStatus,
+  saveLocalLimits,
   saveMediaTools,
   saveNetworkPolicy,
   saveProvider,
+  selectInstalledResource,
   selectProvider,
   selectSpeechModel,
   selectVisionModel,
   setProviderCredential,
+  startLocalAi,
+  stopLocalAi,
   testProvider,
+  useManagedLocalAi,
 } from "../api/client";
 import { asFailure } from "../api/errors";
 import type { EngineFailure, InstalledResource, ProviderConfig, RuntimeStatus } from "../api/types";
@@ -25,6 +32,8 @@ import {
   catalogMessage,
   credentialLabel,
   importSpeechCopy,
+  localAiSummary,
+  modelDetail,
   networkLabel,
   offlineRemoteWarning,
   originLabel,
@@ -48,6 +57,17 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     void reload().catch((error) => setNotice(asFailure(error)));
   }, []);
+
+  useEffect(() => {
+    const state = status?.local_ai.state;
+    if (state !== "STARTING" && state !== "LOADING") {
+      return;
+    }
+    const timer = window.setInterval(() => {
+      void runtimeStatus().then(setStatus).catch(() => undefined);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [status?.local_ai.state]);
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
@@ -79,7 +99,16 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
 
   const speech = status.resources.filter((item) => item.kind === "speech");
   const vision = status.resources.filter((item) => item.kind === "vision");
+  const runtimes = status.resources.filter((item) => item.kind === "llama_runtime");
+  const models = status.resources.filter((item) => item.kind === "gguf");
+  const localProviders = status.providers.filter((item) => item.placement === "local");
+  const remoteProviders = status.providers.filter((item) => item.placement !== "local");
   const catalogNote = catalogMessage(status.catalog.length);
+  const localSummary = localAiSummary({
+    runtimeReady: runtimes.some((item) => item.selected),
+    modelRegistered: models.some((item) => item.selected),
+    state: status.local_ai.state,
+  });
 
   return (
     <main className="settings">
@@ -139,9 +168,37 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
       </section>
       <section>
         <h2>Semantic AI</h2>
-        <p>{providerSummary(status.semantic)}</p>
-        <p className="muted">{testResultLabel(testState)}</p>
-        {status.providers.map((provider) => (
+        <h3>Managed local model</h3>
+        <p>{localSummary}{status.local_ai.selected ? " · Selected" : ""}</p>
+        <p className="muted">{status.local_ai.message}</p>
+        {status.local_ai.state === "FAILED" && status.local_ai.diagnostic ? (
+          <p className="muted">{status.local_ai.diagnostic}</p>
+        ) : null}
+        <p className="muted">Runtime and model stay registered after AMIX closes. The server stops when AMIX closes.</p>
+        <ResourceList
+          items={runtimes}
+          busy={busy}
+          onSelect={(id) => void run(() => selectInstalledResource(id))}
+          onRemove={(item) => void run(() => removeResource(item.resource_id, false))}
+        />
+        <ResourceList
+          items={models}
+          busy={busy}
+          onSelect={(id) => void run(() => selectInstalledResource(id))}
+          onRemove={(item) => void run(() => removeResource(item.resource_id, false))}
+        />
+        <LocalLimits status={status} busy={busy} onApply={(context, threads) => void run(() => saveLocalLimits(context, threads))} />
+        <div className="actions">
+          <button type="button" disabled={busy} onClick={() => void importExecutable()}>Import llama.cpp program</button>
+          <button type="button" disabled={busy} onClick={() => void importFolder("Choose a folder containing llama-server", (path) => importLlamaRuntime(path, "llama.cpp"))}>Import llama.cpp folder</button>
+          <button type="button" disabled={busy} onClick={() => void importGguf()}>Import local GGUF model</button>
+          <button type="button" disabled={busy || status.local_ai.selected} onClick={() => void run(() => useManagedLocalAi())}>Use managed local model</button>
+          <button type="button" disabled={busy || status.local_ai.state === "STARTING" || status.local_ai.state === "LOADING" || status.local_ai.state === "READY"} onClick={() => void run(() => startLocalAi())}>Start / Test</button>
+          <button type="button" disabled={busy || status.local_ai.state === "STOPPED"} onClick={() => void run(() => stopLocalAi())}>Stop Local AI</button>
+        </div>
+        <h3>External local provider</h3>
+        <p className="muted">Use this when llama.cpp, LM Studio, or another OpenAI-compatible server is already running on this computer.</p>
+        {localProviders.map((provider) => (
           <ProviderRow
             key={provider.provider_id}
             provider={provider}
@@ -153,6 +210,20 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
           />
         ))}
         <ProviderForm placement="local" busy={busy} onSave={(body, secret) => void save(body, secret)} />
+        <h3>Remote provider</h3>
+        <p>{status.local_ai.selected ? "Managed local model is active." : providerSummary(status.semantic)}</p>
+        <p className="muted">{testResultLabel(testState)}</p>
+        {remoteProviders.map((provider) => (
+          <ProviderRow
+            key={provider.provider_id}
+            provider={provider}
+            policy={status.network_policy}
+            busy={busy}
+            onSelect={() => void run(() => selectProvider(provider.provider_id))}
+            onRemove={() => void run(() => removeProvider(provider.provider_id))}
+            onRemoveKey={() => void removeKey(provider)}
+          />
+        ))}
         <ProviderForm placement="remote" busy={busy} onSave={(body, secret) => void save(body, secret)} />
         <button type="button" disabled={busy} onClick={() => void check()}>
           Test connection
@@ -177,6 +248,33 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
       return;
     }
     await run(() => action(selected));
+  }
+
+  async function importExecutable() {
+    const selected = await open({
+      directory: false,
+      multiple: false,
+      title: "Choose llama-server",
+      filters: [{ name: "llama-server", extensions: ["exe"] }],
+    });
+    if (typeof selected !== "string") {
+      return;
+    }
+    await run(() => importLlamaRuntime(selected, "llama.cpp"));
+  }
+
+  async function importGguf() {
+    const selected = await open({
+      directory: false,
+      multiple: false,
+      title: "Import a GGUF model",
+      filters: [{ name: "GGUF", extensions: ["gguf"] }],
+    });
+    if (typeof selected !== "string") {
+      return;
+    }
+    const name = selected.split(/[\\/]/).filter(Boolean).pop() || "Local model";
+    await run(() => importGgufModel(selected, name.replace(/\.gguf$/i, "")));
   }
 
   async function importFile() {
@@ -259,6 +357,7 @@ function ResourceList({
           <span className="muted">
             {" "}
             {originLabel(item.origin, item.ownership)}
+            {modelDetail(item)}
             {item.license_name ? ` · ${item.license_name}` : ""}
             {item.selected ? " · Selected" : ""}
           </span>
@@ -357,7 +456,7 @@ function ProviderForm({
         setSecret("");
       }}
     >
-      <h3>{placement === "local" ? "Local OpenAI-compatible" : "Remote OpenAI-compatible"}</h3>
+      <h3>{placement === "local" ? "Add external local provider" : "Add remote provider"}</h3>
       <label>
         Name
         <input value={name} onChange={(event) => setName(event.target.value)} />
@@ -381,6 +480,60 @@ function ProviderForm({
       </button>
     </form>
   );
+}
+
+function LocalLimits({
+  status,
+  busy,
+  onApply,
+}: {
+  status: RuntimeStatus;
+  busy: boolean;
+  onApply: (context: number | null, threads: number | null) => void;
+}) {
+  const [contextText, setContextText] = useState(status.local_ai.context_size == null ? "" : String(status.local_ai.context_size));
+  const [threadsText, setThreadsText] = useState(status.local_ai.threads == null ? "" : String(status.local_ai.threads));
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setContextText(status.local_ai.context_size == null ? "" : String(status.local_ai.context_size));
+    setThreadsText(status.local_ai.threads == null ? "" : String(status.local_ai.threads));
+  }, [status.local_ai.context_size, status.local_ai.threads]);
+  return (
+    <form
+      className="provider-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const context = optionalBound(contextText);
+        const threads = optionalBound(threadsText);
+        if (context === undefined || threads === undefined) {
+          setError("Context size and threads must be whole numbers, or left blank.");
+          return;
+        }
+        setError(null);
+        onApply(context, threads);
+      }}
+    >
+      <label>
+        Context size
+        <input inputMode="numeric" value={contextText} onChange={(event) => setContextText(event.target.value)} placeholder="16384 if blank" />
+      </label>
+      <label>
+        Threads
+        <input inputMode="numeric" value={threadsText} onChange={(event) => setThreadsText(event.target.value)} placeholder="Runtime default" />
+      </label>
+      {error ? <p>{error}</p> : null}
+      <button type="submit" disabled={busy}>Apply local settings</button>
+    </form>
+  );
+}
+
+function optionalBound(value: string): number | null | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const parsed = Number(trimmed);
+  return Number.isInteger(parsed) ? parsed : undefined;
 }
 
 function folderName(path: string): string {

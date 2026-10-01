@@ -49,6 +49,47 @@ def owned_pids() -> list[int]:
         return list(_owned)
 
 
+def spawn_background(args: list[str]) -> subprocess.Popen:
+    """Start a long-lived owned child. The caller stops it with ``stop_background``."""
+    if not args or not isinstance(args, list):
+        raise ValueError("processes take an argument list")
+    process = _spawn_owned(args, None)
+    tail = bytearray()
+    lock = threading.Lock()
+    process._amix_tail = tail  # type: ignore[attr-defined]
+    process._amix_tail_lock = lock  # type: ignore[attr-defined]
+    threading.Thread(target=_read_stderr, args=(process.stderr, tail, lock), name="amix-owned-stderr", daemon=True).start()
+    threading.Thread(target=_drain, args=(process.stdout,), name="amix-owned-stdout", daemon=True).start()
+    return process
+
+
+def background_tail(process: subprocess.Popen) -> str:
+    lock = getattr(process, "_amix_tail_lock", None)
+    tail = getattr(process, "_amix_tail", bytearray())
+    if lock is None:
+        return ""
+    with lock:
+        return bytes(tail).decode("utf-8", errors="replace")
+
+
+def stop_background(process: subprocess.Popen) -> None:
+    _terminate_tree(process)
+    _reap(process)
+    _release(process)
+    _close_pipes(process)
+
+
+def _drain(pipe) -> None:
+    try:
+        if pipe is None:
+            return
+        while pipe.read(1024):
+            continue
+    finally:
+        if pipe is not None:
+            pipe.close()
+
+
 def terminate_owned_processes(timeout_s: float) -> None:
     """Finish any spawn transition, then stop every registered child."""
     deadline = time.monotonic() + max(0.0, timeout_s)

@@ -9,7 +9,7 @@ from amix.amix_engine.semantic.input import (
     chunk_turns,
     turn_payload,
 )
-from amix.amix_engine.semantic.provider import GENERATE_STRUCTURED, StructuredRequest
+from amix.amix_engine.semantic.provider import GENERATE_STRUCTURED, StructuredRequest, runtime_provenance as _runtime_provenance
 from amix.amix_engine.semantic.tasks import (
     CHUNK_PROFILE,
     MAX_TURN_CHARS,
@@ -105,6 +105,7 @@ def _publish(store, asset_id, semantic: SemanticInput, chunks, threads, provider
         "adapter_kind": descriptor.adapter_kind,
         "model_id": descriptor.model_id,
         "execution": execution,
+        **_runtime_provenance(descriptor),
         "capabilities": sorted(descriptor.capabilities),
         "chunk_profile": CHUNK_PROFILE,
         "chunk_fingerprints": [chunk.fingerprint for chunk in chunks],

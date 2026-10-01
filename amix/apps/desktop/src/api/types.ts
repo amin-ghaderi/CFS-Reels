@@ -329,6 +329,7 @@ export interface ConversationState {
   capability_ready: boolean;
   offline_blocked: boolean;
   network_mode: string;
+  local_ai_state?: string | null;
   map_present: boolean;
   map_stale: boolean;
   conversation_map_run_id: string | null;
@@ -378,6 +379,7 @@ export interface ReelState {
   provider_configured: boolean;
   capability_ready: boolean;
   offline_blocked: boolean;
+  local_ai_state?: string | null;
   map_present: boolean;
   map_stale: boolean;
   discovery_present: boolean;
@@ -487,7 +489,21 @@ export interface InstalledResource {
   identity: string | null;
   runtime: string | null;
   status: string;
+  byte_size?: number | null;
+  architecture?: string | null;
+  semantic_compatibility?: string | null;
   selected: boolean;
+}
+
+export interface LocalAiStatus {
+  state: string;
+  message: string;
+  diagnostic: string;
+  runtime_id: string | null;
+  model_id: string | null;
+  selected: boolean;
+  context_size: number | null;
+  threads: number | null;
 }
 
 export interface ProviderConfig {
@@ -531,6 +547,8 @@ export interface RuntimeStatus {
   ffmpeg: ToolStatus;
   ffprobe: ToolStatus;
   resources: InstalledResource[];
+  semantic_source: string;
+  local_ai: LocalAiStatus;
   providers: ProviderConfig[];
   catalog: CatalogEntry[];
 }

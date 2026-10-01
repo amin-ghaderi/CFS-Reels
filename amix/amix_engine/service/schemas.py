@@ -423,6 +423,7 @@ class ConversationStateResponse(_Model):
     capability_ready: bool
     offline_blocked: bool
     network_mode: str
+    local_ai_state: str | None = None
     map_present: bool
     map_stale: bool
     conversation_map_run_id: str | None = None
@@ -472,6 +473,7 @@ class ReelStateResponse(_Model):
     provider_configured: bool
     capability_ready: bool
     offline_blocked: bool
+    local_ai_state: str | None = None
     map_present: bool
     map_stale: bool
     discovery_present: bool

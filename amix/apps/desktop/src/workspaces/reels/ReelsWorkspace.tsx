@@ -12,6 +12,7 @@ import {
   REEL_PROFILE,
   candidateSeekUs,
   discoveryAction,
+  discoveryActivity,
   draftTimeline,
   editorActions,
   FORMAT_LABELS,
@@ -234,7 +235,7 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
     <div className="reels-workspace">
       <section className="reels-context">
         <h1>Reels</h1>
-        <p>{phaseText(phase, state.drafts.length, Boolean(selectedDraft))}</p>
+        <p>{phaseText(phase, state.drafts.length, Boolean(selectedDraft), state.local_ai_state)}</p>
         {action ? <button type="button" onClick={() => void discover()}>{action}</button> : null}
         <h2>Candidates</h2>
         <ul className="review-list">
@@ -393,7 +394,7 @@ function Inspector({
   );
 }
 
-function phaseText(phase: ReturnType<typeof reelPhase>, drafts: number, selected: boolean): string {
+function phaseText(phase: ReturnType<typeof reelPhase>, drafts: number, selected: boolean, localAiState?: string | null): string {
   switch (phase) {
     case "no_media":
       return "No media selected.";
@@ -408,7 +409,7 @@ function phaseText(phase: ReturnType<typeof reelPhase>, drafts: number, selected
     case "provider_unavailable":
       return "Semantic provider is unavailable.";
     case "discovering":
-      return "Discovering reels.";
+      return discoveryActivity(localAiState);
     case "failed":
       return "Reel discovery failed.";
     case "discovery_stale":

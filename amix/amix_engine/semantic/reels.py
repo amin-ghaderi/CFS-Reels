@@ -11,7 +11,7 @@ from amix.amix_engine.semantic.errors import SemanticError
 from amix.amix_engine.semantic.input import SemanticTurn, build_semantic_input, turn_payload
 from amix.amix_engine.editorial.sequence import sequence_duration_us
 from amix.amix_engine.semantic.mapping import map_is_stale
-from amix.amix_engine.semantic.provider import GENERATE_STRUCTURED, StructuredRequest
+from amix.amix_engine.semantic.provider import GENERATE_STRUCTURED, StructuredRequest, runtime_provenance as _runtime_provenance
 from amix.amix_engine.storage.kinds import CONVERSATION_MAP, REEL_DISCOVERY
 from amix.amix_engine.storage.project import ProjectStore
 from amix.amix_engine.time.clock import TimeRange
@@ -105,6 +105,7 @@ def reel_view(store: ProjectStore, asset_id: str) -> dict:
         "provider_configured": conversation["provider_configured"],
         "capability_ready": conversation["capability_ready"],
         "offline_blocked": conversation["offline_blocked"],
+        "local_ai_state": conversation.get("local_ai_state"),
         "map_present": conversation["map_present"],
         "map_stale": conversation["map_stale"],
         "discovery_present": run_id is not None,
@@ -421,6 +422,7 @@ def _publish(store, asset_id, prepared: _Prepared, candidates, provider, request
         "adapter_kind": descriptor.adapter_kind,
         "model_id": descriptor.model_id,
         "execution": execution,
+        **_runtime_provenance(descriptor),
         "capabilities": sorted(descriptor.capabilities),
         "chunk_profile": CHUNK_PROFILE,
         "chunk_fingerprints": [chunk.fingerprint for chunk in prepared.chunks],

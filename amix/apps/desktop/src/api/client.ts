@@ -351,6 +351,34 @@ export function testProvider(): Promise<SemanticStatus> {
   return request("POST", "/v1/runtime/providers/test");
 }
 
+export function importLlamaRuntime(path: string, displayName: string): Promise<{ resource_id: string }> {
+  return request("POST", "/v1/runtime/llama/import", { path, display_name: displayName });
+}
+
+export function importGgufModel(path: string, displayName: string): Promise<{ resource_id: string }> {
+  return request("POST", "/v1/runtime/gguf/import", { path, display_name: displayName });
+}
+
+export function selectInstalledResource(resourceId: string): Promise<void> {
+  return request("POST", "/v1/runtime/resources/select", { resource_id: resourceId });
+}
+
+export function useManagedLocalAi(): Promise<void> {
+  return request("POST", "/v1/runtime/local-ai/use", { source: "managed_local" });
+}
+
+export function startLocalAi(): Promise<void> {
+  return request("POST", "/v1/runtime/local-ai/start");
+}
+
+export function stopLocalAi(): Promise<void> {
+  return request("POST", "/v1/runtime/local-ai/stop");
+}
+
+export function saveLocalLimits(contextSize: number | null, threads: number | null): Promise<void> {
+  return request("POST", "/v1/runtime/local-ai/limits", { context_size: contextSize, threads });
+}
+
 export function setProviderCredential(credentialRef: string, secret: string): Promise<{ configured: boolean }> {
   return invoke("set_provider_credential", { request: { credentialRef, secret } });
 }

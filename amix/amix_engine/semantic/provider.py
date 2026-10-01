@@ -39,6 +39,8 @@ class ProviderDescriptor:
     capabilities: frozenset[str]
     execution: str
     endpoint_host: str | None = None
+    runtime_kind: str | None = None
+    runtime_version: str | None = None
 
 
 @dataclass(frozen=True)
@@ -49,6 +51,16 @@ class StructuredRequest:
     stage: str
     system_prompt: str
     payload: dict
+
+
+def runtime_provenance(descriptor: ProviderDescriptor) -> dict:
+    """Stable local-runtime facts. The ephemeral port is not included."""
+    extra = {}
+    if descriptor.runtime_kind:
+        extra["runtime_kind"] = descriptor.runtime_kind
+    if descriptor.runtime_version:
+        extra["runtime_version"] = descriptor.runtime_version
+    return extra
 
 
 def network_mode(environ: dict[str, str], saved: str | None = None) -> str:

@@ -52,6 +52,7 @@ def conversation_view(store: ProjectStore, asset_id: str) -> dict:
         "capability_ready": status["capability_ready"],
         "offline_blocked": status["offline_blocked"],
         "network_mode": status["network_mode"],
+        "local_ai_state": status.get("local_ai_state"),
         "map_present": run_id is not None,
         "map_stale": stale,
         "conversation_map_run_id": run_id,

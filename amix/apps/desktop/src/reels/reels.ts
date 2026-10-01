@@ -21,6 +21,16 @@ export type ReelPhase =
 
 export const REEL_PROFILE = "amix.reel.discover.v1";
 
+export function discoveryActivity(localAiState: string | null | undefined): string {
+  if (localAiState === "STARTING") {
+    return "Starting local model.";
+  }
+  if (localAiState === "LOADING") {
+    return "Loading model.";
+  }
+  return "Discovering reels.";
+}
+
 export function reelPhase(input: {
   hasMedia: boolean;
   state: ReelState | null;

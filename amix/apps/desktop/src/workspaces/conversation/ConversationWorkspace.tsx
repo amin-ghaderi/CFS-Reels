@@ -11,6 +11,7 @@ import {
   CONVERSATION_PROFILE,
   conversationActions,
   conversationPhase,
+  mappingActivity,
   providerLabel,
   showExistingThreads,
   threadSeekUs,
@@ -117,7 +118,7 @@ export function ConversationWorkspace({ project }: { project: ProjectInfo }) {
   return (
     <div className="stack">
       <h2>Conversation</h2>
-      <p>{phaseText(phase)}</p>
+      <p>{phaseText(phase, state?.local_ai_state)}</p>
       <p>{providerLabel(state)}</p>
       <div className="row">
         {actions.map((action) => (
@@ -156,7 +157,7 @@ export function ConversationWorkspace({ project }: { project: ProjectInfo }) {
   );
 }
 
-function phaseText(phase: ReturnType<typeof conversationPhase>): string {
+function phaseText(phase: ReturnType<typeof conversationPhase>, localAiState?: string | null): string {
   switch (phase) {
     case "no_media":
       return "No media selected.";
@@ -169,7 +170,7 @@ function phaseText(phase: ReturnType<typeof conversationPhase>): string {
     case "offline_blocked":
       return "Offline mode blocks this provider.";
     case "mapping":
-      return "Mapping conversation.";
+      return mappingActivity(localAiState);
     case "failed":
       return "Conversation mapping failed.";
     case "stale":

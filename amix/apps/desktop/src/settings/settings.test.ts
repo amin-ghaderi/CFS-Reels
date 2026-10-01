@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import { mapEngineFailure } from "../api/errors";
 import {
   applyState,
+  byteLabel,
   catalogMessage,
+  localAiSummary,
+  modelDetail,
   credentialLabel,
   exposesStoredSecret,
   importSpeechCopy,
@@ -63,5 +66,25 @@ describe("settings", () => {
     expect(testResultLabel("idle")).toContain("not been tested");
     expect(testResultLabel("ok")).toContain("succeeded");
     expect(testResultLabel("failed")).toContain("failed");
+  });
+
+  it("describes a managed local model without guessing quality", () => {
+    expect(localAiSummary({ runtimeReady: false, modelRegistered: false, state: "STOPPED" })).toContain("Runtime");
+    expect(localAiSummary({ runtimeReady: true, modelRegistered: true, state: "STOPPED" })).toBe("Local AI stopped");
+    expect(localAiSummary({ runtimeReady: true, modelRegistered: true, state: "LOADING" })).toBe("Local AI loading");
+    expect(localAiSummary({ runtimeReady: true, modelRegistered: true, state: "READY" })).toBe("Local AI ready");
+    expect(localAiSummary({ runtimeReady: true, modelRegistered: true, state: "FAILED" })).toBe("Load failed");
+    expect(byteLabel(1_500_000_000)).toContain("GB");
+    const detail = modelDetail({
+      kind: "gguf",
+      version: "3",
+      byte_size: 2_000_000_000,
+      architecture: "qwen2",
+      semantic_compatibility: "unknown",
+    });
+    expect(detail).toContain("GGUF 3");
+    expect(detail).toContain("qwen2");
+    expect(detail).toContain("unknown");
+    expect(detail).not.toMatch(/Q4|7B|license/i);
   });
 });

@@ -19,8 +19,10 @@ class MapConversationJob:
         if not ctx.media_asset_id:
             raise JobFailed("unknown_media_asset", "That media file is no longer in this project.")
         try:
-            provider = resolve_provider()
+            provider = resolve_provider(cancel=ctx.cancellation)
         except SemanticError as exc:
+            if exc.code == "local_model_stopped":
+                raise JobCancelled() from exc
             raise JobFailed(exc.code, exc.message) from exc
         try:
             result = map_conversation(

@@ -73,6 +73,15 @@ class DownloadBody(BaseModel):
     resource_id: str = Field(min_length=1)
 
 
+class LocalLimitsBody(BaseModel):
+    context_size: int | None = None
+    threads: int | None = None
+
+
+class SemanticSourceBody(BaseModel):
+    source: str
+
+
 def register_settings_routes(app: FastAPI, runtime: EngineRuntime, authorize, call) -> None:
     @app.get("/v1/runtime/status")
     def runtime_status(request: Request) -> dict:
@@ -86,6 +95,11 @@ def register_settings_routes(app: FastAPI, runtime: EngineRuntime, authorize, ca
 
     @app.post("/v1/runtime/speech/select")
     def select_speech(body: SelectBody, request: Request) -> dict:
+        authorize(request)
+        return call(lambda: _select(runtime, body.resource_id))
+
+    @app.post("/v1/runtime/resources/select")
+    def select_any_resource(body: SelectBody, request: Request) -> dict:
         authorize(request)
         return call(lambda: _select(runtime, body.resource_id))
 
@@ -128,6 +142,36 @@ def register_settings_routes(app: FastAPI, runtime: EngineRuntime, authorize, ca
     def remove_provider(provider_id: str, request: Request) -> dict:
         authorize(request)
         return call(lambda: _remove_provider(runtime, provider_id))
+
+    @app.post("/v1/runtime/llama/import")
+    def import_llama(body: ImportVisionBody, request: Request) -> dict:
+        authorize(request)
+        return call(lambda: _import_llama(runtime, body))
+
+    @app.post("/v1/runtime/gguf/import")
+    def import_gguf(body: ImportVisionBody, request: Request) -> dict:
+        authorize(request)
+        return call(lambda: _import_gguf(runtime, body))
+
+    @app.post("/v1/runtime/local-ai/limits")
+    def local_limits(body: LocalLimitsBody, request: Request) -> dict:
+        authorize(request)
+        return call(lambda: _local_limits(runtime, body))
+
+    @app.post("/v1/runtime/local-ai/use")
+    def use_local_ai(body: SemanticSourceBody, request: Request) -> dict:
+        authorize(request)
+        return call(lambda: _use_local_ai(runtime, body.source))
+
+    @app.post("/v1/runtime/local-ai/start")
+    def start_local_ai(request: Request) -> dict:
+        authorize(request)
+        return call(lambda: _start_local_ai(runtime))
+
+    @app.post("/v1/runtime/local-ai/stop")
+    def stop_local_ai(request: Request) -> dict:
+        authorize(request)
+        return call(_stop_local_ai)
 
     @app.post("/v1/runtime/providers/test")
     def test_provider(request: Request) -> dict:
@@ -200,6 +244,8 @@ def _status(runtime: EngineRuntime) -> dict:
         "ffmpeg": tools["ffmpeg"],
         "ffprobe": tools["ffprobe"],
         "resources": resources,
+        "semantic_source": "provider" if runtime.app is None else (runtime.app.state().semantic_source or "provider"),
+        "local_ai": _local_ai_status(runtime),
         "providers": providers,
         "catalog": [
             {
@@ -261,9 +307,14 @@ def _public_resource(runtime: EngineRuntime, item) -> dict:
         "identity": item.identity,
         "runtime": item.runtime,
         "status": item.status,
+        "byte_size": item.byte_size,
+        "architecture": item.architecture,
+        "semantic_compatibility": item.semantic_compatibility or "unknown",
         "selected": item.resource_id in {
             runtime.app.state().selected_speech_id,
             runtime.app.state().selected_vision_id,
+            runtime.app.state().selected_llama_runtime_id,
+            runtime.app.state().selected_gguf_model_id,
         },
     }
 
@@ -280,7 +331,7 @@ def _public_provider(runtime: EngineRuntime, item) -> dict:
         "model_id": item.model_id,
         "credential_ref": item.credential_ref,
         "credential_configured": configured,
-        "selected": runtime.app.state().selected_provider_id == item.provider_id,
+        "selected": runtime.app.state().semantic_source != "managed_local" and runtime.app.state().selected_provider_id == item.provider_id,
     }
 
 
@@ -380,7 +431,15 @@ def _remove(runtime: EngineRuntime, resource_id: str, confirm: bool) -> dict:
     if found is None:
         raise ApiError(404, "unknown_resource", "That resource is not installed.")
     state = store.state()
-    selected = state.selected_speech_id if found.kind == "speech" else state.selected_vision_id
+    selected = {
+        "speech": state.selected_speech_id,
+        "vision": state.selected_vision_id,
+        "llama_runtime": state.selected_llama_runtime_id,
+        "gguf": state.selected_gguf_model_id,
+    }.get(found.kind)
+    from amix.amix_engine.appstate.local_server import local_server_uses
+    if local_server_uses(resource_id):
+        raise ApiError(409, "resource_in_use", "Stop local AI before removing this resource.")
     if selected == resource_id and _busy(runtime, found.kind):
         raise ApiError(409, "resource_in_use", "This resource is in use. Wait for the current job to finish.")
     if found.ownership == "managed" and not confirm:
@@ -487,7 +546,112 @@ def _remove_provider(runtime: EngineRuntime, provider_id: str) -> dict:
     return {"removed": True}
 
 
+def _import_llama(runtime: EngineRuntime, body: ImportVisionBody) -> dict:
+    from amix.amix_engine.appstate.validate import file_identity, llama_executable
+    store = _store(runtime)
+    try:
+        executable, version = llama_executable(Path(body.path))
+    except ResourceInvalid as exc:
+        raise ApiError(400, exc.code, exc.message) from exc
+    saved = store.add_resource(
+        kind="llama_runtime",
+        display_name=body.display_name or "llama.cpp",
+        local_path=str(executable.resolve()),
+        ownership="registered",
+        origin="import",
+        identity=file_identity(executable),
+        runtime="llama.cpp",
+        version=version,
+        license_name=body.license_name,
+        license_url=body.license_url,
+        byte_size=executable.stat().st_size,
+    )
+    return {"resource_id": saved.resource_id, "restart_required": False}
+
+
+def _import_gguf(runtime: EngineRuntime, body: ImportVisionBody) -> dict:
+    from amix.amix_engine.appstate.validate import file_identity, gguf_file
+    store = _store(runtime)
+    file = Path(body.path)
+    try:
+        version, architecture = gguf_file(file)
+    except ResourceInvalid as exc:
+        raise ApiError(400, exc.code, exc.message) from exc
+    saved = store.add_resource(
+        kind="gguf",
+        display_name=body.display_name or file.stem or "Local model",
+        local_path=str(file.resolve()),
+        ownership="registered",
+        origin="import",
+        identity=file_identity(file),
+        runtime="llama.cpp",
+        version=str(version),
+        architecture=architecture,
+        license_name=body.license_name,
+        license_url=body.license_url,
+        byte_size=file.stat().st_size,
+        semantic_compatibility="unknown",
+    )
+    return {"resource_id": saved.resource_id, "restart_required": False}
+
+
+def _local_limits(runtime: EngineRuntime, body: LocalLimitsBody) -> dict:
+    store = _store(runtime)
+    try:
+        store.set_local_limits(body.context_size, body.threads)
+    except SettingsRejected as exc:
+        raise ApiError(400, exc.code, exc.message) from exc
+    return {"restart_required": False}
+
+
+def _use_local_ai(runtime: EngineRuntime, source: str) -> dict:
+    store = _store(runtime)
+    try:
+        store.set_semantic_source(source)
+    except SettingsRejected as exc:
+        raise ApiError(400, exc.code, exc.message) from exc
+    return {"semantic_source": source, "restart_required": False}
+
+
+def _start_local_ai(runtime: EngineRuntime) -> dict:
+    from amix.amix_engine.appstate.local_server import begin_local_server
+    store = _store(runtime)
+    if store.state().semantic_source != "managed_local":
+        try:
+            store.set_semantic_source("managed_local")
+        except SettingsRejected as exc:
+            raise ApiError(400, exc.code, exc.message) from exc
+    begin_local_server(store)
+    return {"restart_required": False, "local_ai": _local_ai_status(runtime)}
+
+
+def _stop_local_ai() -> dict:
+    from amix.amix_engine.appstate.local_server import stop_local_server
+    stop_local_server()
+    return {"restart_required": False}
+
+
+def _local_ai_status(runtime: EngineRuntime) -> dict:
+    from amix.amix_engine.appstate.local_server import local_server_snapshot
+    snapshot = local_server_snapshot()
+    if runtime.app is None:
+        return {**snapshot, "selected": False, "context_size": None, "threads": None}
+    state = runtime.app.state()
+    return {
+        **snapshot,
+        "selected": state.semantic_source == "managed_local",
+        "context_size": state.local_context_size,
+        "threads": state.local_threads,
+    }
+
+
 def _test_provider() -> dict:
+    from amix.amix_engine.appstate.bind import bound_store
+    from amix.amix_engine.appstate.local_server import begin_local_server, local_server_snapshot
+    store = bound_store()
+    if store is not None and store.state().semantic_source == "managed_local":
+        begin_local_server(store)
+        return {"local_ai": local_server_snapshot(), "reachable": None}
     try:
         return check_provider()
     except Exception as exc:
