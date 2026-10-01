@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import { mapEngineFailure } from "./errors";
+import { JOBS_CHANGED_EVENT } from "./jobs";
 import type {
   ActiveTranscript,
   EngineStatus,
@@ -77,11 +78,13 @@ export async function createJob(
   kind: string,
   options?: { mediaAssetId?: string; spec?: Record<string, unknown> },
 ): Promise<JobInfo> {
-  return request("POST", `/v1/projects/${handle}/jobs`, {
+  const job = await request<JobInfo>("POST", `/v1/projects/${handle}/jobs`, {
     kind,
     spec: options?.spec ?? {},
     media_asset_id: options?.mediaAssetId ?? null,
   });
+  window.dispatchEvent(new Event(JOBS_CHANGED_EVENT));
+  return job;
 }
 
 export async function listJobs(handle: string): Promise<JobInfo[]> {

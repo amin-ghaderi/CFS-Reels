@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { createParticipant, listParticipants, renameParticipant } from "../../api/client";
 import { asFailure } from "../../api/errors";
 import type { Participant, ProjectInfo } from "../../api/types";
-import { cleanedParticipantName } from "../../participants/participants";
+import { cleanedParticipantName, PARTICIPANTS_CHANGED_EVENT } from "../../participants/participants";
 import { useProjectData } from "../../project/ProjectData";
 
 export function ParticipantsPanel({ project }: { project: ProjectInfo }) {
@@ -43,6 +43,7 @@ export function ParticipantsPanel({ project }: { project: ProjectInfo }) {
       const created = await createParticipant(project.handle, displayName);
       setRows((current) => [...current, created]);
       setName("");
+      window.dispatchEvent(new Event(PARTICIPANTS_CHANGED_EVENT));
     } catch (error) {
       data.setNotice(asFailure(error));
     } finally {
@@ -62,6 +63,7 @@ export function ParticipantsPanel({ project }: { project: ProjectInfo }) {
       const updated = await renameParticipant(project.handle, participantId, displayName);
       setRows((current) => current.map((row) => (row.participant_id === updated.participant_id ? updated : row)));
       setEditing(null);
+      window.dispatchEvent(new Event(PARTICIPANTS_CHANGED_EVENT));
     } catch (error) {
       data.setNotice(asFailure(error));
     } finally {

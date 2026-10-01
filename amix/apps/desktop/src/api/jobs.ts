@@ -1,5 +1,8 @@
 import type { JobStatus } from "./types";
 
+/** Fired after this desktop creates a job so Activity can start watching it. */
+export const JOBS_CHANGED_EVENT = "amix-jobs-changed";
+
 const TERMINAL: ReadonlySet<JobStatus> = new Set([
   "SUCCEEDED",
   "FAILED",

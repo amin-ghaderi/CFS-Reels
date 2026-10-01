@@ -574,6 +574,62 @@ class ServiceTests(unittest.TestCase):
                 client.close()
                 runtime.shutdown()
 
+    def test_succeeded_render_is_listed_with_stored_status(self) -> None:
+        import tempfile
+
+        from amix.amix_engine.storage.project import open_project
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Exports"
+            runtime, client = _client(tmp)
+            try:
+                created = _create(client, root, "Exports")
+                client.post(f"/v1/projects/{created['handle']}/close", headers=_headers())
+                store = open_project(root)
+                try:
+                    asset_id = store.add_media_asset(
+                        display_name="source.mp4",
+                        location_kind="external",
+                        external_path=str(Path(tmp) / "source.mp4"),
+                    )
+                    job = store.create_processing_job(
+                        kind="render_sequence",
+                        spec={"preset_id": "landscape_720"},
+                        media_asset_id=asset_id,
+                    )
+                    self.assertTrue(store.start_processing_job(job.job_id))
+                    store.finish_job_succeeded(job.job_id, {
+                        "height": 720,
+                        "preset_id": "landscape_720",
+                        "relative_path": "exports/example.mp4",
+                        "sequence_id": "seq-1",
+                        "sequence_purpose": "primary",
+                        "visual_treatment": "multicam",
+                        "width": 1280,
+                    })
+                finally:
+                    store.close()
+                opened = client.post(
+                    "/v1/projects/open",
+                    headers=_headers(),
+                    json={"path": str(root), "read_only": False},
+                )
+                self.assertEqual(opened.status_code, 200, opened.text)
+                listed = client.get(
+                    f"/v1/projects/{opened.json()['handle']}/media/{asset_id}/exports",
+                    headers=_headers(),
+                )
+                self.assertEqual(listed.status_code, 200, listed.text)
+                rows = listed.json()
+                self.assertEqual(len(rows), 1)
+                self.assertEqual(rows[0]["status"], "SUCCEEDED")
+                self.assertEqual(rows[0]["relative_path"], "exports/example.mp4")
+                self.assertEqual(rows[0]["width"], 1280)
+                self.assertEqual(rows[0]["height"], 720)
+            finally:
+                client.close()
+                runtime.shutdown()
+
     def test_openapi_lists_the_service_routes(self) -> None:
         import tempfile
         with tempfile.TemporaryDirectory() as tmp:

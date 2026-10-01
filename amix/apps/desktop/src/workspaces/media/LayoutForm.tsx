@@ -4,6 +4,7 @@ import { addLayout, listLayout, listParticipants } from "../../api/client";
 import { asFailure } from "../../api/errors";
 import type { LayoutBindingRecord, MediaAsset, Participant, ProjectInfo } from "../../api/types";
 import { defaultLayoutSpan, layoutFieldError, parseTimecode } from "../../layout/layout";
+import { PARTICIPANTS_CHANGED_EVENT } from "../../participants/participants";
 import { useProjectData } from "../../project/ProjectData";
 import { formatMicroseconds } from "../../time/format";
 
@@ -33,20 +34,25 @@ export function LayoutForm({ project, asset }: { project: ProjectInfo; asset: Me
 
   useEffect(() => {
     let stop = false;
-    void Promise.all([listParticipants(project.handle), listLayout(project.handle, asset.asset_id)])
-      .then(([people, rows]) => {
-        if (!stop) {
-          setParticipants(people);
-          setBindings(rows);
-        }
-      })
-      .catch((error: unknown) => {
-        if (!stop) {
-          data.setNotice(asFailure(error));
-        }
-      });
+    const reload = () => {
+      void Promise.all([listParticipants(project.handle), listLayout(project.handle, asset.asset_id)])
+        .then(([people, rows]) => {
+          if (!stop) {
+            setParticipants(people);
+            setBindings(rows);
+          }
+        })
+        .catch((error: unknown) => {
+          if (!stop) {
+            data.setNotice(asFailure(error));
+          }
+        });
+    };
+    reload();
+    window.addEventListener(PARTICIPANTS_CHANGED_EVENT, reload);
     return () => {
       stop = true;
+      window.removeEventListener(PARTICIPANTS_CHANGED_EVENT, reload);
     };
   }, [project.handle, asset.asset_id]);
 

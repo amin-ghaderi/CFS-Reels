@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { activeTranscript, cancelJob, clearWordText, correctWordText, createJob, listJobs, speechModelStatus, transcriptWords, wordAtTime } from "../../api/client";
 import { asFailure } from "../../api/errors";
-import { isTerminal } from "../../api/jobs";
+import { isTerminal, JOBS_CHANGED_EVENT } from "../../api/jobs";
 import type { ActiveTranscript, JobInfo, ProjectInfo, SpeechModelStatus, TranscriptWord } from "../../api/types";
 import { mediaAvailability } from "../../media/present";
 import { PreviewPlayer } from "../../playback/PreviewPlayer";
@@ -99,8 +99,11 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
         });
     };
     tick();
+    const wake = () => tick();
+    window.addEventListener(JOBS_CHANGED_EVENT, wake);
     return () => {
       stop = true;
+      window.removeEventListener(JOBS_CHANGED_EVENT, wake);
       if (timer !== 0) {
         window.clearInterval(timer);
       }

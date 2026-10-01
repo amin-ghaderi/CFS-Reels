@@ -75,4 +75,4 @@ Overlap analysis does not identify speakers from faces and does not download a m
 
 Rendering a multicam program is separate. See [MULTICAM_RENDERER.md](MULTICAM_RENDERER.md).
 
-The production overlap extractor has not been compared with the six known CFS03 regions, because `AMIX_YUNET_MODEL_PATH` was not set. The overlap thresholds were not changed for that reason.
+On 2026-09-30 the production worker and `overlap_regions` were run on the known CFS03 master for 2960–3560 s with the golden layout. The six final regions matched `tests/golden/cfs03_49_59/expected/overlaps.json` exactly. Thresholds were not changed. The desktop Analyze overlap control still measures the whole linked asset and does not send that window. See [ALPHA_VALIDATION.md](ALPHA_VALIDATION.md).

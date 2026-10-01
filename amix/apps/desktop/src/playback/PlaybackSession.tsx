@@ -24,6 +24,12 @@ interface PlaybackValue {
 
 const PlaybackContext = createContext<PlaybackValue | null>(null);
 
+/** Survives a WebView reload. A reused small id is rejected as stale by the desktop. */
+function nextRequestId(counter: { current: number }): number {
+  counter.current += 1;
+  return Date.now() * 1000 + counter.current;
+}
+
 export function PlaybackProvider({ generation, children }: { generation: number; children: ReactNode }) {
   const data = useProjectData();
   const selected = data.selected;
@@ -43,7 +49,7 @@ export function PlaybackProvider({ generation, children }: { generation: number;
   }, [view]);
 
   useEffect(() => {
-    const requestId = ++requestRef.current;
+    const requestId = nextRequestId(requestRef);
     let stop = false;
     setView(null);
     viewRef.current = null;

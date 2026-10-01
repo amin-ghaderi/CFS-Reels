@@ -764,7 +764,7 @@ def _exports(runtime: EngineRuntime, handle: str, asset_id: str, sequence_id: st
     for job in store.list_processing_jobs():
         if job.kind not in {"render_multicam", "render_sequence"} or job.media_asset_id != asset_id:
             continue
-        if job.status != "succeeded" or not isinstance(job.result, dict):
+        if job.status != "SUCCEEDED" or not isinstance(job.result, dict):
             continue
         result_sequence = job.result.get("sequence_id")
         purpose = job.result.get("sequence_purpose")

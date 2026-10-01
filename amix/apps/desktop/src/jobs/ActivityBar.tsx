@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { cancelJob, createJob, listJobs, retryJob } from "../api/client";
 import { asFailure, jobProblemMessage } from "../api/errors";
-import { canCancel, canRetry, isTerminal, jobStatusLabel, jobTitle, orderJobs, progressPercent } from "../api/jobs";
+import { canCancel, canRetry, isTerminal, JOBS_CHANGED_EVENT, jobStatusLabel, jobTitle, orderJobs, progressPercent } from "../api/jobs";
 import type { EngineFailure, JobInfo, ProjectInfo } from "../api/types";
 import { missingCount } from "../media/present";
 import { useProjectData } from "../project/ProjectData";
@@ -27,6 +27,12 @@ export function ActivityBar({
   const failed = jobs.filter((job) => job.status === "FAILED").length;
   const missing = missingCount(media.assets);
   const summary = active > 0 ? `${active} running` : failed > 0 ? `${failed} failed` : "No active job";
+
+  useEffect(() => {
+    const wake = () => setToken((value) => value + 1);
+    window.addEventListener(JOBS_CHANGED_EVENT, wake);
+    return () => window.removeEventListener(JOBS_CHANGED_EVENT, wake);
+  }, []);
 
   useEffect(() => {
     let stop = false;

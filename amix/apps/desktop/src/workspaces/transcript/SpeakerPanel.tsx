@@ -113,6 +113,8 @@ export function SpeakerPanel({
         review.diarization_run_id,
         mapped.map((item) => ({ cluster_key: item.clusterKey, participant_id: item.participantId })),
       );
+      const status = await speakerAnalysis(project.handle, asset.asset_id);
+      setAnalysis(status);
       onApplied();
     } catch (error) {
       data.setNotice(asFailure(error));
