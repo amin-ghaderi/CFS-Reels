@@ -13,11 +13,13 @@ export function StartScreen({
   notice,
   setNotice,
   applySession,
+  onSettings,
 }: {
   engine: EngineStatus;
   notice: EngineFailure | null;
   setNotice: (notice: EngineFailure | null) => void;
   applySession: (session: EngineStatus) => void;
+  onSettings: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [naming, setNaming] = useState<string | null>(null);
@@ -78,6 +80,9 @@ export function StartScreen({
           </button>
           <button type="button" onClick={() => void chooseOpen()} disabled={busy}>
             Open project
+          </button>
+          <button type="button" onClick={onSettings} disabled={busy}>
+            Settings
           </button>
         </div>
         <Diagnostics engine={engine} />

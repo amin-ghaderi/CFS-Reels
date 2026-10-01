@@ -68,6 +68,43 @@ pub fn timeouts_for(method: &str, path: &str) -> HttpTimeouts {
     }
 }
 
+pub fn engine_credential_http(
+    port: u16,
+    token: &str,
+    path: &str,
+    body: &str,
+) -> Result<RawHttp, String> {
+    validate_request("POST", path)?;
+    if port == 0 {
+        return Err("The engine is not ready.".into());
+    }
+    let url = format!("http://{LOOPBACK_HOST}:{port}{path}");
+    let timeouts = HttpTimeouts::standard();
+    let agent = ureq::AgentBuilder::new()
+        .timeout_connect(timeouts.connect)
+        .timeout_read(timeouts.read)
+        .redirects(0)
+        .build();
+    let result = agent
+        .request("POST", &url)
+        .set("Authorization", &format!("Bearer {token}"))
+        .set("Accept", "application/json")
+        .set("Content-Type", "application/json")
+        .set("X-Amix-Credential-Write", "1")
+        .send_string(body);
+    match result {
+        Ok(response) => Ok(RawHttp {
+            status: response.status(),
+            body: read_limited(response),
+        }),
+        Err(ureq::Error::Status(status, response)) => Ok(RawHttp {
+            status,
+            body: read_limited(response),
+        }),
+        Err(_) => Err("The engine did not respond.".into()),
+    }
+}
+
 pub fn engine_http(
     port: u16,
     token: &str,

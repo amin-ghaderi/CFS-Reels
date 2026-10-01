@@ -1,8 +1,10 @@
+mod credentials;
 mod engine;
 mod playback;
 pub mod launch;
 pub mod paths;
 pub mod ready;
+pub mod redact;
 pub mod transport;
 
 use tauri::{LogicalSize, Manager};
@@ -47,6 +49,9 @@ pub fn run() {
             engine::engine_retry,
             engine::engine_request,
             engine::join_project_path,
+            engine::set_provider_credential,
+            engine::credential_configured,
+            engine::remove_provider_credential,
             playback::prepare_playback,
             playback::release_playback,
         ])

@@ -10,7 +10,10 @@ This is a hands-on WebView session of the development app (`npm run tauri dev`).
 - FFmpeg 8.1.1, discovered by the engine.
 - Speech: a local faster-whisper-small CTranslate2 snapshot already on the machine. Device `cpu`, compute `int8`. Nothing was downloaded.
 - Vision: a local YuNet ONNX file already on the machine. OpenCV 4.14.0. Nothing was downloaded.
-- Semantic provider: not configured. No remote API was called.
+- Semantic provider: not configured in this 2026-09-30 session. No remote API was called.
+- Phase 19 adds Settings so speech, vision, a semantic provider, and FFmpeg can be configured without those environment variables. The 2026-09-30 rows below still describe the session that used development paths for speech, vision, and FFmpeg.
+
+On 2026-10-01 the desktop was started again with those speech, vision, and FFmpeg environment variables unset. Settings was opened with no project. A local speech folder, the existing YuNet file, and an FFmpeg folder were registered from the same engine commands the Settings actions call after the native picker returns a path. The native picker itself was not driven. Speech, vision, FFmpeg, and FFprobe then showed ready, including after quitting and starting the desktop again. No semantic provider was available, and no remote API was called. Conversation still reports that no semantic provider is configured. Map Conversation, reel discovery, and reel renders were not run.
 - The native folder dialog was not driven by this session. Create and open used the same engine commands the buttons call after a path is chosen. In-app controls were clicked in the WebView.
 
 ## Source media

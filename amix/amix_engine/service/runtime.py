@@ -80,6 +80,16 @@ class EngineRuntime:
                 raise ValueError(f"handler already registered: {kind}")
             handlers[kind] = handler
         self.jobs = JobManager(handlers, max_workers=config.worker_count)
+        self.secrets = None
+        self.app = None
+        self._download_cancels: dict[str, threading.Event] = {}
+        if config.app_data:
+            from amix.amix_engine.appstate.bind import bind_app
+            from amix.amix_engine.appstate.secrets import SecretCache
+            from amix.amix_engine.appstate.store import open_app
+            self.secrets = SecretCache()
+            self.app = open_app(Path(config.app_data))
+            bind_app(self.app, self.secrets)
         self._sessions: dict[str, OpenSession] = {}
         self._by_path: dict[str, str] = {}
         self._guard = threading.Lock()
@@ -134,6 +144,15 @@ class EngineRuntime:
             self._sessions.clear()
             self._by_path.clear()
             self._shut_down = True
+        from amix.amix_engine.appstate.bind import unbind_app
+        unbind_app()
+        if self.app is not None:
+            self.app.close()
+            self.app = None
+
+    def open_stores(self) -> list[ProjectStore]:
+        with self._guard:
+            return [session.store for session in self._sessions.values()]
 
     def _adopt(self, store: ProjectStore, key: str) -> OpenSession:
         handle = secrets.token_hex(16)

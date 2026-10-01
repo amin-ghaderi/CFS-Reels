@@ -51,10 +51,17 @@ class StructuredRequest:
     payload: dict
 
 
-def network_mode(environ: dict[str, str]) -> str:
-    value = environ.get("AMIX_AI_NETWORK", "offline").strip().lower()
-    if value == "development":
-        return "development"
+def network_mode(environ: dict[str, str], saved: str | None = None) -> str:
+    """Explicit ``AMIX_AI_NETWORK`` wins. An invalid value does not fall through."""
+    raw = environ.get("AMIX_AI_NETWORK")
+    if raw is not None and raw.strip():
+        value = raw.strip().lower()
+        if value not in {"offline", "network_enabled", "development"}:
+            from amix.amix_engine.semantic.errors import SemanticError
+            raise SemanticError("invalid_network_policy", "The network policy is not valid.")
+        return value
+    if saved in {"offline", "network_enabled"}:
+        return saved
     return "offline"
 
 

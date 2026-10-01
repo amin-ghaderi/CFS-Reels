@@ -10,7 +10,7 @@ use amix_desktop_lib::transport::{engine_http, HttpTimeouts};
 fn development_engine_serves_a_project_and_releases_its_lock() {
     let before = service_process_count();
     let (repo, python) = launch::development_command().expect("development engine");
-    let engine = launch::spawn_development_engine().expect("engine ready record");
+    let engine = launch::spawn_development_engine(None).expect("engine ready record");
     let port = engine.record.port;
     let token = engine.record.token.clone();
     let pid = engine.process_id();

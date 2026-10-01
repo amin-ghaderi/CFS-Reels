@@ -26,6 +26,8 @@ import type {
   TimelineState,
   CaptionExport,
   CaptionState,
+  RuntimeStatus,
+  SemanticStatus,
 } from "./types";
 
 interface RawResponse {
@@ -293,6 +295,68 @@ export function preparePlayback(sourceMediaAssetId: string, requestId: number): 
 
 export function releasePlayback(requestId: number): Promise<void> {
   return invoke("release_playback", { requestId });
+}
+
+export function runtimeStatus(): Promise<RuntimeStatus> {
+  return request("GET", "/v1/runtime/status");
+}
+
+export function importSpeechModel(path: string, displayName: string): Promise<{ resource_id: string }> {
+  return request("POST", "/v1/runtime/speech/import", { path, display_name: displayName });
+}
+
+export function selectSpeechModel(resourceId: string): Promise<void> {
+  return request("POST", "/v1/runtime/speech/select", { resource_id: resourceId });
+}
+
+export function importVisionModel(path: string, displayName: string): Promise<{ resource_id: string }> {
+  return request("POST", "/v1/runtime/vision/import", { path, display_name: displayName });
+}
+
+export function selectVisionModel(resourceId: string): Promise<void> {
+  return request("POST", "/v1/runtime/vision/select", { resource_id: resourceId });
+}
+
+export function removeResource(resourceId: string, confirm: boolean): Promise<void> {
+  return request("POST", `/v1/runtime/resources/${resourceId}/remove`, { confirm });
+}
+
+export function saveNetworkPolicy(policy: "offline" | "network_enabled"): Promise<void> {
+  return request("POST", "/v1/runtime/network", { policy });
+}
+
+export function saveMediaTools(directory: string): Promise<void> {
+  return request("POST", "/v1/runtime/tools", { directory });
+}
+
+export function saveProvider(body: {
+  display_name: string;
+  placement: "local" | "remote";
+  base_url: string;
+  model_id: string;
+  provider_id?: string;
+}): Promise<{ provider_id: string; credential_ref: string | null }> {
+  return request("POST", "/v1/runtime/providers", body);
+}
+
+export function selectProvider(providerId: string): Promise<void> {
+  return request("POST", `/v1/runtime/providers/${providerId}/select`);
+}
+
+export function removeProvider(providerId: string): Promise<void> {
+  return request("POST", `/v1/runtime/providers/${providerId}/remove`);
+}
+
+export function testProvider(): Promise<SemanticStatus> {
+  return request("POST", "/v1/runtime/providers/test");
+}
+
+export function setProviderCredential(credentialRef: string, secret: string): Promise<{ configured: boolean }> {
+  return invoke("set_provider_credential", { request: { credentialRef, secret } });
+}
+
+export function removeProviderCredential(credentialRef: string): Promise<{ configured: boolean }> {
+  return invoke("remove_provider_credential", { request: { credentialRef } });
 }
 
 async function request<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {

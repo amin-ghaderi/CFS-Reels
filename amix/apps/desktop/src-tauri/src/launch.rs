@@ -43,12 +43,22 @@ pub fn development_command() -> Result<(PathBuf, PathBuf), String> {
     Ok((repo, python))
 }
 
-pub fn spawn_development_engine() -> Result<EngineChild, String> {
+pub fn engine_arguments(app_data: Option<&Path>) -> Vec<String> {
+    let mut args = vec!["-m".to_string(), "amix.amix_engine.service".to_string()];
+    if let Some(path) = app_data {
+        args.push("--app-data".to_string());
+        args.push(path.to_string_lossy().into_owned());
+    }
+    args
+}
+
+pub fn spawn_development_engine(app_data: Option<&Path>) -> Result<EngineChild, String> {
     let (repo, python) = development_command()?;
     let mut command = Command::new(&python);
+    for arg in engine_arguments(app_data) {
+        command.arg(arg);
+    }
     command
-        .arg("-m")
-        .arg("amix.amix_engine.service")
         .current_dir(&repo)
         .env("PYTHONUNBUFFERED", "1")
         .env("AMIX_HOST", "127.0.0.1")
@@ -287,5 +297,25 @@ pub fn terminate(child: &mut Child) {
             .status();
         let _ = child.kill();
         let _ = child.wait();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::engine_arguments;
+
+    #[test]
+    fn app_data_is_forwarded_and_omitted_when_absent() {
+        let path = Path::new("C:/amix-app-data");
+        let with_data = engine_arguments(Some(path));
+        assert_eq!(with_data[0], "-m");
+        assert_eq!(with_data[1], "amix.amix_engine.service");
+        assert_eq!(with_data[2], "--app-data");
+        assert_eq!(with_data[3], path.to_string_lossy());
+        let without = engine_arguments(None);
+        assert_eq!(without.len(), 2);
+        assert!(!without.iter().any(|arg| arg == "--app-data"));
     }
 }

@@ -258,6 +258,42 @@ h2 {
   font-family: var(--mono);
 }
 
+.settings {
+  height: 100%;
+  overflow: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 720px;
+}
+
+.settings section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.settings h2,
+.settings h3 {
+  font-size: var(--font-lg);
+}
+
+.provider-form,
+.provider-row,
+.resource-list li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.resource-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
 .start-screen,
 .gate {
   height: 100%;

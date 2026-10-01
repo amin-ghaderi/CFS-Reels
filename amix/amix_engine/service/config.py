@@ -16,6 +16,7 @@ class ServiceConfig:
     worker_count: int = 2
     session_token: str | None = None
     log_level: str = "INFO"
+    app_data: str | None = None
 
     def __post_init__(self) -> None:
         if self.host != LOOPBACK_HOST:
@@ -50,6 +51,7 @@ class ServiceConfig:
         parser.add_argument("--shutdown-timeout", type=float, default=base.shutdown_timeout_s)
         parser.add_argument("--workers", type=int, default=base.worker_count)
         parser.add_argument("--log-level", default=base.log_level)
+        parser.add_argument("--app-data", default=base.app_data)
         args = parser.parse_args(argv)
         return cls(
             host=args.host,
@@ -58,4 +60,5 @@ class ServiceConfig:
             worker_count=args.workers,
             session_token=args.token,
             log_level=args.log_level,
+            app_data=args.app_data,
         )

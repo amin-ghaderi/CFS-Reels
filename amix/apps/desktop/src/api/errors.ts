@@ -108,6 +108,16 @@ const MESSAGES: Record<string, string> = {
   invalid_caption_text: "Caption text cannot be blank.",
   invalid_caption_format: "Choose SRT or WebVTT.",
   invalid_caption_export: "The subtitle file could not be stored in the project.",
+  settings_unavailable: "Application settings are not available.",
+  unknown_resource: "That resource is not installed.",
+  resource_in_use: "This resource is in use. Wait for the current job to finish.",
+  confirmation_required: "Confirm removal of an AMIX-managed resource.",
+  invalid_media_tools: "Choose a folder that contains both FFmpeg and FFprobe.",
+  invalid_provider: "That provider configuration is not valid.",
+  invalid_credential: "The credential could not be stored.",
+  invalid_network_policy: "That network policy is not available.",
+  download_failed: "The resource download did not finish.",
+  unknown_route: "That request was not found.",
 };
 
 export function mapEngineFailure(status: number, body: string): EngineFailure {

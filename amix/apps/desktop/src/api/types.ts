@@ -456,3 +456,81 @@ export interface CaptionExport {
   format: string;
   created_at: string;
 }
+
+export interface RuntimeResourceState {
+  state: string;
+  message: string;
+  resource_id: string | null;
+  display_name: string | null;
+  runtime: string | null;
+  device?: string | null;
+  compute_type?: string | null;
+  version?: string | null;
+  identity?: string | null;
+}
+
+export interface ToolStatus {
+  state: string;
+  version: string | null;
+  message: string;
+}
+
+export interface InstalledResource {
+  resource_id: string;
+  kind: string;
+  display_name: string;
+  version: string | null;
+  ownership: string;
+  origin: string;
+  license_name: string | null;
+  license_url: string | null;
+  identity: string | null;
+  runtime: string | null;
+  status: string;
+  selected: boolean;
+}
+
+export interface ProviderConfig {
+  provider_id: string;
+  display_name: string;
+  placement: string;
+  base_url: string;
+  model_id: string;
+  credential_ref: string | null;
+  credential_configured: boolean;
+  selected: boolean;
+}
+
+export interface SemanticStatus {
+  configured: boolean;
+  network_mode: string;
+  execution: string | null;
+  display_name: string | null;
+  model_id: string | null;
+  provider_id: string | null;
+  capability_ready: boolean;
+  offline_blocked: boolean;
+  reachable: boolean | null;
+}
+
+export interface CatalogEntry {
+  resource_id: string;
+  kind: string;
+  display_name: string;
+  version: string | null;
+  license_name: string | null;
+  license_url: string | null;
+}
+
+export interface RuntimeStatus {
+  restart_required: boolean;
+  network_policy: string;
+  speech: RuntimeResourceState;
+  vision: RuntimeResourceState;
+  semantic: SemanticStatus;
+  ffmpeg: ToolStatus;
+  ffprobe: ToolStatus;
+  resources: InstalledResource[];
+  providers: ProviderConfig[];
+  catalog: CatalogEntry[];
+}

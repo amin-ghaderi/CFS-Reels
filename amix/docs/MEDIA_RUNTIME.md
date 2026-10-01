@@ -14,9 +14,12 @@ A later packaged build can replace discovery with sidecar paths. Job and storage
 
 Nothing is downloaded, including when the tools are missing. The search is:
 
-1. `AMIX_FFMPEG` and `AMIX_FFPROBE`. If either variable is set, that path must exist. The unset partner is the matching name in the same directory. A wrong explicit path is `media_tool_missing`. It does not continue to PATH.
-2. `amix/tools/ffmpeg` and `amix/tools/ffprobe` (`.exe` on Windows) when both files are present. That directory is gitignored. Do not commit binaries.
-3. `ffmpeg` and `ffprobe` on `PATH`.
+1. `AMIX_FFMPEG` and `AMIX_FFPROBE`. If either variable is set, that path must exist. The unset partner is the matching name in the same directory. A wrong explicit path is `media_tool_missing`. It does not continue to a saved folder, `amix/tools`, or PATH.
+2. A saved FFmpeg folder from Settings, when one is configured. Both `ffmpeg` and `ffprobe` (`.exe` on Windows) must be in that folder. A configured folder that is missing either program is invalid and does not continue.
+3. `amix/tools/ffmpeg` and `amix/tools/ffprobe` (`.exe` on Windows) when both files are present. That directory is gitignored. Do not commit binaries.
+4. `ffmpeg` and `ffprobe` on `PATH`.
+
+Choosing a folder in Settings does not choose a production FFmpeg build or license. AMIX still does not redistribute FFmpeg.
 
 The first line of each tool's `-version` output is stored on the probe or the proxy. The desktop says "FFmpeg tools are not available." It does not open a browser or a terminal.
 

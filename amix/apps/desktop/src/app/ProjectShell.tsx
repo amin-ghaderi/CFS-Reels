@@ -24,6 +24,7 @@ export function ProjectShell({
   notice,
   setNotice,
   applySession,
+  onSettings,
 }: {
   project: ProjectInfo;
   folder: string | null;
@@ -31,6 +32,7 @@ export function ProjectShell({
   notice: EngineFailure | null;
   setNotice: (notice: EngineFailure | null) => void;
   applySession: (session: EngineStatus) => void;
+  onSettings: () => void;
 }) {
   const [workspace, setWorkspace] = useState<WorkspaceId>("Media");
   const [busy, setBusy] = useState(false);
@@ -77,6 +79,9 @@ export function ProjectShell({
               </button>
             ))}
           </nav>
+          <button type="button" onClick={onSettings}>
+            Settings
+          </button>
           <button type="button" onClick={() => void closeCurrent()} disabled={busy}>
             {busy ? "Closing" : "Close project"}
           </button>

@@ -4,14 +4,17 @@ Overlap is its own analysis. It reads the original source media, the active layo
 
 ## Model policy
 
-The development resolver is `VisionModelResolver` in `amix_engine/adapters/vision/resolver.py`. It reads `AMIX_YUNET_MODEL_PATH`. Optional `AMIX_YUNET_MODEL_ID` and `AMIX_YUNET_MODEL_VERSION` are labels only.
+`VisionModelResolver` in `amix_engine/adapters/vision/resolver.py` resolves the YuNet file in this order. See [SETTINGS_AND_RESOURCES.md](SETTINGS_AND_RESOURCES.md).
 
-- The file must already exist.
-- An explicit path that is missing or too small fails as `invalid_vision_model`.
-- An unset path fails as `vision_model_missing`.
+1. If `AMIX_YUNET_MODEL_PATH` is set and not blank, that file is the model. A missing or too-small file is `invalid_vision_model`. The resolver does not continue to the saved selection. Optional `AMIX_YUNET_MODEL_ID` and `AMIX_YUNET_MODEL_VERSION` are labels for that override only.
+2. Otherwise the selected global vision resource.
+3. Otherwise `vision_model_missing`.
+
+Import checks that OpenCV `FaceDetectorYN` can open the file. Resolve time checks that the file is still present and large enough, then builds the same `VisionModelDescriptor` identity as before (size, mtime, and the first 64 KiB). Overlap thresholds are unchanged.
+
 - There is no GitHub download, no network fallback, and no legacy cache fallback.
 - The desktop status does not include the filesystem path.
-- The overlap job stores the descriptor identity. It does not read the environment variable itself. A later Model Manager can replace the resolver.
+- The overlap job stores the descriptor identity. It does not read the environment variable or the settings database itself.
 
 OpenCV is the runtime (`opencv-python-headless`). YuNet is `cv2.FaceDetectorYN` inside the worker. FastAPI does not run YuNet.
 

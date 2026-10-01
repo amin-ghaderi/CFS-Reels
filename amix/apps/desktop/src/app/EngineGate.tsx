@@ -5,6 +5,7 @@ import { desktopSession, engineRetry } from "../api/client";
 import { projectInfo, visibleProject } from "../api/session";
 import type { EngineFailure, EngineStatus, ProjectInfo } from "../api/types";
 import { Diagnostics } from "../components/Diagnostics";
+import { SettingsScreen } from "../settings/SettingsScreen";
 import { ProjectShell } from "./ProjectShell";
 import { StartScreen } from "./StartScreen";
 
@@ -13,6 +14,7 @@ export function EngineGate() {
   const [project, setProject] = useState<ProjectInfo | null>(null);
   const [folder, setFolder] = useState<string | null>(null);
   const [notice, setNotice] = useState<EngineFailure | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const generationRef = useRef(0);
 
   function applySession(session: EngineStatus) {
@@ -103,8 +105,20 @@ export function EngineGate() {
     );
   }
 
+  if (settingsOpen) {
+    return <SettingsScreen onClose={() => setSettingsOpen(false)} />;
+  }
+
   if (!project) {
-    return <StartScreen engine={engine} notice={notice} setNotice={setNotice} applySession={applySession} />;
+    return (
+      <StartScreen
+        engine={engine}
+        notice={notice}
+        setNotice={setNotice}
+        applySession={applySession}
+        onSettings={() => setSettingsOpen(true)}
+      />
+    );
   }
 
   return (
@@ -115,6 +129,7 @@ export function EngineGate() {
       notice={notice}
       setNotice={setNotice}
       applySession={applySession}
+      onSettings={() => setSettingsOpen(true)}
     />
   );
 }

@@ -20,25 +20,25 @@ faster-whisper is not bit-deterministic across every device and build. The word 
 
 A job resolves a model through `SpeechModelResolver` (`amix_engine/stt/resolver.py`). The transcription job, the AnalysisRun, and the Transcribe action depend on the descriptor, not on environment variables.
 
-The Phase 9 resolver is a development adapter. It reads:
+The resolver reads the global speech selection first, then a development override when one is set. See [SETTINGS_AND_RESOURCES.md](SETTINGS_AND_RESOURCES.md).
 
-- `AMIX_STT_MODEL_PATH` — an existing directory that contains `model.bin`
-- `AMIX_STT_MODEL_ID` — optional display id
-- `AMIX_STT_MODEL_VERSION` — optional declared version
-- `AMIX_STT_DEVICE` — `cpu` (default) or `cuda`
-- `AMIX_STT_COMPUTE_TYPE` — `int8` by default
+1. If `AMIX_STT_MODEL_PATH` is set and not blank, that directory is the model. A missing or unusable directory is `INVALID_MODEL`. The resolver does not continue to the saved selection.
+2. Otherwise the selected global speech resource, when one is registered.
+3. Otherwise `MODEL_MISSING` (`speech_model_missing`).
 
-An empty path is `MODEL_MISSING` (`speech_model_missing`). A path that is set but is not a usable local directory is `INVALID_MODEL` (`invalid_speech_model`). There is no fallback to a repository name, a Hugging Face id, or a legacy cache. GPU selection is not automatic: `cuda` is used only when it is configured.
+`AMIX_STT_MODEL_ID` and `AMIX_STT_MODEL_VERSION` still label an environment override. Device and compute type follow the same rule: a set `AMIX_STT_DEVICE` or `AMIX_STT_COMPUTE_TYPE` that is not in the allowed set is invalid and does not fall through. When those variables are unset, the saved application default is `cpu` and `int8`. GPU selection is not automatic.
+
+A registered import must be a directory that contains `model.bin` and one of `config.json`, `tokenizer.json`, `vocabulary.txt`, or `preprocessor_config.json`. There is no fallback to a repository name, a Hugging Face id, or a legacy cache.
 
 The worker sets `HF_HUB_OFFLINE` before importing the model library and passes `local_files_only=True`. A missing model fails the job. It does not open a download.
 
-Phase 9 does not bundle weights. Whisper-compatible models do not share one license. A future Model Manager has to store license metadata for each model it installs.
+Phase 9 does not bundle weights. Whisper-compatible models do not share one license. Each registered speech resource can store its own license name and URL. Settings can show that text when it was supplied.
 
 `GET /v1/runtime/speech-model` is authenticated. It reports `READY`, `MODEL_MISSING`, `INVALID_MODEL`, or `RUNTIME_UNAVAILABLE`, plus a display name when one exists. It does not return the model path, and it does not browse the disk.
 
-## What the Model Manager replaces
+## What the resource manager supplies
 
-A later Model Manager supplies the same descriptor (`model_id`, display name, runtime, local path, declared version, a lightweight identity, device, compute type, capabilities). It does not need to change:
+The global resource manager supplies the same descriptor (`model_id`, display name, runtime, local path, declared version, a lightweight identity, device, compute type, capabilities). The transcription job still consumes that descriptor. It does not read the global database. The manager does not change:
 
 - the `transcribe` job spec (`media_asset_id`, optional language, profile id)
 - AnalysisRun provenance

@@ -4,11 +4,12 @@ Order, and only this order:
 
 1. ``AMIX_FFMPEG`` and ``AMIX_FFPROBE`` when either is set. A set variable must
    name an existing file. If only one is set, the other name is taken from the
-   same directory. A wrong explicit path is an error. It does not fall through
-   to PATH.
-2. ``amix/tools/ffmpeg`` and ``amix/tools/ffprobe`` (``.exe`` on Windows) when
+   same directory. A wrong explicit path is an error. It does not fall through.
+2. A saved global tools directory, when one is configured. Both binaries must
+   exist there. An invalid directory does not fall through.
+3. ``amix/tools/ffmpeg`` and ``amix/tools/ffprobe`` (``.exe`` on Windows) when
    both files exist.
-3. ``ffmpeg`` and ``ffprobe`` on PATH.
+4. ``ffmpeg`` and ``ffprobe`` on PATH.
 
 Packaged builds can replace this function with sidecar paths. Media jobs call
 it in one place.
@@ -37,7 +38,7 @@ class MediaTools:
 
 def discover_tools(environ: dict[str, str] | None = None, *, root: Path | None = None) -> MediaTools:
     env = os.environ if environ is None else environ
-    pair = _from_env(env) or _from_tools_dir(root) or _from_path()
+    pair = _from_env(env) or _from_saved_directory() or _from_tools_dir(root) or _from_path()
     if pair is None:
         raise MediaToolMissing("FFmpeg tools are not available.")
     ffmpeg, ffprobe = pair
@@ -61,6 +62,24 @@ def _from_env(env: dict[str, str]) -> tuple[Path, Path] | None:
     if ffprobe is not None and ffmpeg is None:
         ffmpeg = ffprobe.with_name("ffmpeg.exe" if ffprobe.suffix.lower() == ".exe" else "ffmpeg")
     if ffmpeg is None or ffprobe is None or not ffmpeg.is_file() or not ffprobe.is_file():
+        raise MediaToolMissing("FFmpeg tools are not available.")
+    return ffmpeg, ffprobe
+
+
+def _from_saved_directory() -> tuple[Path, Path] | None:
+    from amix.amix_engine.appstate.bind import bound_store
+
+    store = bound_store()
+    if store is None:
+        return None
+    directory = store.state().ffmpeg_directory
+    if directory is None or not str(directory).strip():
+        return None
+    names = ("ffmpeg.exe", "ffprobe.exe") if os.name == "nt" else ("ffmpeg", "ffprobe")
+    root = Path(directory)
+    ffmpeg = root / names[0]
+    ffprobe = root / names[1]
+    if not ffmpeg.is_file() or not ffprobe.is_file():
         raise MediaToolMissing("FFmpeg tools are not available.")
     return ffmpeg, ffprobe
 

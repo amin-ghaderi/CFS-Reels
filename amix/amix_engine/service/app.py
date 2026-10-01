@@ -20,6 +20,7 @@ from amix.amix_engine.service.errors import (
     UnknownProjectHandle,
 )
 from amix.amix_engine.service.runtime import EngineRuntime, resolve_project_path
+from amix.amix_engine.service.settings_routes import register_settings_routes
 from amix.amix_engine.service.workspace import register_workspace_routes
 from amix.amix_engine.service.schemas import (
     CreateJobRequest,
@@ -145,6 +146,7 @@ def create_app(runtime: EngineRuntime) -> FastAPI:
         return _call(lambda: _job_view(runtime.jobs.retry(runtime.session(handle).store, job_id)))
 
     register_workspace_routes(app, runtime, _authorize, _call)
+    register_settings_routes(app, runtime, _authorize, _call)
     return app
 
 

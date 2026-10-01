@@ -7,6 +7,7 @@ use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager, State};
 
+use crate::credentials::CredentialVault;
 use crate::launch::{self, EngineChild};
 use crate::playback::{self, PlaybackBook};
 use crate::transport::{self, timeouts_for, HttpTimeouts};
@@ -160,8 +161,16 @@ impl EngineState {
                 inner.generation,
             )
         };
-        let response = transport::engine_http(port, &token, method, path, body, timeouts_for(method, path))?;
-        self.apply_response(generation, method, path, response.status, &response.body, body);
+        let clean = body.map(crate::redact::strip_secret_fields);
+        let response = transport::engine_http(
+            port,
+            &token,
+            method,
+            path,
+            clean.as_deref(),
+            timeouts_for(method, path),
+        )?;
+        self.apply_response(generation, method, path, response.status, &response.body, clean.as_deref());
         Ok(EngineResponse {
             status: response.status,
             body: response.body,
@@ -230,7 +239,8 @@ impl EngineState {
         if self.lock().generation != generation {
             return;
         }
-        match launch::spawn_development_engine() {
+        let app_data = self.app_data_dir();
+        match launch::spawn_development_engine(app_data.as_deref()) {
             Ok(engine) => self.publish_ready(generation, engine),
             Err(message) => self.publish_failure(generation, message),
         }
@@ -285,6 +295,68 @@ impl EngineState {
             });
         }
         self.publish();
+        self.install_saved_credentials();
+    }
+
+    fn app_data_dir(&self) -> Option<std::path::PathBuf> {
+        let app = self.app_handle()?;
+        let path = app.path().app_data_dir().ok()?;
+        std::fs::create_dir_all(&path).ok()?;
+        Some(path)
+    }
+
+    fn install_saved_credentials(&self) {
+        let Ok(status) = self.request("GET", "/v1/runtime/status", None) else {
+            return;
+        };
+        if status.status != 200 {
+            return;
+        }
+        let Ok(value) = serde_json::from_str::<Value>(&status.body) else {
+            return;
+        };
+        let Some(providers) = value.get("providers").and_then(Value::as_array) else {
+            return;
+        };
+        let vault = crate::credentials::KeyringVault;
+        for provider in providers {
+            let Some(reference) = provider.get("credential_ref").and_then(Value::as_str) else {
+                continue;
+            };
+            let account = crate::credentials::credential_account(reference);
+            let Ok(Some(secret)) = vault.get(&account) else {
+                continue;
+            };
+            let _ = self.push_credential(reference, &secret);
+        }
+    }
+
+    fn push_credential(&self, credential_ref: &str, secret: &str) -> Result<(), String> {
+        let body = serde_json::json!({
+            "credential_ref": credential_ref,
+            "secret": secret,
+        })
+        .to_string();
+        self.credential_write("/v1/runtime/credentials", &body)
+    }
+
+    fn credential_write(&self, path: &str, body: &str) -> Result<(), String> {
+        let (port, token) = {
+            let inner = self.lock();
+            if inner.phase != Phase::Ready {
+                return Err("The engine is not ready.".into());
+            }
+            (
+                inner.port.ok_or("The engine is not ready.")?,
+                inner.token.clone().ok_or("The engine is not ready.")?,
+            )
+        };
+        let response = transport::engine_credential_http(port, &token, path, body)?;
+        if response.status == 200 {
+            Ok(())
+        } else {
+            Err("The credential could not be applied.".into())
+        }
     }
 
     fn publish_failure(&self, generation: u64, message: String) {
@@ -467,6 +539,60 @@ pub async fn engine_request(
         .map_err(|_| "The engine request could not be completed.".to_string())?
 }
 
+#[derive(serde::Deserialize)]
+pub struct CredentialWrite {
+    pub credential_ref: String,
+    pub secret: String,
+}
+
+#[derive(serde::Deserialize)]
+pub struct CredentialRef {
+    pub credential_ref: String,
+}
+
+#[derive(Serialize)]
+pub struct CredentialStatus {
+    pub configured: bool,
+}
+
+#[tauri::command]
+pub fn set_provider_credential(
+    state: State<'_, EngineState>,
+    request: CredentialWrite,
+) -> Result<CredentialStatus, String> {
+    if request.credential_ref.trim().is_empty() || request.secret.trim().is_empty() {
+        return Err("Enter an API key.".into());
+    }
+    let vault = crate::credentials::KeyringVault;
+    let account = crate::credentials::credential_account(&request.credential_ref);
+    vault.set(&account, &request.secret)?;
+    let _ = state.push_credential(&request.credential_ref, &request.secret);
+    Ok(CredentialStatus { configured: true })
+}
+
+#[tauri::command]
+pub fn credential_configured(
+    request: CredentialRef,
+) -> Result<CredentialStatus, String> {
+    let vault = crate::credentials::KeyringVault;
+    let account = crate::credentials::credential_account(&request.credential_ref);
+    let configured = vault.get(&account)?.is_some();
+    Ok(CredentialStatus { configured })
+}
+
+#[tauri::command]
+pub fn remove_provider_credential(
+    state: State<'_, EngineState>,
+    request: CredentialRef,
+) -> Result<CredentialStatus, String> {
+    let vault = crate::credentials::KeyringVault;
+    let account = crate::credentials::credential_account(&request.credential_ref);
+    vault.delete(&account)?;
+    let body = serde_json::json!({ "resource_id": request.credential_ref }).to_string();
+    let _ = state.credential_write("/v1/runtime/credentials/remove", &body);
+    Ok(CredentialStatus { configured: false })
+}
+
 #[tauri::command]
 pub fn join_project_path(parent: String, name: String) -> Result<String, String> {
     crate::paths::join_project_path(&parent, &name).map(|path| path.to_string_lossy().into_owned())
@@ -477,6 +603,38 @@ mod tests {
     use super::*;
     use std::io::{Read, Write};
     use std::net::TcpListener;
+    use std::sync::{Arc, Mutex};
+
+    #[test]
+    fn engine_request_strips_a_secret_before_it_reaches_the_engine() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let received = Arc::new(Mutex::new(String::new()));
+        let slot = received.clone();
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut buf = vec![0u8; 4096];
+            let count = stream.read(&mut buf).unwrap_or(0);
+            *slot.lock().unwrap() = String::from_utf8_lossy(&buf[..count]).into_owned();
+            let body = "{}";
+            let response = format!(
+                "HTTP/1.1 200 OK\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            let _ = stream.write_all(response.as_bytes());
+        });
+        let state = EngineState::new();
+        state.testing_ready(port);
+        let _ = state.request(
+            "POST",
+            "/v1/runtime/providers",
+            Some(r#"{"display_name":"Loop","api_key":"sk-visible","model_path":"C:\\models"}"#),
+        );
+        let text = received.lock().unwrap().clone();
+        assert!(text.contains("Loop"));
+        assert!(!text.contains("sk-visible"));
+        assert!(!text.contains("model_path"));
+    }
 
     #[test]
     fn snapshot_does_not_serialize_a_session_token() {
