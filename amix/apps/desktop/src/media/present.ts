@@ -5,6 +5,39 @@ export function mediaAvailability(status: MediaAsset["status"]): "Available" | "
   return status === "present" ? "Available" : "Missing";
 }
 
+export const IMPORT_MEDIA = "Import Media";
+export const PEOPLE_LABEL = "People";
+
+export function mediaCardLabel(state: string | null | undefined): "Preparing" | "Ready" | "Missing" | "Failed" {
+  if (state === "ready") {
+    return "Ready";
+  }
+  if (state === "missing") {
+    return "Missing";
+  }
+  if (state === "failed") {
+    return "Failed";
+  }
+  return "Preparing";
+}
+
+export function mediaGuidance(hasMedia: boolean, state: string | null | undefined): string {
+  if (!hasMedia) {
+    return "Import media to begin.";
+  }
+  const label = mediaCardLabel(state);
+  if (label === "Preparing") {
+    return "AMIX is analyzing the file and preparing playback.";
+  }
+  if (label === "Ready") {
+    return "Media is ready. Next: Transcribe.";
+  }
+  if (label === "Missing") {
+    return "The media file is missing. Relink it.";
+  }
+  return "Media preparation failed.";
+}
+
 export function formatBytes(size: number): string {
   if (size < 1024) {
     return `${size} B`;

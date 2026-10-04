@@ -158,7 +158,7 @@ export function SpeakerPanel({
                 ))}
               </div>
               <label>
-                Participant
+                Person
                 <select
                   value={choices[cluster.cluster_key] === null ? "unknown" : choices[cluster.cluster_key] ?? ""}
                   onChange={(event) => {

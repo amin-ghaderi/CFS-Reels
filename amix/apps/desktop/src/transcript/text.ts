@@ -12,7 +12,7 @@ export function transcriptDir(language: string | null): "ltr" | "rtl" | "auto" {
   return "ltr";
 }
 
-export const EMPTY_TRANSCRIPT = "No transcript is available for this media yet.";
+export const EMPTY_TRANSCRIPT = "Create a transcript to continue.";
 
 export function correctionDraft(word: Pick<TranscriptWord, "effective_text" | "text_corrected">): {
   draft: string;

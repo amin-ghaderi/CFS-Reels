@@ -108,13 +108,13 @@ export function LayoutForm({ project, asset }: { project: ProjectInfo; asset: Me
       <ul className="facts">
         {bindings.map((row) => (
           <li key={row.binding_id}>
-            {names.get(row.participant_id) ?? "Participant"} {formatMicroseconds(row.start_us)}–{formatMicroseconds(row.end_us)} {row.w}×{row.h} at {row.x},{row.y}
+            {names.get(row.participant_id) ?? "Person"} {formatMicroseconds(row.start_us)}–{formatMicroseconds(row.end_us)}
           </li>
         ))}
       </ul>
       <form className="stack" onSubmit={(event) => void save(event)}>
         <label>
-          Participant
+          Person
           <select value={participantId} onChange={(event) => setParticipantId(event.target.value)} disabled={project.read_only}>
             <option value="">Choose</option>
             {participants.map((row) => (

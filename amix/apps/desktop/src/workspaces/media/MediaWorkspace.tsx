@@ -3,25 +3,27 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { createJob, linkMedia, relinkMedia } from "../../api/client";
 import { asFailure } from "../../api/errors";
 import type { ProjectInfo } from "../../api/types";
-import { mediaAvailability, mediaFacts, proxyLabel, roleLabel, sourceAssets } from "../../media/present";
-import { PreviewPlayer } from "../../playback/PreviewPlayer";
+import { IMPORT_MEDIA, mediaCardLabel, mediaFacts, mediaGuidance, proxyLabel, roleLabel, sourceAssets } from "../../media/present";
 import { useProjectData } from "../../project/ProjectData";
 import { SplitPane } from "../../shell/SplitPane";
+import { LayoutEditor } from "./LayoutEditor";
 import { LayoutForm } from "./LayoutForm";
 import { ParticipantsPanel } from "./ParticipantsPanel";
 
 export function MediaWorkspace({ project }: { project: ProjectInfo }) {
   const data = useProjectData();
   const selected = data.selected;
+  const sources = sourceAssets(data.assets);
+  const guidanceAsset = selected ?? sources[0];
 
   async function chooseFile(title: string): Promise<string | null> {
-    const selectedPath = await open({ multiple: false, directory: false, title });
+    const selectedPath = await open({ multiple: false, directory: false, title: title });
     return typeof selectedPath === "string" ? selectedPath : null;
   }
 
   async function link() {
     data.setNotice(null);
-    const path = await chooseFile("Link a media file");
+    const path = await chooseFile(IMPORT_MEDIA);
     if (!path) {
       return;
     }
@@ -101,7 +103,7 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
         </div>
         <div>
           <dt>Status</dt>
-          <dd>{mediaAvailability(selected.status)}</dd>
+          <dd>{mediaCardLabel(selected.prepare_state)}</dd>
         </div>
         <div>
           <dt>Location</dt>
@@ -130,16 +132,19 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
         </button>
       ) : null}
       {selected.role === "master" && selected.status === "present" ? (
-        <div className="actions">
-          <button type="button" onClick={() => void analyze()} disabled={data.busy || project.read_only}>
-            Analyze media
-          </button>
-          <button type="button" className="primary" onClick={() => void generateProxy()} disabled={data.busy || project.read_only}>
-            Generate proxy
-          </button>
-        </div>
+        <details>
+          <summary>Details</summary>
+          <div className="actions">
+            <button type="button" onClick={() => void analyze()} disabled={data.busy || project.read_only}>
+              Re-analyze Media
+            </button>
+            <button type="button" onClick={() => void generateProxy()} disabled={data.busy || project.read_only}>
+              Rebuild Proxy
+            </button>
+          </div>
+          <LayoutForm project={project} asset={selected} />
+        </details>
       ) : null}
-      {selected.role === "master" ? <LayoutForm project={project} asset={selected} /> : null}
     </aside>
   ) : null;
 
@@ -148,12 +153,13 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
       <div className="toolbar">
         <h2>Media</h2>
         <button type="button" className="primary" onClick={() => void link()} disabled={data.busy || project.read_only}>
-          Link file
+          {IMPORT_MEDIA}
         </button>
       </div>
-      {sourceAssets(data.assets).length === 0 ? <p className="muted">No media is linked to this project yet.</p> : null}
+      <p>{mediaGuidance(sources.length > 0, guidanceAsset?.prepare_state)}</p>
+      {sources.length === 0 ? <p className="muted">Import media to begin.</p> : null}
       <ul className="asset-list">
-        {sourceAssets(data.assets).map((asset) => (
+        {sources.map((asset) => (
           <li key={asset.asset_id}>
             <button
               type="button"
@@ -162,11 +168,10 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
               onClick={() => data.select(asset.asset_id)}
             >
               <span>{asset.display_name}</span>
-              <span className={asset.status === "missing" ? "status missing" : "status"}>
-                {mediaAvailability(asset.status)}
+              <span className={asset.prepare_state === "missing" || asset.prepare_state === "failed" ? "status missing" : "status"}>
+                {mediaCardLabel(asset.prepare_state)}
               </span>
               <span className="muted">{roleLabel(asset.role)}</span>
-              {asset.role === "master" ? <span className="muted">Proxy {proxyLabel(asset.proxy_state)}</span> : null}
             </button>
           </li>
         ))}
@@ -193,7 +198,7 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
               <div className="toolbar">
                 <h1>Preview</h1>
               </div>
-              <PreviewPlayer project={project} />
+              {selected?.role === "master" ? <LayoutEditor project={project} asset={selected} /> : null}
             </section>
           }
         />

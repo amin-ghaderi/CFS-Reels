@@ -116,7 +116,7 @@ export function ConversationWorkspace({ project }: { project: ProjectInfo }) {
   }
 
   return (
-    <div className="stack">
+    <div className="stack sticky-actions">
       <h2>Conversation</h2>
       <p>{phaseText(phase, state?.local_ai_state)}</p>
       <p>{providerLabel(state)}</p>
@@ -162,7 +162,7 @@ function phaseText(phase: ReturnType<typeof conversationPhase>, localAiState?: s
     case "no_media":
       return "No media selected.";
     case "no_transcript":
-      return "No transcript.";
+      return "Create a transcript to continue.";
     case "turns_required":
       return "Speaker analysis is required before a conversation map.";
     case "provider_missing":

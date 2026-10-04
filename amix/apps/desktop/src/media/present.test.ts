@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { MediaAsset } from "../api/types";
-import { mediaAvailability, mediaFacts, proxyLabel, sourceAssets } from "./present";
+import { IMPORT_MEDIA, PEOPLE_LABEL, mediaAvailability, mediaCardLabel, mediaFacts, mediaGuidance, proxyLabel, sourceAssets } from "./present";
 
 const asset: MediaAsset = {
   asset_id: "a",
@@ -32,6 +32,20 @@ const asset: MediaAsset = {
 };
 
 describe("media presentation", () => {
+  it("uses import language and simple preparation states", () => {
+    expect(IMPORT_MEDIA).toBe("Import Media");
+    expect(IMPORT_MEDIA).not.toMatch(/link file/i);
+    expect(PEOPLE_LABEL).toBe("People");
+    expect(mediaCardLabel("preparing")).toBe("Preparing");
+    expect(mediaCardLabel("ready")).toBe("Ready");
+    expect(mediaCardLabel("missing")).toBe("Missing");
+    expect(mediaCardLabel("failed")).toBe("Failed");
+    expect(mediaGuidance(false, null)).toBe("Import media to begin.");
+    expect(mediaGuidance(true, "preparing")).toMatch(/preparing playback/);
+    expect(mediaGuidance(true, "ready")).toMatch(/Transcribe/);
+    expect(mediaGuidance(true, "ready")).not.toMatch(/Generate proxy|Analyze media/);
+  });
+
   it("names missing media without inventing a picture size", () => {
     expect(mediaAvailability("missing")).toBe("Missing");
     expect(mediaAvailability("present")).toBe("Available");

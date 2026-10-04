@@ -94,9 +94,9 @@ const shots: ShotView[] = [
 describe("multicam review", () => {
   it("keeps prerequisite states distinct", () => {
     expect(phaseLabel(multicamPhase(null, null, []))).toBe("No media selected");
-    expect(phaseLabel(multicamPhase("m", ready({ blocking_reason: "transcript_required", turns_ready: false, layout_ready: false }), []))).toBe("No transcript/turns");
-    expect(phaseLabel(multicamPhase("m", ready({ blocking_reason: "turns_required", turns_ready: false, layout_ready: true }), []))).toBe("Speaker analysis required");
-    expect(phaseLabel(multicamPhase("m", ready({ blocking_reason: "insufficient_layout", layout_ready: false }), []))).toBe("Layout incomplete");
+    expect(phaseLabel(multicamPhase("m", ready({ blocking_reason: "transcript_required", turns_ready: false, layout_ready: false }), []))).toBe("Create a transcript to continue.");
+    expect(phaseLabel(multicamPhase("m", ready({ blocking_reason: "turns_required", turns_ready: false, layout_ready: true }), []))).toBe("Analyze speakers before building multicam.");
+    expect(phaseLabel(multicamPhase("m", ready({ blocking_reason: "insufficient_layout", layout_ready: false }), []))).toBe("Add people on the layout before building multicam.");
     expect(phaseLabel(multicamPhase("m", ready({ vision_state: "MODEL_MISSING" }), []))).toBe("Overlap resource missing");
     expect(phaseLabel(multicamPhase("m", ready(), []))).toBe("Ready to analyze overlap");
     expect(phaseLabel(multicamPhase("m", ready(), [job({})]))).toBe("Overlap running");

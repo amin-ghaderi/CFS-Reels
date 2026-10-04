@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { listMedia } from "../api/client";
 import { asFailure } from "../api/errors";
@@ -25,9 +25,15 @@ export function ProjectDataProvider({ project, children }: { project: ProjectInf
   const [projectKey, setProjectKey] = useState(project.project_id);
   const [notice, setNotice] = useState<EngineFailure | null>(null);
   const [busy, setBusy] = useState(false);
+  const mediaGeneration = useRef(0);
 
   async function refresh() {
+    const generation = mediaGeneration.current + 1;
+    mediaGeneration.current = generation;
     const next = await listMedia(project.handle);
+    if (mediaGeneration.current !== generation) {
+      return;
+    }
     setAssets(next);
     setSelectedId((current) => reconcileSelection(current, next.map((asset) => asset.asset_id), project.project_id, projectKey));
     setProjectKey(project.project_id);
@@ -35,17 +41,19 @@ export function ProjectDataProvider({ project, children }: { project: ProjectInf
 
   useEffect(() => {
     let stop = false;
+    const generation = mediaGeneration.current + 1;
+    mediaGeneration.current = generation;
     setSelectedId(null);
     setAssets([]);
     setProjectKey(project.project_id);
     void listMedia(project.handle)
       .then((next) => {
-        if (!stop) {
+        if (!stop && mediaGeneration.current === generation) {
           setAssets(next);
         }
       })
       .catch((error: unknown) => {
-        if (!stop) {
+        if (!stop && mediaGeneration.current === generation) {
           setNotice(asFailure(error));
         }
       });

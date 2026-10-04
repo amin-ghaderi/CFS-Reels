@@ -101,6 +101,7 @@ export interface MediaAsset {
   source_media_asset_id: string | null;
   proxy_state: string | null;
   proxy_asset_id: string | null;
+  prepare_state?: "preparing" | "ready" | "missing" | "failed";
   status: "present" | "missing";
 }
 

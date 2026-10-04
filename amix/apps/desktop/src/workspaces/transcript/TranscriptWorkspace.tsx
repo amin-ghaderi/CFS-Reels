@@ -386,7 +386,7 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
         ) : null}
         {transcriptSpeakerLabel(picked) ? (
           <div>
-            <dt>Participant</dt>
+            <dt>Person</dt>
             <dd dir="auto">{transcriptSpeakerLabel(picked)}</dd>
           </div>
         ) : null}
@@ -430,7 +430,7 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
           side={inspector}
           main={
             <section className="workspace-main" aria-label="Transcript">
-              <div className="toolbar">
+              <div className="toolbar sticky-actions">
                 <h1>Transcript</h1>
                 {described?.language ? <span className="muted" dir="ltr">{described.language}</span> : null}
                 {described?.active ? (
@@ -472,7 +472,15 @@ export function TranscriptWorkspace({ project }: { project: ProjectInfo }) {
                 />
               ) : null}
               {!asset ? <p className="muted">Select a media file in Media.</p> : null}
-              {asset && described && !described.active ? <p>{EMPTY_TRANSCRIPT}</p> : null}
+              {asset && described && !described.active ? (
+                <div className="sticky-actions">
+                  <p>{EMPTY_TRANSCRIPT}</p>
+                  {offer.start === "transcribe" ? (
+                    <button type="button" className="primary" onClick={() => { setFormError(null); setDialog(true); }}>Transcribe</button>
+                  ) : null}
+                </div>
+              ) : null}
+              {asset && described?.active ? <p>Next: analyze speakers or continue to Conversation.</p> : null}
               {offer.blocked ? <p>{offer.blocked}</p> : null}
               {dialog && asset && offer.start ? (
                 <form className="transcribe-panel" onSubmit={(event) => void startTranscription(event)}>

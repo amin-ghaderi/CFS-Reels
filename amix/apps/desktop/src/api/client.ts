@@ -110,11 +110,15 @@ export async function listMedia(handle: string): Promise<MediaAsset[]> {
 }
 
 export async function linkMedia(handle: string, path: string, role = "master"): Promise<MediaAsset> {
-  return request("POST", `/v1/projects/${handle}/media`, { path, role });
+  const asset = await request<MediaAsset>("POST", `/v1/projects/${handle}/media`, { path, role });
+  window.dispatchEvent(new Event(JOBS_CHANGED_EVENT));
+  return asset;
 }
 
 export async function relinkMedia(handle: string, assetId: string, path: string): Promise<MediaAsset> {
-  return request("POST", `/v1/projects/${handle}/media/${assetId}/relink`, { path });
+  const asset = await request<MediaAsset>("POST", `/v1/projects/${handle}/media/${assetId}/relink`, { path });
+  window.dispatchEvent(new Event(JOBS_CHANGED_EVENT));
+  return asset;
 }
 
 export async function activeTranscript(handle: string, assetId: string): Promise<ActiveTranscript> {
@@ -174,9 +178,20 @@ export async function addLayout(
     y: number;
     w: number;
     h: number;
+    binding_id?: string | null;
   },
 ): Promise<LayoutBindingRecord> {
   return request("POST", `/v1/projects/${handle}/media/${assetId}/layout`, body);
+}
+
+export async function detectLayoutCandidates(
+  handle: string,
+  assetId: string,
+  timeUs: number | null,
+): Promise<{ picture_width: number; picture_height: number; candidates: { x: number; y: number; w: number; h: number }[] }> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/layout-candidates`, {
+    time_us: timeUs,
+  });
 }
 
 export async function speakerAnalysis(handle: string, assetId: string): Promise<SpeakerAnalysis> {

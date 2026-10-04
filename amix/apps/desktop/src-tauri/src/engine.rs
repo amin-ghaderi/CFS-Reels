@@ -613,9 +613,7 @@ mod tests {
         let slot = received.clone();
         thread::spawn(move || {
             let (mut stream, _) = listener.accept().unwrap();
-            let mut buf = vec![0u8; 4096];
-            let count = stream.read(&mut buf).unwrap_or(0);
-            *slot.lock().unwrap() = String::from_utf8_lossy(&buf[..count]).into_owned();
+            *slot.lock().unwrap() = read_http_request(&mut stream);
             let body = "{}";
             let response = format!(
                 "HTTP/1.1 200 OK\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
@@ -631,9 +629,54 @@ mod tests {
             Some(r#"{"display_name":"Loop","api_key":"sk-visible","model_path":"C:\\models"}"#),
         );
         let text = received.lock().unwrap().clone();
-        assert!(text.contains("Loop"));
-        assert!(!text.contains("sk-visible"));
-        assert!(!text.contains("model_path"));
+        assert!(text.contains("Loop"), "{text}");
+        assert!(!text.contains("sk-visible"), "{text}");
+        assert!(!text.contains("model_path"), "{text}");
+    }
+
+    fn read_http_request(stream: &mut std::net::TcpStream) -> String {
+        use std::time::Duration;
+        let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
+        let mut buf = Vec::new();
+        let mut chunk = [0u8; 4096];
+        loop {
+            match stream.read(&mut chunk) {
+                Ok(0) => break,
+                Ok(count) => {
+                    buf.extend_from_slice(&chunk[..count]);
+                    if http_request_complete(&buf) {
+                        break;
+                    }
+                }
+                Err(error)
+                    if error.kind() == std::io::ErrorKind::WouldBlock
+                        || error.kind() == std::io::ErrorKind::TimedOut =>
+                {
+                    break;
+                }
+                Err(_) => break,
+            }
+        }
+        String::from_utf8_lossy(&buf).into_owned()
+    }
+
+    fn http_request_complete(buf: &[u8]) -> bool {
+        let Some(split) = buf.windows(4).position(|window| window == b"\r\n\r\n") else {
+            return false;
+        };
+        let headers = String::from_utf8_lossy(&buf[..split]);
+        let length = headers.lines().find_map(|line| {
+            let (name, value) = line.split_once(':')?;
+            if name.eq_ignore_ascii_case("content-length") {
+                value.trim().parse::<usize>().ok()
+            } else {
+                None
+            }
+        });
+        match length {
+            Some(length) => buf.len() >= split + 4 + length,
+            None => true,
+        }
     }
 
     #[test]
@@ -801,7 +844,7 @@ mod tests {
         assert_eq!(crashed.generation, generation);
         assert_eq!(crashed.notice.as_deref(), Some(CRASH_NOTICE));
         let (_repo, python) = launch::development_command().unwrap();
-        assert!(lock_is_free(&python, &project.join("project.lock")));
+        assert!(lock_is_free(&python, &project.join(".amix").join("project.lock")));
 
         state.schedule_restart();
         assert!(state.wait_until(Duration::from_secs(20), |session| session.state == Phase::Ready));

@@ -244,6 +244,42 @@ h2 {
   margin-bottom: var(--space-2);
 }
 
+.sticky-actions,
+.workspace-main > .toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+}
+
+.layout-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.layout-rect {
+  position: absolute;
+  border: 2px solid #7eb6ff;
+  background: rgba(126, 182, 255, 0.18);
+  color: #fff;
+  cursor: move;
+  box-sizing: border-box;
+}
+
+.layout-rect.selected {
+  border-color: #ffe08a;
+}
+
+.layout-handle {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  cursor: nwse-resize;
+}
+
 .toolbar h1,
 .toolbar h2 {
   margin-right: auto;

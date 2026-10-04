@@ -1,14 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 
-import { createJob } from "../api/client";
-import { asFailure } from "../api/errors";
 import type { ProjectInfo } from "../api/types";
 import { useProjectData } from "../project/ProjectData";
 import { formatMicroseconds } from "../time/format";
 import { usePlayback } from "./PlaybackSession";
 import { canonicalToCurrentTime } from "./time";
-
-const GENERATABLE = new Set(["not_generated", "failed", "stale", "missing"]);
 
 export function PreviewPlayer({ project, overlay }: { project: ProjectInfo; overlay?: ReactNode }) {
   const data = useProjectData();
@@ -41,35 +37,11 @@ export function PreviewPlayer({ project, overlay }: { project: ProjectInfo; over
     video.volume = volume;
   }, [playable, view?.asset_url, muted, volume, playback.videoRef]);
 
-  async function generate() {
-    if (!selected) {
-      return;
-    }
-    data.setNotice(null);
-    data.setBusy(true);
-    try {
-      await createJob(project.handle, "generate_proxy", {
-        mediaAssetId: selected.asset_id,
-        spec: { profile: "amix.proxy.v1" },
-      });
-    } catch (error) {
-      data.setNotice(asFailure(error));
-    } finally {
-      data.setBusy(false);
-    }
-  }
-
   const status = playback.mediaFailed ? "unsupported" : view?.status;
   const notice = statusMessage(status, playback.failure);
-  const canGenerate =
-    selected?.role === "master" &&
-    selected.status === "present" &&
-    !project.read_only &&
-    status != null &&
-    GENERATABLE.has(status);
 
   return (
-    <section className="preview" aria-label="Preview">
+    <section className="preview" aria-label="Preview" data-readonly={project.read_only ? "true" : "false"}>
       <div className="preview-frame">
         <video
           ref={playback.videoRef}
@@ -135,11 +107,6 @@ export function PreviewPlayer({ project, overlay }: { project: ProjectInfo; over
           }}
         />
       </div>
-      {canGenerate ? (
-        <button type="button" className="primary" disabled={data.busy} onClick={() => void generate()}>
-          {status === "not_generated" || status === "failed" ? "Generate proxy" : "Regenerate proxy"}
-        </button>
-      ) : null}
     </section>
   );
 }
@@ -150,17 +117,15 @@ function statusMessage(status: string | undefined, failure: string | null): stri
   }
   switch (status) {
     case "not_generated":
-      return "Generate a proxy to preview this media.";
     case "queued":
-      return "A proxy is queued.";
     case "generating":
-      return "Generating a preview proxy.";
+      return "Preparing preview…";
     case "stale":
-      return "This proxy is out of date. Regenerate it to preview.";
+      return "Preview is out of date.";
     case "missing":
-      return "The proxy file is missing. Regenerate it to preview.";
+      return "Preview is missing.";
     case "failed":
-      return "Proxy generation failed.";
+      return "Preview preparation failed.";
     case "unsupported":
       return "This proxy could not be played.";
     case "unavailable":

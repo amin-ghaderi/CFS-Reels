@@ -10,9 +10,8 @@ describe("transcript text", () => {
     expect(transcriptDir("en")).toBe("ltr");
   });
 
-  it("describes an empty transcript without offering transcription", () => {
-    expect(EMPTY_TRANSCRIPT).toContain("No transcript");
-    expect(EMPTY_TRANSCRIPT.toLowerCase()).not.toContain("transcribe");
+  it("tells the editor to create a transcript", () => {
+    expect(EMPTY_TRANSCRIPT).toBe("Create a transcript to continue.");
   });
 
   it("tracks a manual correction separately from machine text", () => {

@@ -37,7 +37,7 @@ export function layoutFieldError(input: {
   pictureHeight: number | null;
 }): string | null {
   if (!input.participantId) {
-    return "Choose a participant.";
+    return "Choose a person.";
   }
   const startUs = parseTimecode(input.start);
   const endUs = parseTimecode(input.end);

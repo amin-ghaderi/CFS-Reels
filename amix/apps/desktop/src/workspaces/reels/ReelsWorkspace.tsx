@@ -232,7 +232,7 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
   }
 
   return (
-    <div className="reels-workspace">
+    <div className="reels-workspace sticky-actions">
       <section className="reels-context">
         <h1>Reels</h1>
         <p>{phaseText(phase, state.drafts.length, Boolean(selectedDraft), state.local_ai_state)}</p>
@@ -399,11 +399,11 @@ function phaseText(phase: ReturnType<typeof reelPhase>, drafts: number, selected
     case "no_media":
       return "No media selected.";
     case "no_transcript":
-      return "No transcript.";
+      return "Create a transcript to continue.";
     case "turns_required":
-      return "Speaker turns are required.";
+      return "Analyze speakers before discovering reels.";
     case "map_required":
-      return "A conversation map is required.";
+      return "Map the conversation before discovering reels.";
     case "map_stale":
       return "The conversation map is stale.";
     case "provider_unavailable":

@@ -52,7 +52,7 @@ export function speakerAnalysisCopy(state: SpeakerServerState | "running" | "fai
   showLimitation: boolean;
 } {
   if (state === "no_participants") {
-    return { message: "Add participants in Media before analyzing speakers.", analyzeEnabled: false, showMapping: false, applyLabel: "Apply speaker mapping", showLimitation: false };
+    return { message: "Add people in Media before analyzing speakers.", analyzeEnabled: false, showMapping: false, applyLabel: "Apply speaker mapping", showLimitation: false };
   }
   if (state === "no_transcript") {
     return { message: "Transcribe this media before analyzing speakers.", analyzeEnabled: false, showMapping: false, applyLabel: "Apply speaker mapping", showLimitation: false };

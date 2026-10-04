@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { createParticipant, listParticipants, renameParticipant } from "../../api/client";
 import { asFailure } from "../../api/errors";
 import type { Participant, ProjectInfo } from "../../api/types";
+import { PEOPLE_LABEL } from "../../media/present";
 import { cleanedParticipantName, PARTICIPANTS_CHANGED_EVENT } from "../../participants/participants";
 import { useProjectData } from "../../project/ProjectData";
 
@@ -72,11 +73,11 @@ export function ParticipantsPanel({ project }: { project: ProjectInfo }) {
   }
 
   return (
-    <section className="context" aria-label="Participants">
+    <section className="context" aria-label="People">
       <div className="toolbar">
-        <h2>Participants</h2>
+        <h2>{PEOPLE_LABEL}</h2>
       </div>
-      {rows.length === 0 ? <p className="muted">No participants yet.</p> : null}
+      {rows.length === 0 ? <p className="muted">Add a person to assign them on the picture.</p> : null}
       <ul className="asset-list">
         {rows.map((row) => (
           <li key={row.participant_id}>
@@ -117,10 +118,10 @@ export function ParticipantsPanel({ project }: { project: ProjectInfo }) {
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder="Display name"
-          aria-label="New participant"
+          aria-label="New person"
           disabled={project.read_only}
         />
-        <button type="submit" disabled={data.busy || project.read_only}>Add participant</button>
+        <button type="submit" disabled={data.busy || project.read_only}>Add person</button>
       </form>
     </section>
   );

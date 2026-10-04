@@ -100,7 +100,7 @@ fn development_engine_serves_a_project_and_releases_its_lock() {
         before,
         "an engine process was still running after shutdown"
     );
-    let lock = project.join("project.lock");
+    let lock = project.join(".amix").join("project.lock");
     let probe = lock_probe(&python, &lock);
     assert!(probe.is_ok(), "project lock still held: {probe:?}");
 

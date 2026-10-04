@@ -31,9 +31,9 @@ export type MulticamPhase =
 
 const PHASE_LABEL: Record<MulticamPhase, string> = {
   no_media: "No media selected",
-  no_transcript: "No transcript/turns",
-  speaker_required: "Speaker analysis required",
-  layout_incomplete: "Layout incomplete",
+  no_transcript: "Create a transcript to continue.",
+  speaker_required: "Analyze speakers before building multicam.",
+  layout_incomplete: "Add people on the layout before building multicam.",
   vision_missing: "Overlap resource missing",
   overlap_running: "Overlap running",
   ready_overlap: "Ready to analyze overlap",
