@@ -1,7 +1,7 @@
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{mpsc, Arc, Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
 
@@ -63,6 +63,7 @@ pub fn spawn_development_engine(app_data: Option<&Path>) -> Result<EngineChild, 
         .env("PYTHONUNBUFFERED", "1")
         .env("AMIX_HOST", "127.0.0.1")
         .env("AMIX_PORT", "0")
+        .env("AMIX_OWNER_PID", std::process::id().to_string())
         .env_remove("AMIX_SESSION_TOKEN")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -72,6 +73,10 @@ pub fn spawn_development_engine(app_data: Option<&Path>) -> Result<EngineChild, 
     let mut child = command.spawn().map_err(|_| {
         "The development engine process could not be started.".to_string()
     })?;
+    // A closed or crashed desktop must not leave the engine holding a project lock.
+    // The job covers a normal launch. AMIX_OWNER_PID covers a desktop that is already
+    // inside another job, where assigning this child can fail.
+    bind_engine_lifetime(&child);
     let stdout = child.stdout.take().ok_or("Engine stdout was unavailable.")?;
     let stderr = child.stderr.take().ok_or("Engine stderr was unavailable.")?;
     let secret = Arc::new(Mutex::new(None::<String>));
@@ -252,6 +257,88 @@ fn hide_console(command: &mut Command) {
         command.creation_flags(CREATE_NO_WINDOW);
     }
     let _ = command;
+}
+
+fn bind_engine_lifetime(child: &Child) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::io::AsRawHandle;
+        unsafe {
+            let job = engine_job();
+            if !job.is_null() {
+                let _ = AssignProcessToJobObject(job, child.as_raw_handle());
+            }
+        }
+    }
+    let _ = child;
+}
+
+#[cfg(windows)]
+struct SharedJob(*mut core::ffi::c_void);
+#[cfg(windows)]
+unsafe impl Send for SharedJob {}
+#[cfg(windows)]
+unsafe impl Sync for SharedJob {}
+
+#[cfg(windows)]
+fn engine_job() -> *mut core::ffi::c_void {
+    static JOB: OnceLock<SharedJob> = OnceLock::new();
+    JOB.get_or_init(|| unsafe { SharedJob(create_kill_on_close_job()) }).0
+}
+
+#[cfg(windows)]
+unsafe fn create_kill_on_close_job() -> *mut core::ffi::c_void {
+    let job = CreateJobObjectW(std::ptr::null_mut(), std::ptr::null());
+    if job.is_null() {
+        return job;
+    }
+    let mut limits = JobObjectBasicLimitInformation::default();
+    limits.limit_flags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+    let ok = SetInformationJobObject(
+        job,
+        JOB_OBJECT_BASIC_LIMIT_INFORMATION_CLASS,
+        &limits as *const JobObjectBasicLimitInformation as *const core::ffi::c_void,
+        std::mem::size_of::<JobObjectBasicLimitInformation>() as u32,
+    );
+    if ok == 0 {
+        let _ = CloseHandle(job);
+        return std::ptr::null_mut();
+    }
+    job
+}
+
+#[cfg(windows)]
+const JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE: u32 = 0x0000_2000;
+#[cfg(windows)]
+const JOB_OBJECT_BASIC_LIMIT_INFORMATION_CLASS: i32 = 2;
+
+#[cfg(windows)]
+#[repr(C)]
+#[derive(Default)]
+struct JobObjectBasicLimitInformation {
+    per_process_user_time_limit: i64,
+    per_job_user_time_limit: i64,
+    limit_flags: u32,
+    minimum_working_set_size: usize,
+    maximum_working_set_size: usize,
+    active_process_limit: u32,
+    affinity: usize,
+    priority_class: u32,
+    scheduling_class: u32,
+}
+
+#[cfg(windows)]
+#[link(name = "kernel32")]
+unsafe extern "system" {
+    fn CreateJobObjectW(attrs: *mut core::ffi::c_void, name: *const u16) -> *mut core::ffi::c_void;
+    fn SetInformationJobObject(
+        job: *mut core::ffi::c_void,
+        class: i32,
+        info: *const core::ffi::c_void,
+        length: u32,
+    ) -> i32;
+    fn AssignProcessToJobObject(job: *mut core::ffi::c_void, process: *mut core::ffi::c_void) -> i32;
+    fn CloseHandle(handle: *mut core::ffi::c_void) -> i32;
 }
 
 fn isolate_process_group(command: &mut Command) {

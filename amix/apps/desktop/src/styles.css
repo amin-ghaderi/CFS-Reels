@@ -334,8 +334,95 @@ h2 {
 .gate {
   height: 100%;
   display: grid;
-  place-items: center;
+  place-items: start center;
   padding: var(--space-6);
+  overflow: auto;
+}
+
+.launcher {
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.recent-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.recent-heading h2 {
+  font-size: var(--font-lg);
+}
+
+.recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.recent-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+}
+
+.recent-card {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.recent-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.recent-copy strong {
+  font-size: var(--font-lg);
+}
+
+.path-hint {
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thumb,
+.thumb-placeholder {
+  width: 96px;
+  height: 54px;
+  border-radius: 4px;
+  background: #101214;
+  object-fit: cover;
+}
+
+.recent-overflow {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.launcher-diagnostics {
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
 }
 
 .start-screen button,

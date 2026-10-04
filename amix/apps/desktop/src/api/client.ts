@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import type { RecentProject } from "../recent/recent";
 import { mapEngineFailure } from "./errors";
 import { JOBS_CHANGED_EVENT } from "./jobs";
 import type {
@@ -65,6 +66,28 @@ export async function createProject(path: string, name: string): Promise<Project
 
 export async function openProject(path: string): Promise<ProjectInfo> {
   return request("POST", "/v1/projects/open", { path, read_only: false });
+}
+
+export async function listRecentProjects(): Promise<RecentProject[]> {
+  const body = await request<{ projects: RecentProject[] }>("GET", "/v1/runtime/recent-projects");
+  return body.projects;
+}
+
+export async function removeRecentProject(projectId: string): Promise<void> {
+  await request("POST", `/v1/runtime/recent-projects/${projectId}/remove`);
+}
+
+export async function locateRecentProject(projectId: string, path: string): Promise<RecentProject> {
+  return request("POST", `/v1/runtime/recent-projects/${projectId}/locate`, { path });
+}
+
+export async function recentThumbnail(projectId: string): Promise<string | null> {
+  try {
+    const body = await request<{ data_base64: string }>("GET", `/v1/runtime/recent-projects/${projectId}/thumbnail`);
+    return body.data_base64;
+  } catch {
+    return null;
+  }
 }
 
 export async function getProject(handle: string): Promise<ProjectInfo> {
