@@ -53,7 +53,7 @@ class DiarizeAudioJob:
             ffmpeg_path = str(tools.ffmpeg)
             ffmpeg_version = tools.ffmpeg_version
         origin = 0 if asset.container_start_us is None else asset.container_start_us
-        temp = ctx.store.root / ".diarize" / ctx.job_id
+        temp = ctx.store.private / ".diarize" / ctx.job_id
         temp.mkdir(parents=True, exist_ok=True)
         result_path = temp / "result.json"
         spec_path = temp / "worker.json"

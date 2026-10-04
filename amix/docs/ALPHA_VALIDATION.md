@@ -29,7 +29,7 @@ Not committed.
 1. Start the desktop and confirm the engine is READY.
 2. Create Alpha, link the excerpt, analyze it, and generate a V1 proxy. Play, pause, and seek in the WebView. Sibling proxy URLs return 403.
 3. Reload the WebView with the project open. Close the project. Quit the desktop. Start it again and open Alpha. A second open in the same engine returns `project_already_open`.
-4. Hide the source file. The media row shows Missing, and the transcript stays readable on the proxy. Relink the same bytes under a new file name. The asset id is unchanged and no second master is created. Probe metadata is cleared until Analyze media runs again.
+4. Hide the source file. The media row shows Missing, and the transcript stays readable on the proxy. Relink the same bytes under a new file name. The asset id is unchanged and no second master is created. Relink clears probe data and queues analysis and preview preparation again.
 5. Transcribe with the local small model (Persian). Correct a word, revert it, then keep one correction. Map three anonymous clusters to Nima R., Arman, and Unknown.
 6. Run overlap on the excerpt from Multicam (no regions; the excerpt ends before the first golden region). Build a plan. Override Wide, then Use Automatic, then Full for one participant.
 7. Split the primary sequence, remove the later clip (edit length 20.213 s), after an earlier reset had restored the full 45 s. Generate captions, edit one cue, restore generated text, export SRT and VTT.

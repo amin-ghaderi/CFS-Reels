@@ -40,7 +40,7 @@ from amix.amix_engine.playback import canonical_origin_us
 from amix.amix_engine.service.config import ServiceConfig
 from amix.amix_engine.service.runtime import EngineRuntime
 from amix.amix_engine.speakers import apply_cluster_map, representative_ranges, summarize_clusters
-from amix.amix_engine.storage.project import create_project
+from amix.amix_engine.storage.project import create_project, private_directory
 from amix.amix_engine.time.clock import TimeRange, legacy_seconds_to_us
 from amix.tests.test_service import _client, _create, _headers
 
@@ -574,7 +574,7 @@ class JobTests(unittest.TestCase):
                 self.assertEqual(record["config"]["clock"], "source_container_start")
                 self.assertEqual(record["config"]["cluster_count"], 3)
                 self.assertNotIn("cluster_map", record["config"])
-                self.assertFalse((root / ".diarize" / job.job_id).exists())
+                self.assertFalse((private_directory(root) / ".diarize" / job.job_id).exists())
             finally:
                 runtime.shutdown()
 
@@ -602,7 +602,7 @@ class JobTests(unittest.TestCase):
                 session.store.set_active(asset, "transcript", transcript)
                 with patch.dict(os.environ, {"AMIX_DIARIZE_TEST_WORKER": "wait"}):
                     job = runtime.jobs.submit(session.store, DIARIZE_AUDIO, {}, asset)
-                    pid = _wait_pid(root / ".diarize" / job.job_id / "worker.pid")
+                    pid = _wait_pid(private_directory(root) / ".diarize" / job.job_id / "worker.pid")
                     self.assertTrue(_alive(pid))
                     runtime.jobs.cancel(session.store, job.job_id)
                     self.assertTrue(runtime.jobs.wait_until_idle(session.store, 5))
@@ -611,7 +611,7 @@ class JobTests(unittest.TestCase):
                 self.assertFalse(_alive(pid))
                 self.assertIsNone(session.store.get_active_run_id(asset, "diarization"))
                 self.assertEqual(session.store.list_run_ids(asset, "diarization"), [])
-                self.assertFalse((root / ".diarize" / job.job_id).exists())
+                self.assertFalse((private_directory(root) / ".diarize" / job.job_id).exists())
             finally:
                 runtime.shutdown()
 

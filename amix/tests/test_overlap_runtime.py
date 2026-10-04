@@ -41,7 +41,7 @@ from amix.amix_engine.multicam.apply import build_automatic_plan, multicam_readi
 from amix.amix_engine.multicam.planner import plan_shots
 from amix.amix_engine.service.config import ServiceConfig
 from amix.amix_engine.service.runtime import EngineRuntime
-from amix.amix_engine.storage.project import MediaProbeRecord, create_project
+from amix.amix_engine.storage.project import MediaProbeRecord, create_project, private_directory
 from amix.amix_engine.time.clock import TimeRange
 from amix.amix_engine.workers.overlap import video_command
 
@@ -357,8 +357,8 @@ class OverlapJobTests(unittest.TestCase):
                 self.assertEqual(session.store.get_active_run_id(asset, "overlap"), run_id)
                 with patch.dict(os.environ, {"AMIX_OVERLAP_TEST_WORKER": "wait"}):
                     waiting = runtime.jobs.submit(session.store, DETECT_OVERLAP, {"start_us": 0, "end_us": 1_000_000}, asset)
-                    child = int(_wait_file(root / ".overlap" / waiting.job_id / "child.pid"))
-                    worker = int(_wait_file(root / ".overlap" / waiting.job_id / "worker.pid"))
+                    child = int(_wait_file(private_directory(root) / ".overlap" / waiting.job_id / "child.pid"))
+                    worker = int(_wait_file(private_directory(root) / ".overlap" / waiting.job_id / "worker.pid"))
                     self.assertTrue(_alive(worker))
                     self.assertTrue(_alive(child))
                     runtime.jobs.cancel(session.store, waiting.job_id)
@@ -369,7 +369,7 @@ class OverlapJobTests(unittest.TestCase):
                 self.assertFalse(_alive(child))
                 self.assertEqual(session.store.get_active_run_id(asset, "overlap"), run_id)
                 self.assertEqual(session.store.list_run_ids(asset, "overlap"), [run_id])
-                self.assertFalse((root / ".overlap" / waiting.job_id).exists())
+                self.assertFalse((private_directory(root) / ".overlap" / waiting.job_id).exists())
             finally:
                 runtime.shutdown()
 

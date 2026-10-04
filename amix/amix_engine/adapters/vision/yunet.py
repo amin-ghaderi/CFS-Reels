@@ -17,6 +17,25 @@ class YunetDetector:
         self._size: tuple[int, int] | None = None
 
     def detect(self, frame) -> list[FaceSample]:
+        rows = self._rows(frame)
+        samples = []
+        for row in rows:
+            landmarks = None
+            if len(row) >= 15:
+                landmarks = tuple((float(row[4 + 2 * index]), float(row[5 + 2 * index])) for index in range(5))
+            samples.append(FaceSample(w=float(row[2]), h=float(row[3]), landmarks=landmarks))
+        return samples
+
+    def boxes(self, frame) -> list[tuple[float, float, float, float]]:
+        """Face rectangles as x, y, width, height in the frame's pixel space."""
+        found = []
+        for row in self._rows(frame):
+            if len(row) < 4:
+                continue
+            found.append((float(row[0]), float(row[1]), float(row[2]), float(row[3])))
+        return found
+
+    def _rows(self, frame) -> list:
         height, width = frame.shape[:2]
         size = (width, height)
         if self._detector is None or self._size != size:
@@ -33,10 +52,4 @@ class YunetDetector:
         _faces, rows = self._detector.detect(frame)
         if rows is None:
             return []
-        samples = []
-        for row in rows:
-            landmarks = None
-            if len(row) >= 15:
-                landmarks = tuple((float(row[4 + 2 * index]), float(row[5 + 2 * index])) for index in range(5))
-            samples.append(FaceSample(w=float(row[2]), h=float(row[3]), landmarks=landmarks))
-        return samples
+        return list(rows)

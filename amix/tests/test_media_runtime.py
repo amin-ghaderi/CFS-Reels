@@ -29,6 +29,7 @@ from amix.amix_engine.storage.project import (
     MediaProbeRecord,
     create_project,
     open_project,
+    private_directory,
 )
 from amix.amix_engine.storage.jobs import CANCELLED
 
@@ -319,7 +320,7 @@ class StoreAndJobTests(unittest.TestCase):
                 self.assertEqual(stored.duration_us, 2_000_000)
                 self.assertEqual(stored.fps_num, 25)
                 self.assertIsInstance(stored.fps_num, int)
-                proxy_file = root / "proxy" / f"{asset_id}.mp4"
+                proxy_file = private_directory(root) / "proxy" / f"{asset_id}.mp4"
                 proxy_file.write_bytes(b"proxy")
                 published = store.publish_proxy(
                     asset_id,
@@ -354,7 +355,7 @@ class StoreAndJobTests(unittest.TestCase):
                     proxy_file_present=True,
                 )
                 self.assertEqual(stale, "stale")
-                junk = root / "proxy" / ".tmp" / "old.mp4"
+                junk = private_directory(root) / "proxy" / ".tmp" / "old.mp4"
                 junk.parent.mkdir(parents=True, exist_ok=True)
                 junk.write_bytes(b"partial")
                 store.clean_proxy_tmp()
@@ -408,7 +409,7 @@ class StoreAndJobTests(unittest.TestCase):
                 self.assertEqual(finished.status, CANCELLED)
                 self.assertIsNone(session.store.find_proxy(asset_id))
                 self.assertFalse(_alive(pid))
-                self.assertFalse((root / "proxy" / f"{asset_id}.mp4").exists())
+                self.assertFalse((private_directory(root) / "proxy" / f"{asset_id}.mp4").exists())
             finally:
                 runtime.shutdown()
 
@@ -533,7 +534,7 @@ class FfmpegIntegrationTests(unittest.TestCase):
                 self.assertLessEqual(tall_proxy.height or 0, 720)
                 self.assertGreater(tall_proxy.height or 0, tall_proxy.width or 0)
                 self.assertNotEqual((tall_proxy.width, tall_proxy.height), (1280, 720))
-                self.assertTrue((root / "proxy" / f"{landscape_id}.mp4").is_file())
+                self.assertTrue((private_directory(root) / "proxy" / f"{landscape_id}.mp4").is_file())
                 self.assertFalse((landscape.parent / "proxy").exists())
                 described = resolve_playback(session.store, landscape_id)
                 self.assertTrue(described.playable)

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from amix.amix_engine.domain.types import Word
 from amix.amix_engine.playback import SOURCE_MISSING_WARNING, canonical_origin_us, resolve_playback
-from amix.amix_engine.storage.project import MediaProbeRecord, create_project
+from amix.amix_engine.storage.project import MediaProbeRecord, create_project, private_directory
 from amix.amix_engine.time.clock import TimeRange
 from amix.tests.test_service import _client, _create, _headers
 
@@ -72,10 +72,10 @@ class DescriptorTests(unittest.TestCase):
                     file_mtime_ns=source_file.stat().st_mtime_ns,
                 )
                 store.apply_probe(asset_id, _record(byte_size=4, file_mtime_ns=source_file.stat().st_mtime_ns, container_start_us=1_500_000))
-                decoy = root / "proxy" / f"{asset_id}.mp4"
+                decoy = private_directory(root) / "proxy" / f"{asset_id}.mp4"
                 decoy.parent.mkdir(parents=True, exist_ok=True)
                 decoy.write_bytes(b"not-the-relation")
-                real = root / "proxy" / "chosen.mp4"
+                real = private_directory(root) / "proxy" / "chosen.mp4"
                 real.write_bytes(b"proxy-bytes")
                 published = store.publish_proxy(
                     asset_id,
@@ -122,7 +122,7 @@ class DescriptorTests(unittest.TestCase):
                     file_mtime_ns=mtime,
                 )
                 store.apply_probe(asset_id, _record(byte_size=4, file_mtime_ns=mtime))
-                proxy = root / "proxy" / "chosen.mp4"
+                proxy = private_directory(root) / "proxy" / "chosen.mp4"
                 proxy.parent.mkdir(parents=True, exist_ok=True)
                 proxy.write_bytes(b"proxy")
                 store.publish_proxy(
@@ -161,7 +161,7 @@ class DescriptorTests(unittest.TestCase):
                     file_mtime_ns=source_file.stat().st_mtime_ns,
                 )
                 store.apply_probe(asset_id, _record(byte_size=12, file_mtime_ns=source_file.stat().st_mtime_ns))
-                proxy = root / "proxy" / "chosen.mp4"
+                proxy = private_directory(root) / "proxy" / "chosen.mp4"
                 proxy.parent.mkdir(parents=True, exist_ok=True)
                 proxy.write_bytes(b"proxy")
                 store.publish_proxy(
@@ -200,7 +200,7 @@ class DescriptorTests(unittest.TestCase):
                     file_mtime_ns=source_file.stat().st_mtime_ns,
                 )
                 store.apply_probe(asset_id, _record(byte_size=4, file_mtime_ns=source_file.stat().st_mtime_ns))
-                proxy = root / "proxy" / "chosen.mp4"
+                proxy = private_directory(root) / "proxy" / "chosen.mp4"
                 proxy.parent.mkdir(parents=True, exist_ok=True)
                 proxy.write_bytes(b"proxy")
                 store.publish_proxy(
@@ -231,7 +231,7 @@ class DescriptorTests(unittest.TestCase):
                     file_mtime_ns=fresh.stat().st_mtime_ns,
                 )
                 store.apply_probe(other, _record(byte_size=4, file_mtime_ns=fresh.stat().st_mtime_ns))
-                other_proxy = root / "proxy" / "other.mp4"
+                other_proxy = private_directory(root) / "proxy" / "other.mp4"
                 other_proxy.write_bytes(b"proxy")
                 store.publish_proxy(
                     other,
@@ -292,7 +292,7 @@ class PlaybackApiTests(unittest.TestCase):
                 asset_id = linked.json()["asset_id"]
                 store = runtime.session(handle).store
                 store.apply_probe(asset_id, _record(byte_size=4, file_mtime_ns=media.stat().st_mtime_ns, container_start_us=1_500_000))
-                proxy = root / "Show" / "proxy" / "chosen.mp4"
+                proxy = private_directory(root / "Show") / "proxy" / "chosen.mp4"
                 proxy.parent.mkdir(parents=True, exist_ok=True)
                 proxy.write_bytes(b"proxy")
                 store.publish_proxy(

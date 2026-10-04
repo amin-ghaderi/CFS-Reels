@@ -17,7 +17,7 @@ import wave
 from pathlib import Path
 from unittest.mock import patch
 
-from amix.amix_engine.adapters.stt.evidence import SttEvidence, SttWord, evidence_from_document
+from amix.amix_engine.adapters.stt.evidence import SttEvidence, SttEvidenceError, SttWord, evidence_from_document
 from amix.amix_engine.adapters.stt.faster_whisper import evidence_from_segments
 from amix.amix_engine.adapters.stt.profile import PROFILE_ID, requested_language
 from amix.amix_engine.adapters.stt.progress import transcription_progress_bp
@@ -31,7 +31,7 @@ from amix.amix_engine.stt.resolver import (
     resolve_speech_model,
     speech_model_status,
 )
-from amix.amix_engine.storage.project import MediaProbeRecord, create_project, open_project
+from amix.amix_engine.storage.project import MediaProbeRecord, create_project, open_project, private_directory
 from amix.tests.test_service import _client, _headers
 
 
@@ -212,6 +212,23 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(evidence.language, "fa")
         self.assertEqual(evidence.language_probability, 0.42)
 
+    def test_zero_duration_word_is_kept_and_does_not_abort_the_segment(self) -> None:
+        evidence = evidence_from_segments(
+            [Segment([
+                Token("before", 755.14, 755.24, 0.8),
+                Token("and", 755.4, 755.4, 0.4),
+                Token("after", 755.4, 755.52, 0.7),
+            ])],
+            Info("fa", 0.9),
+        )
+        self.assertEqual([word.text for word in evidence.words], ["before", "and", "after"])
+        collapsed = evidence.words[1]
+        self.assertEqual(collapsed.end_us, collapsed.start_us + 1)
+        self.assertLess(evidence.words[0].end_us, collapsed.start_us)
+        reversed_word = Segment([Token("bad", 1.0, 0.5, 0.2)])
+        with self.assertRaises(SttEvidenceError):
+            evidence_from_segments([reversed_word], None)
+
     def test_blank_tokens_are_dropped_and_an_empty_result_is_valid(self) -> None:
         skipped = evidence_from_segments([Segment([Token("   ", 0.0, 0.2, 0.5)])], Info(None, None))
         self.assertEqual(skipped.words, ())
@@ -310,7 +327,7 @@ class TranscriptionJobTests(unittest.TestCase):
                     file_mtime_ns=source.stat().st_mtime_ns,
                 )
                 session.store.apply_probe(asset_id, _record(byte_size=source.stat().st_size, file_mtime_ns=source.stat().st_mtime_ns))
-                proxy_file = root / "proxy" / "preview.mp4"
+                proxy_file = private_directory(root) / "proxy" / "preview.mp4"
                 proxy_file.parent.mkdir(exist_ok=True)
                 proxy_file.write_bytes(b"proxy-audio")
                 session.store.publish_proxy(
@@ -371,7 +388,7 @@ class TranscriptionJobTests(unittest.TestCase):
                 self.assertNotIn(str(model), encoded)
                 self.assertNotIn("source-master.mov", encoded)
                 self.assertEqual(session.store.active_transcript(asset_id).language, "fa")
-                self.assertFalse((root / ".stt" / job.job_id).exists())
+                self.assertFalse((private_directory(root) / ".stt" / job.job_id).exists())
             finally:
                 runtime.shutdown()
             reopened = open_project(root)
@@ -462,14 +479,14 @@ class TranscriptionJobTests(unittest.TestCase):
                 before = session.store.load_words(run_a)
                 with patch.dict(os.environ, _env(model, None, "wait"), clear=False):
                     job_b = runtime.jobs.submit(session.store, TRANSCRIBE, {}, asset_id)
-                    pid = _wait_pid(root / ".stt" / job_b.job_id / "worker.pid")
+                    pid = _wait_pid(private_directory(root) / ".stt" / job_b.job_id / "worker.pid")
                     self.assertTrue(_alive(pid))
                     runtime.jobs.cancel(session.store, job_b.job_id)
                     self.assertTrue(runtime.jobs.wait_until_idle(session.store, 5))
                 finished = session.store.get_processing_job(job_b.job_id)
                 self.assertEqual(finished.status, "CANCELLED")
                 self.assertFalse(_alive(pid))
-                self.assertFalse((root / ".stt" / job_b.job_id).exists())
+                self.assertFalse((private_directory(root) / ".stt" / job_b.job_id).exists())
                 self.assertEqual(session.store.get_active_run_id(asset_id, "transcript"), run_a)
                 self.assertEqual(session.store.list_run_ids(asset_id, "transcript"), [run_a])
                 self.assertEqual(session.store.load_words(run_a), before)
@@ -496,7 +513,7 @@ class TranscriptionJobTests(unittest.TestCase):
             try:
                 with patch.dict(os.environ, _env(model, None, "wait"), clear=False):
                     job = runtime.jobs.submit(session.store, TRANSCRIBE, {}, asset_id)
-                    pid = _wait_pid(root / ".stt" / job.job_id / "worker.pid")
+                    pid = _wait_pid(private_directory(root) / ".stt" / job.job_id / "worker.pid")
                     self.assertTrue(_alive(pid))
                     runtime.shutdown()
                     self.assertFalse(_alive(pid))
@@ -525,7 +542,7 @@ class TranscriptionJobTests(unittest.TestCase):
                 )
                 job = store.create_processing_job(kind=TRANSCRIBE, spec={"profile": PROFILE_ID}, media_asset_id=asset_id)
                 self.assertTrue(store.start_processing_job(job.job_id))
-                partial = root / ".stt" / "orphan"
+                partial = private_directory(root) / ".stt" / "orphan"
                 partial.mkdir(parents=True)
                 partial.joinpath("result.json").write_text(_evidence(), encoding="utf-8")
             finally:
@@ -592,7 +609,7 @@ class TranscriptionJobTests(unittest.TestCase):
                     self.assertEqual(made_done.status, "SUCCEEDED", made_done.error_message)
                     run_id = made_done.result["transcript_run_id"]
                     source.unlink()
-                    proxy = root / "proxy" / "preview.mp4"
+                    proxy = private_directory(root) / "proxy" / "preview.mp4"
                     self.assertTrue(proxy.is_file())
                     missing = runtime.jobs.submit(session.store, TRANSCRIBE, {}, asset_id)
                     missing_done = _wait_job(session.store, missing.job_id)
@@ -673,7 +690,7 @@ def _prepared(runtime: EngineRuntime, root: Path):
         byte_size=source.stat().st_size,
         file_mtime_ns=source.stat().st_mtime_ns,
     ))
-    proxy_file = root / "proxy" / "preview.mp4"
+    proxy_file = private_directory(root) / "proxy" / "preview.mp4"
     proxy_file.parent.mkdir(exist_ok=True)
     proxy_file.write_bytes(b"proxy-audio")
     session.store.publish_proxy(

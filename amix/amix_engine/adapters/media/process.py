@@ -13,6 +13,7 @@ import threading
 import time
 from dataclasses import dataclass
 from queue import Empty, Queue
+from collections.abc import Mapping
 from typing import Callable, Protocol
 
 from amix.amix_engine.adapters.media.errors import ProcessCancelled
@@ -119,10 +120,11 @@ def run_process(
     *,
     on_line: Callable[[str], None] | None = None,
     max_stdout: int = 2_000_000,
+    env: Mapping[str, str] | None = None,
 ) -> ProcessResult:
     if not args or not isinstance(args, list):
         raise ValueError("media tools take an argument list")
-    process = _spawn_owned(args, cancel)
+    process = _spawn_owned(args, cancel, env)
     stdout_lines: Queue[bytes | None] = Queue()
     stderr_tail = bytearray()
     stderr_lock = threading.Lock()
@@ -240,7 +242,11 @@ def _release(process: subprocess.Popen) -> None:
             _owned.pop(process.pid, None)
 
 
-def _spawn_owned(args: list[str], cancel: CancelSignal | None) -> subprocess.Popen:
+def _spawn_owned(
+    args: list[str],
+    cancel: CancelSignal | None,
+    env: Mapping[str, str] | None = None,
+) -> subprocess.Popen:
     """Create the child and register it before returning to the caller."""
     _begin_spawn()
     process: subprocess.Popen | None = None
@@ -248,13 +254,16 @@ def _spawn_owned(args: list[str], cancel: CancelSignal | None) -> subprocess.Pop
         _note("before_spawn")
         if cancel is not None and cancel.is_cancelled():
             raise ProcessCancelled()
+        kwargs = _spawn_kwargs()
+        if env is not None:
+            kwargs["env"] = dict(env)
         process = subprocess.Popen(
             args,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False,
-            **_spawn_kwargs(),
+            **kwargs,
         )
         _register(process)
         _note("after_register")

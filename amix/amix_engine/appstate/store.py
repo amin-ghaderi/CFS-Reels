@@ -8,10 +8,18 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, insert, select, update
+from sqlalchemy import create_engine, delete, insert, select, update
 from sqlalchemy.engine import Engine
 
-from amix.amix_engine.appstate.schema import app_setting, provider_configuration, resource_installation, resource_job
+from amix.amix_engine.appstate.schema import (
+    app_setting,
+    provider_configuration,
+    recent_project,
+    resource_installation,
+    resource_job,
+)
+from amix.amix_engine.storage.errors import ProjectDatabaseInvalid
+from amix.amix_engine.storage.project import database_file, manifest_identity, poster_file
 
 _INI = Path(__file__).resolve().parents[2] / "alembic_app.ini"
 NOT_CONFIGURED = "NOT_CONFIGURED"
@@ -70,6 +78,16 @@ class InstalledResource:
     status: str
     architecture: str | None = None
     semantic_compatibility: str | None = None
+
+
+@dataclass(frozen=True)
+class RecentProject:
+    project_id: str
+    display_name: str
+    root_path: str
+    last_opened_at: str
+    availability: str
+    thumbnail: str
 
 
 @dataclass(frozen=True)
@@ -355,6 +373,88 @@ class AppStore:
             row = connection.execute(select(resource_job).where(resource_job.c.job_id == job_id)).mappings().first()
         return None if row is None else dict(row)
 
+    def remember_project(
+        self,
+        project_id: str,
+        display_name: str,
+        root_path: str,
+        *,
+        opened_at: str | None = None,
+    ) -> RecentProject:
+        root = str(Path(root_path).resolve())
+        name = display_name.strip()[:128] or "Project"
+        moment = opened_at or _now()
+        with self.engine.begin() as connection:
+            connection.execute(delete(recent_project).where(
+                recent_project.c.root_path == root,
+                recent_project.c.project_id != project_id,
+            ))
+            found = connection.execute(
+                select(recent_project.c.project_id).where(recent_project.c.project_id == project_id)
+            ).first()
+            values = {
+                "display_name": name,
+                "root_path": root,
+                "last_opened_at": moment,
+            }
+            if found is None:
+                connection.execute(insert(recent_project).values(project_id=project_id, **values))
+            else:
+                connection.execute(
+                    update(recent_project).where(recent_project.c.project_id == project_id).values(**values)
+                )
+        listed = self.recent_projects()
+        return next(item for item in listed if item.project_id == project_id)
+
+    def recent_projects(self) -> list[RecentProject]:
+        with self.engine.connect() as connection:
+            rows = connection.execute(
+                select(recent_project).order_by(
+                    recent_project.c.last_opened_at.desc(),
+                    recent_project.c.project_id.asc(),
+                )
+            ).mappings().all()
+        return [_recent(row) for row in rows]
+
+    def remove_recent(self, project_id: str) -> None:
+        with self.engine.begin() as connection:
+            found = connection.execute(
+                select(recent_project.c.project_id).where(recent_project.c.project_id == project_id)
+            ).first()
+            if found is None:
+                raise SettingsRejected("unknown_recent_project", "That project is not in Recent Projects.")
+            connection.execute(delete(recent_project).where(recent_project.c.project_id == project_id))
+
+    def locate_recent(self, project_id: str, root_path: str) -> RecentProject:
+        with self.engine.connect() as connection:
+            row = connection.execute(
+                select(recent_project).where(recent_project.c.project_id == project_id)
+            ).mappings().first()
+        if row is None:
+            raise SettingsRejected("unknown_recent_project", "That project is not in Recent Projects.")
+        try:
+            found_id, found_name = manifest_identity(root_path)
+        except ProjectDatabaseInvalid as exc:
+            raise SettingsRejected("project_not_found", "That folder does not contain this project.") from exc
+        if found_id != project_id:
+            raise SettingsRejected("recent_project_mismatch", "That folder is a different project.")
+        return self.remember_project(project_id, found_name or row["display_name"], root_path)
+
+    def recent_thumbnail(self, project_id: str) -> bytes | None:
+        with self.engine.connect() as connection:
+            row = connection.execute(
+                select(recent_project.c.root_path).where(recent_project.c.project_id == project_id)
+            ).first()
+        if row is None:
+            raise SettingsRejected("unknown_recent_project", "That project is not in Recent Projects.")
+        poster = poster_file(row[0])
+        if poster is None:
+            return None
+        data = poster.read_bytes()
+        if len(data) > 512 * 1024 or not data.startswith(b"\xff\xd8"):
+            return None
+        return data
+
     def update_resource_job(self, job_id: str, **fields: object) -> None:
         with self.engine.begin() as connection:
             connection.execute(update(resource_job).where(resource_job.c.job_id == job_id).values(**fields))
@@ -394,6 +494,28 @@ def _resource(row) -> InstalledResource:
         status=row["status"],
         architecture=row["architecture"],
         semantic_compatibility=row["semantic_compatibility"] or "unknown",
+    )
+
+
+def _recent(row) -> RecentProject:
+    root = Path(row["root_path"])
+    availability = "missing"
+    thumbnail = "none"
+    try:
+        if database_file(root).is_file():
+            availability = "available"
+    except ProjectDatabaseInvalid:
+        availability = "missing"
+    poster = poster_file(root)
+    if poster is not None and poster.stat().st_size <= 512 * 1024:
+        thumbnail = "ready"
+    return RecentProject(
+        project_id=row["project_id"],
+        display_name=row["display_name"],
+        root_path=row["root_path"],
+        last_opened_at=row["last_opened_at"],
+        availability=availability,
+        thumbnail=thumbnail,
     )
 
 

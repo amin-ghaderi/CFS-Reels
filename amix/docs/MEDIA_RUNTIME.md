@@ -88,11 +88,13 @@ Engine shutdown cancels active jobs, waits until any in-progress spawn has regis
 
 ### Stale proxy
 
-The proxy row records the source size and modification time it was built from. If the source file is still present and either value differs, the state is Stale. AMIX does not regenerate it automatically.
+The proxy row records the source size and modification time it was built from. If the source file is still present and either value differs, the state is Stale. A change that is not a relink waits for Rebuild Proxy.
 
 ## Desktop
 
-Analyze media and Generate proxy start the existing job API. Progress stays in the Activity panel. After the job status changes, the media list reloads. Generated proxies are not listed as source media.
+Import Media links the external file and queues probe. A successful probe of a picture queues the preview proxy. The media card says Preparing, Ready, Missing, or Failed. Re-analyze Media and Rebuild Proxy stay in Details. Final renders still read the original source, not the preview proxy. New projects keep the database, cache, proxy, and lock under `.amix/`. Exports stay in the project folder. A project whose database is still beside those exports opens as before.
+
+People are assigned on the preview. Detect Faces reads one source frame with the configured YuNet model and draws expanded regions. The editor drags and resizes those regions in display pixels, then saves a LayoutBinding for the whole media. A person name is chosen explicitly. Time ranges remain available in Details.
 
 ## Licensing
 

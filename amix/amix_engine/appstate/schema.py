@@ -62,6 +62,15 @@ provider_configuration = Table(
     Column("created_at", Text, nullable=False),
 )
 
+recent_project = Table(
+    "recent_project",
+    AppBase.metadata,
+    Column("project_id", Text, primary_key=True),
+    Column("display_name", Text, nullable=False),
+    Column("root_path", Text, nullable=False),
+    Column("last_opened_at", Text, nullable=False),
+)
+
 resource_job = Table(
     "resource_job",
     AppBase.metadata,

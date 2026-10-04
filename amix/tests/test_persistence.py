@@ -29,7 +29,7 @@ from amix.amix_engine.storage.errors import (
 )
 from amix.amix_engine.storage.kinds import PARTICIPANT_ASSIGNMENT, SPEAKER_OVERRIDE, TURNS, WORD_TEXT
 from amix.amix_engine.storage.migrate import head_revision, upgrade_database
-from amix.amix_engine.storage.project import DATABASE_NAME, create_project, open_project
+from amix.amix_engine.storage.project import DATABASE_NAME, create_project, database_file, open_project, private_directory
 from amix.amix_engine.time.clock import TimeRange, legacy_seconds_to_us
 
 FIXTURE = Path(__file__).resolve().parent / "golden" / "cfs03_49_59"
@@ -55,8 +55,10 @@ class SchemaTests(unittest.TestCase):
                 self.assertEqual(store.pragma("foreign_keys"), "1")
                 self.assertEqual(store.pragma("journal_mode"), "delete")
                 self.assertEqual(store.pragma("synchronous"), "2")
-                for folder in ("media", "proxy", "cache", "artifacts", "exports", "logs"):
-                    self.assertTrue((root / folder).is_dir(), folder)
+                self.assertTrue((root / "exports").is_dir())
+                self.assertFalse((root / DATABASE_NAME).exists())
+                for folder in ("media", "proxy", "cache", "artifacts", "logs"):
+                    self.assertTrue((private_directory(root) / folder).is_dir(), folder)
                 sql = "\n".join(store.schema_sql()).upper()
                 self.assertNotIn("BLOB", sql)
                 self.assertIn("ACTIVE_ANALYSIS", sql)
@@ -128,7 +130,7 @@ class SchemaTests(unittest.TestCase):
             root = Path(tmp) / "Future"
             store = create_project(root, "Future")
             store.close()
-            connection = sqlite3.connect(root / DATABASE_NAME)
+            connection = sqlite3.connect(database_file(root))
             connection.execute("UPDATE alembic_version SET version_num = '9999_future'")
             connection.commit()
             connection.close()
@@ -187,7 +189,7 @@ class GoldenRoundTripTests(unittest.TestCase):
             root = Path(tmp) / "CFS03"
             store = create_project(root, "CFS03")
             try:
-                media_path = root / "media" / "master.bin"
+                media_path = store.private / "media" / "master.bin"
                 media_path.write_bytes(SENTINEL)
                 for index, binding in enumerate(bindings):
                     store.add_participant(binding.participant_id.value, binding.participant_id.value, sort_order=index)
@@ -273,7 +275,7 @@ class GoldenRoundTripTests(unittest.TestCase):
             finally:
                 store.close()
 
-            database = root / DATABASE_NAME
+            database = database_file(root)
             raw = database.read_bytes()
             self.assertNotIn(SENTINEL, raw)
             for token in BANNED:
@@ -420,7 +422,7 @@ class RerunTests(unittest.TestCase):
                     store.require_media(asset_id)
             finally:
                 store.close()
-            connection = sqlite3.connect(Path(tmp) / "Rerun" / DATABASE_NAME)
+            connection = sqlite3.connect(database_file(Path(tmp) / "Rerun"))
             try:
                 connection.execute("PRAGMA foreign_keys=ON")
                 with self.assertRaises(sqlite3.IntegrityError):
@@ -548,7 +550,7 @@ class RelocationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             original = Path(tmp) / "Original"
             store = create_project(original, "Move")
-            media = original / "media" / "clip.bin"
+            media = store.private / "media" / "clip.bin"
             media.write_bytes(b"dummy")
             try:
                 asset_id = store.add_media_asset(
@@ -574,12 +576,12 @@ class RelocationTests(unittest.TestCase):
             store = open_project(moved)
             try:
                 resolved = store.resolve_media(asset_id)
-                self.assertEqual(resolved, moved / "media" / "clip.bin")
+                self.assertEqual(resolved, moved / ".amix" / "media" / "clip.bin")
                 self.assertTrue(resolved.is_file())
                 self.assertEqual(store.media_status(asset_id), "present")
                 self.assertEqual(store.get_active_run_id(asset_id, "transcript"), run_id)
                 self.assertEqual(store.load_words(run_id)[0].machine_text, "hi")
-                relinked = moved / "media" / "clip-relinked.bin"
+                relinked = moved / ".amix" / "media" / "clip-relinked.bin"
                 relinked.write_bytes(b"dummy")
                 store.relink_media(asset_id, relative_path="media/clip-relinked.bin")
                 self.assertEqual(store.resolve_media(asset_id), relinked)
@@ -598,12 +600,12 @@ class LockTests(unittest.TestCase):
             try:
                 self.assertEqual(_probe(root, "write"), 2)
                 self.assertEqual(_probe(root, "read"), 0)
-                note = json.loads((root / "project.lock.json").read_text(encoding="utf-8"))
+                note = json.loads((private_directory(root) / "project.lock.json").read_text(encoding="utf-8"))
                 self.assertIn("pid", note)
                 self.assertIn("hostname", note)
             finally:
                 holder.close()
-            (root / "project.lock.json").write_text(
+            (private_directory(root) / "project.lock.json").write_text(
                 json.dumps({"pid": 1, "hostname": "stale", "opened_at": "2000-01-01T00:00:00+00:00"}),
                 encoding="utf-8",
             )

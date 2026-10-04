@@ -10,6 +10,7 @@ import uvicorn
 
 from amix.amix_engine.service.app import create_app
 from amix.amix_engine.service.config import ServiceConfig
+from amix.amix_engine.service.owner import exit_when_owner_exits
 from amix.amix_engine.service.runtime import EngineRuntime
 
 
@@ -54,6 +55,7 @@ def run(config: ServiceConfig | None = None) -> None:
 
 
 def main() -> None:
+    exit_when_owner_exits()
     try:
         run()
     except ValueError as exc:

@@ -168,7 +168,16 @@ class EngineRuntime:
             self._sessions[handle] = session
             self._by_path[key] = handle
         log.info("opened project %s handle %s", store.project_id, handle)
+        self._remember(store, key)
         return session
+
+    def _remember(self, store: ProjectStore, path: str) -> None:
+        if self.app is None or not store.project_id:
+            return
+        try:
+            self.app.remember_project(store.project_id, store.project_name, path)
+        except Exception as exc:
+            log.info("recent project was not recorded: %s", type(exc).__name__)
 
     def _reject_if_open(self, key: str) -> None:
         existing = self._by_path.get(key)

@@ -66,6 +66,16 @@ class JobContext:
         self.spec = spec
         self.cancellation = cancellation
         self.media_asset_id = media_asset_id
+        self._follow = None
+
+    def follow_up(self, kind: str, spec: dict, media_asset_id: str | None) -> None:
+        """Queue another job after this one. Direct callers can leave this unset."""
+        if self._follow is None:
+            return
+        try:
+            self._follow(kind, spec, media_asset_id)
+        except EngineNotAccepting:
+            return
 
     def report_progress(self, progress_bp: int) -> None:
         self.cancellation.raise_if_cancelled()
@@ -177,7 +187,11 @@ class JobManager:
             if token.is_cancelled():
                 store.finish_job_cancelled(job_id)
                 return
-            result = self._handlers[kind].run(JobContext(store, job_id, spec, token, media_asset_id))
+            context = JobContext(store, job_id, spec, token, media_asset_id)
+            context._follow = lambda follow_kind, follow_spec, follow_asset: self.submit(
+                store, follow_kind, follow_spec, follow_asset,
+            )
+            result = self._handlers[kind].run(context)
             committed = isinstance(result, dict) and result.get("activated") is True
             if token.is_cancelled() and not committed:
                 store.finish_job_cancelled(job_id)

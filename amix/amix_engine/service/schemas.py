@@ -105,6 +105,7 @@ class MediaResponse(_Model):
     source_media_asset_id: str | None = None
     proxy_state: str | None = None
     proxy_asset_id: str | None = None
+    prepare_state: str = "preparing"
     status: str
 
 
@@ -208,6 +209,24 @@ class LayoutBindingRequest(_Model):
     y: int
     w: int
     h: int
+    binding_id: str | None = None
+
+
+class LayoutCandidatesRequest(_Model):
+    time_us: int | None = None
+
+
+class LayoutCandidateResponse(_Model):
+    x: int
+    y: int
+    w: int
+    h: int
+
+
+class LayoutCandidatesResponse(_Model):
+    picture_width: int
+    picture_height: int
+    candidates: list[LayoutCandidateResponse]
 
 
 class ClusterSampleResponse(_Model):

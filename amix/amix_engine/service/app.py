@@ -70,8 +70,8 @@ def create_app(runtime: EngineRuntime) -> FastAPI:
         return _error(400, "invalid_request", "request is invalid")
 
     @app.exception_handler(Exception)
-    async def _unexpected(_request: Request, _exc: Exception) -> JSONResponse:
-        log.error("request failed")
+    async def _unexpected(_request: Request, exc: Exception) -> JSONResponse:
+        log.error("request failed: %s", type(exc).__name__)
         return _error(500, "internal_error", "internal error")
 
     @app.get("/v1/health", response_model=HealthResponse)
@@ -147,6 +147,8 @@ def create_app(runtime: EngineRuntime) -> FastAPI:
 
     register_workspace_routes(app, runtime, _authorize, _call)
     register_settings_routes(app, runtime, _authorize, _call)
+    from amix.amix_engine.service.recent_routes import register_recent_routes
+    register_recent_routes(app, runtime, _authorize, _call)
     return app
 
 

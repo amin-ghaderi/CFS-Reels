@@ -112,7 +112,7 @@ Rust does not own editorial rules, speakers, timelines, reels, or the project da
 
 ## Project and job UI
 
-With no project open, the start screen offers Create project and Open project. Both use the native folder dialog. Create asks for a name, joins it to the selected parent with the OS path API, and calls `POST /v1/projects/create`. Open calls `POST /v1/projects/open`. Close calls the engine close route and returns to the start screen. There is no recent-project list.
+With no project open, the start screen lists Recent Projects from the global app database, then Create Project, Open Existing Project, and Settings. A recent card opens that folder directly. Create and Open still use the native folder dialog. Close returns to the start screen. AMIX does not reopen the last project by itself.
 
 The shell has a header, workspace navigation, an empty workspace, a job inspector, and a status bar. Media, Transcript, Conversation, Multicam, Reels, and Export are labeled "Not implemented yet".
 

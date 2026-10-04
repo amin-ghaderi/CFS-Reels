@@ -102,22 +102,95 @@ from amix.amix_engine.time.clock import TimeRange
 DATABASE_NAME = "project.sqlite"
 # Application format marker. Alembic revision is the schema, not this number.
 PROJECT_SCHEMA_VERSION = 1
-_FOLDERS = ("media", "proxy", "cache", "artifacts", "exports", "logs")
+INTERNAL_DIR = ".amix"
+_INTERNAL_FOLDERS = ("media", "proxy", "cache", "artifacts", "logs")
+_PRIVATE_PREFIXES = ("proxy/", "media/", "cache/", "artifacts/", "logs/", ".stt/", ".diarize/", ".overlap/")
+
+
+def database_file(user_root: str | Path) -> Path:
+    """The project database. New projects keep it under ``.amix``.
+
+    A database already at the folder the user chose is the previous layout
+    and stays there. Two database files in one project are refused.
+    """
+    root = Path(user_root)
+    modern = root / INTERNAL_DIR / DATABASE_NAME
+    previous = root / DATABASE_NAME
+    if modern.is_file() and previous.is_file():
+        raise ProjectDatabaseInvalid("project database is duplicated")
+    if modern.is_file():
+        return modern
+    if previous.is_file():
+        return previous
+    return modern
+
+
+def private_directory(user_root: str | Path) -> Path:
+    """Directory that holds the database, cache, proxy, and lock."""
+    return database_file(user_root).parent
+
+
+def manifest_identity(user_root: str | Path) -> tuple[str, str]:
+    """Project id and display name from the manifest beside the database.
+
+    This does not acquire the project lock and does not open the database.
+    """
+    root = Path(user_root)
+    database = database_file(root)
+    if not database.is_file():
+        raise ProjectDatabaseInvalid(f"missing project database: {database}")
+    manifest_path = database.parent / "manifest.json"
+    if not manifest_path.is_file():
+        raise ProjectDatabaseInvalid(f"missing manifest: {manifest_path}")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ProjectDatabaseInvalid(f"manifest is not readable: {manifest_path}") from exc
+    project_id = manifest.get("project_id")
+    name = manifest.get("name")
+    if not isinstance(project_id, str) or not project_id:
+        raise ProjectDatabaseInvalid("manifest has no project id")
+    display_name = name.strip() if isinstance(name, str) else ""
+    return project_id, display_name or "Project"
+
+
+def poster_file(user_root: str | Path) -> Path | None:
+    """Existing poster still, if the project folder has one. Never creates it."""
+    root = Path(user_root)
+    if not root.is_dir():
+        return None
+    try:
+        database = database_file(root)
+    except ProjectDatabaseInvalid:
+        return None
+    if not database.is_file():
+        return None
+    poster = (database.parent / "cache" / "poster.jpg").resolve()
+    cache = (database.parent / "cache").resolve()
+    if poster.parent != cache:
+        return None
+    if not poster.is_file() or poster.stat().st_size <= 0:
+        return None
+    return poster
 
 
 def create_project(path: str | Path, name: str) -> ProjectStore:
     root = Path(path)
-    database = root / DATABASE_NAME
-    if database.exists():
-        raise ProjectDatabaseInvalid(f"project database already exists: {database}")
+    modern = root / INTERNAL_DIR / DATABASE_NAME
+    previous = root / DATABASE_NAME
+    if modern.exists() or previous.exists():
+        raise ProjectDatabaseInvalid(f"project database already exists: {modern}")
     root.mkdir(parents=True, exist_ok=True)
-    for folder in _FOLDERS:
-        (root / folder).mkdir(exist_ok=True)
-    lock = ProjectWriteLock(root)
+    private = root / INTERNAL_DIR
+    private.mkdir(exist_ok=True)
+    for folder in _INTERNAL_FOLDERS:
+        (private / folder).mkdir(exist_ok=True)
+    (root / "exports").mkdir(exist_ok=True)
+    lock = ProjectWriteLock(private)
     lock.acquire()
     store: ProjectStore | None = None
     try:
-        upgrade_database(database)
+        upgrade_database(modern)
         store = ProjectStore(root, lock=lock, read_only=False)
         store._insert_project(name)
         return store
@@ -130,9 +203,10 @@ def create_project(path: str | Path, name: str) -> ProjectStore:
 
 def open_project(path: str | Path, *, read_only: bool = False) -> ProjectStore:
     root = Path(path)
-    database = root / DATABASE_NAME
+    database = database_file(root)
     if not database.is_file():
         raise ProjectDatabaseInvalid(f"missing project database: {database}")
+    private = database.parent
     lock = None
     if read_only:
         revision = current_revision(database)
@@ -142,7 +216,7 @@ def open_project(path: str | Path, *, read_only: bool = False) -> ProjectStore:
                 "open the project for write to migrate"
             )
     else:
-        lock = ProjectWriteLock(root)
+        lock = ProjectWriteLock(private)
         lock.acquire()
         try:
             upgrade_database(database)
@@ -290,9 +364,10 @@ class TranscriptWordView:
 class ProjectStore:
     def __init__(self, root: Path, *, lock: ProjectWriteLock | None, read_only: bool) -> None:
         self.root = root.resolve()
+        self.private = private_directory(self.root)
         self.read_only = read_only
         self._lock = lock
-        self._engine = create_project_engine(self.root / DATABASE_NAME, read_only=read_only)
+        self._engine = create_project_engine(self.private / DATABASE_NAME, read_only=read_only)
         self._sessions = sessionmaker(self._engine, expire_on_commit=False)
         self.project_id = ""
         self.project_name = ""
@@ -324,12 +399,12 @@ class ProjectStore:
             "project_schema_version": PROJECT_SCHEMA_VERSION,
             "created_by": f"amix {__version__}",
         }
-        (self.root / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        (self.private / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         self.project_id = project_id
         self.project_name = name
 
     def _load_identity(self) -> None:
-        manifest_path = self.root / "manifest.json"
+        manifest_path = self.private / "manifest.json"
         if not manifest_path.is_file():
             raise ProjectDatabaseInvalid(f"missing manifest: {manifest_path}")
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -361,7 +436,7 @@ class ProjectStore:
             return [row[0] for row in rows]
 
     def alembic_revision(self) -> str | None:
-        return current_revision(self.root / DATABASE_NAME)
+        return current_revision(self.private / DATABASE_NAME)
 
     def list_media_assets(self) -> list[StoredMedia]:
         with self._session() as session:
@@ -662,11 +737,23 @@ class ProjectStore:
                 row.external_path = external_path
             session.commit()
 
+    def project_file(self, relative: str) -> Path:
+        """Resolve a stored project-relative path.
+
+        Proxy, cache, and similar internal files live under the private
+        directory. Exports stay in the folder the user chose. When the
+        database itself is in that folder, both locations are the same.
+        """
+        text = (relative or "").replace("\\", "/")
+        if text == "proxy" or text.startswith(_PRIVATE_PREFIXES):
+            return self.private / text
+        return self.root / text
+
     def resolve_media(self, asset_id: str) -> Path:
         with self._session() as session:
             row = self._asset(session, asset_id)
             if row.location_kind == "project":
-                return self.root / (row.relative_path or "")
+                return self.project_file(row.relative_path or "")
             return Path(row.external_path or "")
 
     def media_status(self, asset_id: str) -> str:
@@ -774,7 +861,7 @@ class ProjectStore:
 
     def clean_proxy_tmp(self, keep_name: str | None = None) -> None:
         """Remove interrupted proxy fragments. A published proxy file is not in this directory."""
-        folder = self.root / "proxy" / ".tmp"
+        folder = self.private / "proxy" / ".tmp"
         if not folder.is_dir():
             return
         for item in folder.iterdir():
@@ -813,6 +900,23 @@ class ProjectStore:
             ))
             session.commit()
         return binding_id
+
+    def update_layout_binding(self, asset_id: str, binding_id: str, binding: LayoutBinding) -> None:
+        """Replace one saved rectangle. The binding id stays the same."""
+        self._require_write()
+        with self._session() as session:
+            self._asset(session, asset_id)
+            row = session.get(LayoutBindingRow, binding_id)
+            if row is None or row.media_asset_id != asset_id or row.project_id != self.project_id:
+                raise ProjectDatabaseInvalid(f"unknown layout {binding_id}")
+            row.participant_id = binding.participant_id.value
+            row.start_us = binding.span.start_us
+            row.end_us = binding.span.end_us
+            row.x = binding.x
+            row.y = binding.y
+            row.w = binding.w
+            row.h = binding.h
+            session.commit()
 
     def load_layout_bindings(self, asset_id: str) -> list[LayoutBinding]:
         with self._session() as session:

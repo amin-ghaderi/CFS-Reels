@@ -7,7 +7,8 @@ import shutil
 import sys
 from pathlib import Path
 
-from amix.amix_engine.adapters.media.errors import ProcessCancelled
+from amix.amix_engine.adapters.media.discovery import discover_tools
+from amix.amix_engine.adapters.media.errors import MediaToolMissing, ProcessCancelled
 from amix.amix_engine.adapters.media.process import run_process
 from amix.amix_engine.adapters.stt.evidence import SttEvidenceError, load_evidence
 from amix.amix_engine.adapters.stt.profile import InvalidLanguage, InvalidProfile, profile_from_spec, requested_language
@@ -45,7 +46,7 @@ class TranscribeJob:
         except SpeechResourceError as exc:
             raise JobFailed(exc.code, exc.message) from exc
         ctx.cancellation.raise_if_cancelled()
-        temp = ctx.store.root / ".stt" / ctx.job_id
+        temp = ctx.store.private / ".stt" / ctx.job_id
         temp.mkdir(parents=True, exist_ok=True)
         result_path = temp / "result.json"
         spec_path = temp / "worker.json"
@@ -75,7 +76,6 @@ class TranscribeJob:
             try:
                 record = json.loads(line)
             except json.JSONDecodeError:
-                error_code = "speech_transcription_failed"
                 return
             if not isinstance(record, dict):
                 error_code = "speech_transcription_failed"
@@ -96,7 +96,12 @@ class TranscribeJob:
 
         try:
             try:
-                completed = run_process(worker_command(spec_path), ctx.cancellation, on_line=on_line)
+                completed = run_process(
+                    worker_command(spec_path),
+                    ctx.cancellation,
+                    on_line=on_line,
+                    env=speech_worker_env(),
+                )
             except ProcessCancelled as exc:
                 raise JobCancelled() from exc
             if error_code:
@@ -130,6 +135,25 @@ class TranscribeJob:
             }
         finally:
             shutil.rmtree(temp, ignore_errors=True)
+
+
+def speech_worker_env() -> dict[str, str]:
+    """Give the speech worker the same FFmpeg the media tools already use.
+
+    faster-whisper decodes audio by running ``ffmpeg`` from PATH. Probe and
+    proxy resolve the saved tool directory themselves. The worker does not.
+    """
+    env = dict(os.environ)
+    try:
+        tools = discover_tools()
+    except MediaToolMissing:
+        return env
+    directory = str(tools.ffmpeg.parent)
+    current = env.get("PATH", "")
+    parts = current.split(os.pathsep) if current else []
+    if directory not in parts:
+        env["PATH"] = directory + (os.pathsep + current if current else "")
+    return env
 
 
 def worker_command(spec_path: Path) -> list[str]:
@@ -167,10 +191,15 @@ def _asset_id(ctx: JobContext) -> str:
 
 
 def _message(code: str) -> str:
-    if code == "invalid_language":
-        return "That language code is not supported. Use Auto or a Whisper language code."
-    if code == "invalid_speech_model":
-        return "The configured speech model cannot be used."
-    if code == "speech_model_missing":
-        return "Speech model not installed."
-    return "Transcription did not finish."
+    return {
+        "invalid_language": "That language code is not supported. Use Auto or a Whisper language code.",
+        "invalid_speech_model": "The configured speech model cannot be used.",
+        "speech_model_missing": "Speech model not installed.",
+        "speech_runtime_unavailable": "The speech runtime is not available.",
+        "media_missing": "A media file for this project is missing.",
+        "media_has_no_audio": "This media has no audio to transcribe.",
+        "audio_stream_unavailable": "This media has no audio to transcribe.",
+        "ffmpeg_unavailable": "FFmpeg is not available.",
+        "worker_failed": "Transcription did not finish.",
+        "speech_transcription_failed": "Transcription did not finish.",
+    }.get(code, "Transcription did not finish.")

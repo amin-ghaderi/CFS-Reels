@@ -28,8 +28,12 @@ def evidence_from_segments(segments: Iterable[object], info: object | None = Non
                 continue
             start = _boundary_us(getattr(token, "start", None))
             end = _boundary_us(getattr(token, "end", None))
-            if end <= start:
+            if end < start:
                 raise SttEvidenceError("transcription word ends before it starts")
+            # faster-whisper rounds word edges to 0.01s. A real token can
+            # collapse to one instant. One microsecond keeps it on the timeline.
+            if end == start:
+                end += 1
             words.append(SttWord(
                 text=text,
                 start_us=start,

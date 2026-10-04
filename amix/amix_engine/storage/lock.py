@@ -48,12 +48,16 @@ class ProjectWriteLock:
                 f"project is already open for write: {self.root}"
             ) from exc
         self._handle = handle
+        # The note is diagnostic. A stored pid is not consulted and is not ownership.
         note = {
             "pid": os.getpid(),
             "hostname": socket.gethostname(),
             "opened_at": datetime.now(timezone.utc).isoformat(),
         }
-        self.note_path.write_text(json.dumps(note), encoding="utf-8")
+        try:
+            self.note_path.write_text(json.dumps(note), encoding="utf-8")
+        except OSError:
+            pass
 
     def release(self) -> None:
         handle = self._handle
@@ -65,6 +69,10 @@ class ProjectWriteLock:
             _unlock_handle(handle)
         finally:
             handle.close()
+        try:
+            self.note_path.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def _lock_handle(handle: IO[bytes]) -> None:

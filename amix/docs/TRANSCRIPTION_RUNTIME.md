@@ -51,7 +51,9 @@ The React client cannot send a model path, an executable, or a worker command.
 
 The job handler starts `sys.executable -m amix.amix_engine.workers.transcribe` with a spec file. That spec contains the source path, the resolved model path, the profile, the language, the canonical origin inputs the parent already checked, and a temporary result path. It does not contain secrets or a callable name.
 
-Stdout is NDJSON progress and status. The transcript is a temporary JSON file, not a command argument. Human diagnostics go to stderr. The parent validates the file before it writes a transcript, then deletes the temporary directory.
+Stdout is NDJSON progress and status. Lines that are not JSON are ignored. The transcript is a temporary JSON file, not a command argument. Human diagnostics go to stderr. The parent validates the file before it writes a transcript, then deletes the temporary directory.
+
+The worker process receives the FFmpeg directory already used for probe and proxy on its PATH. faster-whisper decodes audio by launching `ffmpeg`. A missing FFmpeg becomes `ffmpeg_unavailable`. A missing model, a missing source, and a file with no audio stay their own job codes. Those codes are not reported as `internal_error`, and the exception text is not shown in the workspace.
 
 Progress uses the existing 0..10000 scale and never moves backward. Segment end divided by the known source duration can advance it, capped at 9999. If the duration is unknown, progress stays put instead of inventing a percentage. 10000 is recorded only after the new transcript is persisted and activated.
 

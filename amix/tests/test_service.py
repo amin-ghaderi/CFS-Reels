@@ -25,7 +25,7 @@ from amix.amix_engine.service.runtime import EngineRuntime
 from amix.amix_engine.service.__main__ import startup_record
 from amix.amix_engine.storage.errors import InvalidJobState
 from amix.amix_engine.storage.jobs import INTERRUPT_REASON
-from amix.amix_engine.storage.project import DATABASE_NAME, create_project
+from amix.amix_engine.storage.project import create_project, database_file
 
 TOKEN = "phase4-session-token"
 REPO = Path(__file__).resolve().parents[2]
@@ -307,7 +307,7 @@ class ServiceTests(unittest.TestCase):
                 )
                 self.assertEqual(secret.status_code, 400)
                 self.assertEqual(secret.json()["error"]["code"], "job_spec_rejected")
-                connection = sqlite3.connect(root / DATABASE_NAME)
+                connection = sqlite3.connect(database_file(root))
                 try:
                     kind = connection.execute("SELECT typeof(progress_bp) FROM processing_job").fetchone()[0]
                 finally:
@@ -538,7 +538,7 @@ class ServiceTests(unittest.TestCase):
             try:
                 created = _create(client, root, "Read")
                 client.post(f"/v1/projects/{created['handle']}/close", headers=_headers())
-                connection = sqlite3.connect(root / DATABASE_NAME)
+                connection = sqlite3.connect(database_file(root))
                 connection.execute("UPDATE alembic_version SET version_num = '9999_future'")
                 connection.commit()
                 connection.close()
@@ -549,7 +549,7 @@ class ServiceTests(unittest.TestCase):
                 )
                 self.assertEqual(refused.status_code, 409)
                 self.assertEqual(refused.json()["error"]["code"], "schema_mismatch")
-                connection = sqlite3.connect(root / DATABASE_NAME)
+                connection = sqlite3.connect(database_file(root))
                 self.assertEqual(
                     connection.execute("SELECT version_num FROM alembic_version").fetchone()[0],
                     "9999_future",

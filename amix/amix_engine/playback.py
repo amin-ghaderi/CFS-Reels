@@ -59,7 +59,7 @@ def resolve_playback(store: ProjectStore, asset_id: str) -> PlaybackDescriptor:
     jobs = store.list_processing_jobs()
     observed_size, observed_mtime = store.observed_file(asset_id)
     source_present = observed_size is not None
-    proxy_file = None if proxy is None else _confined_proxy_file(store.root, proxy)
+    proxy_file = None if proxy is None else _confined_proxy_file(store, proxy)
     state = proxy_state(
         source,
         proxy,
@@ -163,13 +163,12 @@ def _recorded_identity_conflicts(source: StoredMedia, proxy: StoredMedia) -> boo
     return False
 
 
-def _confined_proxy_file(root: Path, proxy: StoredMedia) -> Path | None:
+def _confined_proxy_file(store: ProjectStore, proxy: StoredMedia) -> Path | None:
     """The published proxy file, only when it stays inside the project proxy directory."""
     if proxy.location_kind != "project" or not proxy.relative_path:
         return None
-    project_root = root.resolve()
-    proxy_root = (project_root / "proxy").resolve()
-    candidate = (project_root / proxy.relative_path).resolve()
+    proxy_root = (store.private / "proxy").resolve()
+    candidate = store.project_file(proxy.relative_path).resolve()
     playback_root = (proxy_root / ".playback").resolve()
     if not candidate.is_file():
         return None

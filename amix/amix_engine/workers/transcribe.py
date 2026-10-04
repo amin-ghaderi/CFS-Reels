@@ -73,7 +73,7 @@ def _transcribe(spec: dict) -> int:
     if not isinstance(device, str) or not isinstance(compute, str):
         _fail("invalid_speech_model")
         return 1
-    from amix.amix_engine.adapters.stt.evidence import SttEvidenceError, dump_evidence
+    from amix.amix_engine.adapters.stt.evidence import dump_evidence
     from amix.amix_engine.adapters.stt.faster_whisper import transcribe_file
     from amix.amix_engine.adapters.stt.profile import V1
 
@@ -91,14 +91,30 @@ def _transcribe(spec: dict) -> int:
             on_segment_end_us=on_segment,
         )
         publish_text(result_path, dump_evidence(evidence))
-    except SttEvidenceError:
-        _fail("speech_transcription_failed")
-        return 1
-    except Exception:
-        _fail("speech_transcription_failed")
+    except Exception as exc:
+        _fail(classify_transcription_error(exc))
         return 1
     _emit({"type": "done"})
     return 0
+
+
+def classify_transcription_error(exc: BaseException) -> str:
+    """Map an operational speech failure to a stable code.
+
+    Unknown failures stay ``speech_transcription_failed``. This does not
+    report success, and it does not include the exception text.
+    """
+    filename = str(getattr(exc, "filename", "") or "")
+    text = f"{filename} {exc}".lower()
+    if isinstance(exc, FileNotFoundError) and ("ffmpeg" in text or "ffprobe" in text):
+        return "ffmpeg_unavailable"
+    if "ffmpeg" in text and any(token in text for token in ("not found", "no such file", "cannot find", "winerror 2")):
+        return "ffmpeg_unavailable"
+    if any(token in text for token in ("no audio", "audio stream", "does not contain an audio")):
+        return "audio_stream_unavailable"
+    if "model" in text and any(token in text for token in ("not found", "not usable", "unable to open")):
+        return "invalid_speech_model"
+    return "speech_transcription_failed"
 
 
 def _emit_fixture(spec: dict) -> int:

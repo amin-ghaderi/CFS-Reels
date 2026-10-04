@@ -35,6 +35,8 @@ from amix.amix_engine.service.schemas import (
     ClusterSummaryResponse,
     LayoutBindingRequest,
     LayoutBindingResponse,
+    LayoutCandidatesRequest,
+    LayoutCandidatesResponse,
     LinkMediaRequest,
     MediaResponse,
     MediaStatusResponse,
@@ -70,7 +72,7 @@ from amix.amix_engine.service.schemas import (
     CaptionTextRequest,
 )
 from amix.amix_engine.speakers import SpeakerMapRejected, apply_cluster_map, speaker_status
-from amix.amix_engine.jobs.media import proxy_state
+from amix.amix_engine.jobs.media import MEDIA_PROBE, prepare_state, proxy_state
 from amix.amix_engine.jobs.render import sequence_render_readiness
 from amix.amix_engine.multicam.apply import multicam_readiness
 from amix.amix_engine.storage.errors import NoActiveTranscript
@@ -166,6 +168,13 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
     def add_layout(handle: str, asset_id: str, body: LayoutBindingRequest, request: Request) -> LayoutBindingResponse:
         authorize(request)
         return call(lambda: _add_layout(runtime, handle, asset_id, body))
+
+    @app.post("/v1/projects/{handle}/media/{asset_id}/layout-candidates", response_model=LayoutCandidatesResponse)
+    def layout_candidates(
+        handle: str, asset_id: str, body: LayoutCandidatesRequest, request: Request,
+    ) -> LayoutCandidatesResponse:
+        authorize(request)
+        return call(lambda: _layout_candidates(runtime, handle, asset_id, body.time_us))
 
     @app.get("/v1/projects/{handle}/media/{asset_id}/speaker-analysis", response_model=SpeakerAnalysisResponse)
     def describe_speakers(handle: str, asset_id: str, request: Request) -> SpeakerAnalysisResponse:
@@ -314,6 +323,8 @@ def _link(runtime: EngineRuntime, handle: str, path: str, role: str) -> MediaRes
         byte_size=stat.st_size,
         file_mtime_ns=stat.st_mtime_ns,
     )
+    if (role or DEFAULT_MEDIA_ROLE) == "master":
+        _schedule_probe(runtime, store, asset_id)
     return _media_view(store, store.get_media(asset_id))
 
 
@@ -328,7 +339,9 @@ def _relink(runtime: EngineRuntime, handle: str, asset_id: str, path: str) -> Me
         display_name=chosen.name,
         file_mtime_ns=stat.st_mtime_ns,
     )
-    return _media_view(store, asset)
+    if asset.role == "master":
+        _schedule_probe(runtime, store, asset.asset_id)
+    return _media_view(store, store.get_media(asset.asset_id))
 
 
 def _one(runtime: EngineRuntime, handle: str, asset_id: str) -> MediaResponse:
@@ -433,6 +446,17 @@ def _clear(runtime: EngineRuntime, handle: str, asset_id: str, word_id: str) -> 
     return _word_view(store.active_word_view(asset_id, word_id))
 
 
+def _schedule_probe(runtime: EngineRuntime, store, asset_id: str) -> None:
+    """Queue analysis after import. The request returns before ffprobe runs."""
+    active = {"QUEUED", "RUNNING", "CANCEL_REQUESTED"}
+    if any(
+        job.media_asset_id == asset_id and job.kind == MEDIA_PROBE and job.status in active
+        for job in store.list_processing_jobs()
+    ):
+        return
+    runtime.jobs.submit(store, MEDIA_PROBE, {}, asset_id)
+
+
 def _existing_file(path: str) -> Path:
     try:
         chosen = Path(path)
@@ -456,6 +480,7 @@ def _media_view(store: ProjectStore, asset: StoredMedia, jobs: list | None = Non
     derivative = None if asset.role == "proxy" else store.find_proxy(asset.asset_id)
     source_size, source_mtime = store.observed_file(asset.asset_id)
     proxy_present = derivative is not None and store.media_status(derivative.asset_id) == "present"
+    source_present = source_size is not None
     return MediaResponse(
         asset_id=asset.asset_id,
         role=asset.role,
@@ -479,6 +504,15 @@ def _media_view(store: ProjectStore, asset: StoredMedia, jobs: list | None = Non
         rotation_degrees=asset.rotation_degrees,
         probed_at=asset.probed_at,
         source_media_asset_id=asset.source_media_asset_id,
+        prepare_state=prepare_state(
+            asset,
+            derivative,
+            job_rows,
+            source_present=source_present,
+            source_size=source_size,
+            source_mtime_ns=source_mtime,
+            proxy_file_present=proxy_present,
+        ),
         proxy_state=proxy_state(
             asset,
             derivative,
@@ -564,6 +598,8 @@ def _layout(runtime: EngineRuntime, handle: str, asset_id: str) -> list[LayoutBi
 
 
 def _add_layout(runtime: EngineRuntime, handle: str, asset_id: str, body: LayoutBindingRequest) -> LayoutBindingResponse:
+    from amix.amix_engine.storage.errors import ProjectDatabaseInvalid
+
     store = _store(runtime, handle)
     asset = store.get_media(asset_id)
     known = {item_id for item_id, _name, _order in store.list_participants()}
@@ -583,9 +619,35 @@ def _add_layout(runtime: EngineRuntime, handle: str, asset_id: str, body: Layout
         )
     except LayoutRejected as exc:
         raise ApiError(400, exc.code, str(exc)) from exc
-    binding_id = store.add_layout_binding(asset_id, binding)
+    if body.binding_id:
+        try:
+            store.update_layout_binding(asset_id, body.binding_id, binding)
+        except ProjectDatabaseInvalid as exc:
+            raise ApiError(404, "unknown_layout", "That layout is not in this project.") from exc
+        binding_id = body.binding_id
+    else:
+        binding_id = store.add_layout_binding(asset_id, binding)
     saved = next(row for row in store.list_layout_records(asset_id) if row["binding_id"] == binding_id)
     return _layout_view(saved)
+
+
+def _layout_candidates(runtime: EngineRuntime, handle: str, asset_id: str, time_us: int | None) -> LayoutCandidatesResponse:
+    from amix.amix_engine.adapters.vision.resolver import VisionResourceError
+    from amix.amix_engine.layout_detect import LayoutDetectError, detect_layout_candidates
+
+    store = _store(runtime, handle)
+    try:
+        found = detect_layout_candidates(store, asset_id, time_us)
+    except VisionResourceError as exc:
+        raise ApiError(409, exc.code, exc.message) from exc
+    except LayoutDetectError as exc:
+        status = 409 if exc.code == "media_missing" else 400
+        raise ApiError(status, exc.code, exc.message) from exc
+    return LayoutCandidatesResponse(
+        picture_width=found["picture_width"],
+        picture_height=found["picture_height"],
+        candidates=found["candidates"],
+    )
 
 
 def _layout_view(record: dict) -> LayoutBindingResponse:
