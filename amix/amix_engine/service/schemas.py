@@ -516,6 +516,7 @@ class SemanticProviderStatusResponse(_Model):
     capability_ready: bool
     offline_blocked: bool
     reachable: bool | None = None
+    readiness: str | None = None
 
 
 class CaptionCueResponse(_Model):

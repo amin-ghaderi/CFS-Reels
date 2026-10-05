@@ -59,6 +59,7 @@ class StructuredRequest:
     payload: dict
     output_schema: dict | None = None
     diagnostics: dict | None = None
+    output_token_limit: int | None = None
 
 
 def runtime_provenance(descriptor: ProviderDescriptor) -> dict:

@@ -75,6 +75,38 @@ export function mappingActivity(localAiState: string | null | undefined): string
   return "Mapping conversation.";
 }
 
+export function providerCheckLabel(readiness: string | null | undefined): string {
+  switch (readiness) {
+    case "ready":
+      return "Provider is ready.";
+    case "loading":
+      return "Provider is loading.";
+    case "busy":
+      return "Provider is busy with a semantic request.";
+    case "unavailable":
+      return "Provider is unavailable.";
+    case "failed":
+      return "Provider failed to start.";
+    default:
+      return "Provider status is unknown.";
+  }
+}
+
+export function semanticTimeoutSummary(message: string | null | undefined): string {
+  if (message?.startsWith("Local semantic processing timed out.")) {
+    return "Local semantic processing timed out.";
+  }
+  return "The semantic provider took too long.";
+}
+
+export function semanticTimeoutDetail(message: string | null | undefined): string | null {
+  if (!message) {
+    return null;
+  }
+  const extra = message.slice(semanticTimeoutSummary(message).length).trim();
+  return extra || null;
+}
+
 export function providerLabel(state: ConversationState | null): string {
   if (!state?.provider_model_id) {
     return "No semantic provider";

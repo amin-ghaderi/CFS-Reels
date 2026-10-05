@@ -12,7 +12,10 @@ import {
   conversationActions,
   conversationPhase,
   mappingActivity,
+  providerCheckLabel,
   providerLabel,
+  semanticTimeoutDetail,
+  semanticTimeoutSummary,
   showExistingThreads,
   threadSeekUs,
 } from "../../conversation/conversation";
@@ -41,6 +44,7 @@ export function ConversationWorkspace({ project }: { project: ProjectInfo }) {
   const [state, setState] = useState<ConversationState>(EMPTY);
   const [jobs, setJobs] = useState<JobInfo[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [checkNote, setCheckNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (!asset) {
@@ -101,11 +105,13 @@ export function ConversationWorkspace({ project }: { project: ProjectInfo }) {
   async function checkProvider() {
     data.setNotice(null);
     try {
-      await checkSemanticProvider(project.handle);
+      const status = await checkSemanticProvider(project.handle) as { readiness?: string | null };
+      setCheckNote(providerCheckLabel(status.readiness));
       if (asset) {
         setState(await conversationState(project.handle, asset.asset_id));
       }
     } catch (error) {
+      setCheckNote(null);
       data.setNotice(asFailure(error));
     }
   }
@@ -128,10 +134,22 @@ export function ConversationWorkspace({ project }: { project: ProjectInfo }) {
         ))}
         <button type="button" onClick={() => void checkProvider()}>Check provider</button>
       </div>
+      {checkNote ? <p>{checkNote}</p> : null}
       {phase === "stale" || phase === "mapped" ? (
         <p>Rebuild Map creates a new semantic analysis and keeps the previous map.</p>
       ) : null}
-      {failedJob && state.map_present ? <p>The latest map did not replace the current one. {failedJob.error_message}</p> : null}
+      {failedJob?.error_code === "semantic_timeout" ? (
+        <>
+          <p>{semanticTimeoutSummary(failedJob.error_message)}</p>
+          {semanticTimeoutDetail(failedJob.error_message) ? (
+            <details>
+              <summary>Details</summary>
+              <div>{semanticTimeoutDetail(failedJob.error_message)}</div>
+            </details>
+          ) : null}
+        </>
+      ) : null}
+      {failedJob && state.map_present ? <p>The latest map did not replace the current one.</p> : null}
       {visible ? (
         <ul className="review-list" aria-label="Conversation threads">
           {state.threads.map((thread) => (

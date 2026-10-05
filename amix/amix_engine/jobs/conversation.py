@@ -35,7 +35,8 @@ class MapConversationJob:
         except JobCancelled:
             raise
         except SemanticError as exc:
-            raise JobFailed(exc.code, exc.message) from exc
+            message = exc.message if not exc.detail else f"{exc.message} {exc.detail}"
+            raise JobFailed(exc.code, message) from exc
         ctx.store.set_job_progress(ctx.job_id, 10000)
         return result
 

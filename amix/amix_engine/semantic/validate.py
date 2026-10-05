@@ -7,6 +7,83 @@ from amix.amix_engine.semantic.input import SemanticTurn
 from amix.amix_engine.semantic.tasks import MapDraft
 
 
+def threads_from_assignments(units: list[dict], payload: object, *, group_limit: int = 4) -> tuple[list[dict] | None, str | None]:
+    """Expand a fixed-length assignment array into ordered, non-overlapping threads.
+
+    A one-item run is absorbed into its neighbor. Extra runs beyond ``group_limit``
+    are absorbed too, so a per-turn labeling cannot publish dozens of tiny threads
+    or an unbounded merge request.
+    """
+    if not isinstance(payload, dict):
+        return None, "The model response was not a JSON object."
+    assignments = payload.get("assignments")
+    if not isinstance(assignments, list) or len(assignments) != len(units) or not units:
+        return None, "The map does not cover the whole conversation."
+    keys: list[int] = []
+    for item in assignments:
+        if isinstance(item, bool) or not isinstance(item, int):
+            return None, "The model response did not match the conversation schema."
+        keys.append(item)
+    described: dict[int, dict] = {}
+    threads = payload.get("threads")
+    if threads is None:
+        threads = []
+    if not isinstance(threads, list):
+        return None, "The model response did not match the conversation schema."
+    for thread in threads:
+        if not isinstance(thread, dict) or isinstance(thread.get("key"), bool) or not isinstance(thread.get("key"), int):
+            continue
+        described[thread["key"]] = thread
+    runs: list[dict] = []
+    start = 0
+    for index in range(1, len(keys) + 1):
+        if index != len(keys) and keys[index] == keys[start]:
+            continue
+        runs.append({"start": start, "end": index, "key": keys[start]})
+        start = index
+    _absorb_short_runs(runs, group_limit)
+    grouped: list[dict] = []
+    for run in runs:
+        meta = described.get(run["key"]) or {}
+        title = str(meta.get("title") or "").strip() or "Untitled"
+        summary = str(meta.get("summary") or "").strip()
+        grouped.append({
+            "start_turn_id": units[run["start"]]["start_turn_id"],
+            "end_turn_id": units[run["end"] - 1]["end_turn_id"],
+            "title": title,
+            "summary": summary,
+        })
+    return grouped, None
+
+
+def _absorb_short_runs(runs: list[dict], group_limit: int) -> None:
+    while len(runs) > 1 and any(run["end"] - run["start"] == 1 for run in runs):
+        index = next(pos for pos, run in enumerate(runs) if run["end"] - run["start"] == 1)
+        _absorb(runs, index)
+    while len(runs) > max(1, group_limit):
+        lengths = [run["end"] - run["start"] for run in runs]
+        _absorb(runs, lengths.index(min(lengths)))
+
+
+def _absorb(runs: list[dict], index: int) -> None:
+    if index <= 0:
+        runs[1]["start"] = runs[0]["start"]
+        del runs[0]
+        return
+    if index >= len(runs) - 1:
+        runs[index - 1]["end"] = runs[index]["end"]
+        del runs[index]
+        return
+    previous = runs[index - 1]["end"] - runs[index - 1]["start"]
+    following = runs[index + 1]["end"] - runs[index + 1]["start"]
+    if following > previous:
+        runs[index + 1]["start"] = runs[index]["start"]
+        del runs[index]
+        return
+    runs[index - 1]["end"] = runs[index]["end"]
+    del runs[index]
+
+
 def parse_draft(payload: object) -> tuple[list[dict] | None, str | None]:
     if not isinstance(payload, dict):
         return None, "The model response was not a JSON object."

@@ -22,9 +22,52 @@ SYSTEM_PROMPT = (
     "Return one JSON object and nothing else. "
     "Cover every requested turn id exactly once, in source order, with no gaps and no overlaps. "
     "Use only turn ids from the user message. "
+    "When the response schema requires assignments, return one integer per item in source order. "
+    "Equal adjacent values are the same thread. "
+    "Include a title and summary for every assignment value you use. "
     "Do not return timestamps, seconds, frames, or word times. "
     "You have no tools, filesystem, or network."
 )
+
+# A chunk may use at most this many topic groups. The grammar, not the sampler, enforces it.
+ASSIGNMENT_GROUP_LIMIT = 4
+
+
+def assignment_schema(count: int, groups: int = ASSIGNMENT_GROUP_LIMIT) -> dict:
+    """Fixed-length grouping schema. The array length is the coverage constraint."""
+    size = max(1, int(count))
+    group_count = max(1, int(groups))
+    return {
+        "type": "object",
+        "properties": {
+            "assignments": {
+                "type": "array",
+                "minItems": size,
+                "maxItems": size,
+                "items": {"type": "integer", "minimum": 1, "maximum": group_count},
+            },
+            "threads": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": group_count,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "key": {"type": "integer", "minimum": 1, "maximum": group_count},
+                        "title": {"type": "string", "maxLength": 80},
+                        "summary": {"type": "string", "maxLength": 180},
+                    },
+                    "required": ["key", "title", "summary"],
+                },
+            },
+        },
+        "required": ["assignments", "threads"],
+    }
+
+
+def output_token_limit(count: int) -> int:
+    """Bound completion length. Local llama.cpp otherwise defaults to unlimited generation."""
+    return min(1024, max(256, int(count) * 8 + 256))
 
 
 class ThreadDraft(BaseModel):

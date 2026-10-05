@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 import time
 from http.client import HTTPConnection, HTTPSConnection
 from urllib.parse import urlparse
@@ -21,8 +22,9 @@ log = logging.getLogger("amix.semantic")
 
 CONNECT_TIMEOUT_S = 5
 READ_TIMEOUT_S = 60
-# Inference wait. Model startup uses a separate timeout in the local server.
-LOCAL_READ_TIMEOUT_S = 120
+# CPU prefill of a budget-sized local request plus a bounded completion.
+# Remote calls keep READ_TIMEOUT_S. Model startup has its own timeout.
+LOCAL_READ_TIMEOUT_S = 180
 MAX_RESPONSE_BYTES = 1_000_000
 
 
@@ -57,9 +59,11 @@ class OpenAICompatibleProvider:
         response_format = _response_format(self.descriptor.structured_transport, request.output_schema)
         if response_format is not None:
             body["response_format"] = response_format
+        if request.output_token_limit is not None:
+            body["max_tokens"] = int(request.output_token_limit)
         started = time.monotonic()
+        read_timeout = LOCAL_READ_TIMEOUT_S if self.descriptor.execution == "local" else READ_TIMEOUT_S
         try:
-            read_timeout = LOCAL_READ_TIMEOUT_S if self.descriptor.execution == "local" else READ_TIMEOUT_S
             try:
                 parsed = self._transport(
                     "POST",
@@ -76,8 +80,17 @@ class OpenAICompatibleProvider:
             result = _content_json(parsed)
             _log(self.descriptor, request, started, True, self.last_inference)
             return result
-        except SemanticError:
+        except SemanticError as exc:
             _log(self.descriptor, request, started, False, self.last_inference)
+            if exc.code == "semantic_timeout":
+                local = self.descriptor.execution == "local"
+                elapsed = max(1, int(time.monotonic() - started))
+                message = "Local semantic processing timed out." if local else "The semantic provider took too long."
+                raise SemanticError(
+                    exc.code,
+                    message,
+                    detail=f"Elapsed {elapsed}s. Timeout {int(read_timeout)}s.",
+                ) from exc
             raise
 
     def check(self) -> None:
@@ -193,7 +206,20 @@ def _http_json(method: str, url: str, payload: dict | None, headers: dict, conne
         path = f"{path}?{parsed.query}"
     connection_type = HTTPSConnection if parsed.scheme == "https" else HTTPConnection
     connection = connection_type(host, port, timeout=connect_timeout)
+    deadline = time.monotonic() + read_timeout
+
+    def _abort() -> None:
+        try:
+            connection.close()
+        except OSError:
+            return
+
+    # A socket timeout on Windows did not abort a stalled local server read.
+    # Closing the connection is the hard deadline.
+    timer = threading.Timer(read_timeout, _abort)
+    timer.daemon = True
     try:
+        timer.start()
         connection.timeout = read_timeout
         raw = None if payload is None else json.dumps(payload).encode("utf-8")
         try:
@@ -203,6 +229,8 @@ def _http_json(method: str, url: str, payload: dict | None, headers: dict, conne
         except TimeoutError as exc:
             raise SemanticError("semantic_timeout", "The semantic provider took too long.") from exc
         except OSError as exc:
+            if time.monotonic() >= deadline - 0.05:
+                raise SemanticError("semantic_timeout", "The semantic provider took too long.") from exc
             raise SemanticError("semantic_provider_unavailable", "The semantic provider could not be reached.") from exc
         if len(data) > max_bytes:
             raise SemanticError("semantic_request_failed", "The semantic provider response was too large.")
@@ -219,4 +247,5 @@ def _http_json(method: str, url: str, payload: dict | None, headers: dict, conne
             raise SemanticError("semantic_invalid_output", "The model response was not a JSON object.")
         return parsed_body
     finally:
+        timer.cancel()
         connection.close()

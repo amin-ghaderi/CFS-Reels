@@ -187,13 +187,48 @@ def _describe_managed(mode: str) -> dict | None:
 
 
 def check_provider(environ: dict[str, str] | None = None) -> dict:
+    """Reachability only. This does not run a semantic task or cancel one."""
+    if environ is None and _semantic_source() == "managed_local":
+        waiting = _managed_readiness()
+        if waiting is not None:
+            return waiting
     provider = resolve_provider(environ)
     try:
         provider.check()
-    except SemanticError:
-        raise
+    except SemanticError as exc:
+        status = provider_status(environ)
+        status["readiness"] = readiness_for_check_error(exc.code)
+        status["reachable"] = exc.code == "semantic_timeout"
+        return status
     status = provider_status(environ)
+    status["readiness"] = "ready"
     status["reachable"] = True
+    return status
+
+
+def readiness_for_check_error(code: str) -> str:
+    if code == "semantic_timeout":
+        return "busy"
+    if code == "semantic_provider_unavailable":
+        return "unavailable"
+    return "failed"
+
+
+def _managed_readiness() -> dict | None:
+    from amix.amix_engine.appstate.local_server import local_server_snapshot
+
+    state = local_server_snapshot()["state"]
+    if state in {"STARTING", "LOADING"}:
+        readiness, reachable = "loading", None
+    elif state == "FAILED":
+        readiness, reachable = "failed", False
+    elif state != "READY":
+        readiness, reachable = "unavailable", False
+    else:
+        return None
+    status = provider_status()
+    status["readiness"] = readiness
+    status["reachable"] = reachable
     return status
 
 
@@ -219,4 +254,5 @@ def _status(
         "offline_blocked": offline_blocked,
         "reachable": None,
         "local_ai_state": None,
+        "readiness": None,
     }

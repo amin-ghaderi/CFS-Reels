@@ -128,8 +128,13 @@ def chunk_turns(
     *,
     budget: int = CHUNK_TEXT_BUDGET,
     token_budget: int = SEMANTIC_DATA_TOKEN_BUDGET,
+    fits=None,
 ) -> list[SemanticChunk]:
-    """Split on turn boundaries only. A turn longer than either budget stays whole."""
+    """Split on turn boundaries only. A turn longer than either budget stays whole.
+
+    ``fits(primary, context)`` can shed a trailing turn when the assembled payload
+    exceeds the request budget even though the per-turn sum did not.
+    """
     ordered = list(turns)
     chunks: list[SemanticChunk] = []
     index = 0
@@ -138,6 +143,13 @@ def chunk_turns(
         context: tuple[SemanticTurn, ...] = ()
         if chunks and CONTEXT_TURN_COUNT:
             context = chunks[-1].primary[-CONTEXT_TURN_COUNT:]
+        if fits is not None:
+            while len(primary) > 1 and not fits(primary, context):
+                if context and fits(primary, ()):
+                    context = ()
+                    break
+                index -= 1
+                primary = primary[:-1]
         chunk_id = f"c{len(chunks):04d}"
         chunks.append(SemanticChunk(
             chunk_id=chunk_id,

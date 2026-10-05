@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { cancelJob, createJob, listJobs, retryJob } from "../api/client";
 import { asFailure, jobProblemMessage } from "../api/errors";
+import { semanticTimeoutDetail, semanticTimeoutSummary } from "../conversation/conversation";
 import { canCancel, canRetry, isTerminal, JOBS_CHANGED_EVENT, jobStatusLabel, jobTitle, orderJobs, progressPercent } from "../api/jobs";
 import type { EngineFailure, JobInfo, ProjectInfo } from "../api/types";
 import { missingCount } from "../media/present";
@@ -139,8 +140,16 @@ export function ActivityBar({
                   Attempt {job.attempt}
                   {job.progress_bp > 0 ? ` · ${progressPercent(job.progress_bp)}%` : job.status === "RUNNING" ? " · Working" : ""}
                 </p>
-                {job.error_code || job.error_message ? <p>{jobProblemMessage(job.error_code)}</p> : null}
-                {import.meta.env.DEV && job.error_message ? (
+                {job.error_code || job.error_message ? (
+                  <p>{job.error_code === "semantic_timeout" ? semanticTimeoutSummary(job.error_message) : jobProblemMessage(job.error_code)}</p>
+                ) : null}
+                {job.error_code === "semantic_timeout" && semanticTimeoutDetail(job.error_message) ? (
+                  <details>
+                    <summary>Details</summary>
+                    <div>{semanticTimeoutDetail(job.error_message)}</div>
+                  </details>
+                ) : null}
+                {import.meta.env.DEV && job.error_message && job.error_code !== "semantic_timeout" ? (
                   <details>
                     <summary>Details</summary>
                     <div>{job.error_message}</div>

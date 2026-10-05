@@ -6,7 +6,10 @@ import {
   conversationActions,
   conversationPhase,
   mappingActivity,
+  providerCheckLabel,
   providerLabel,
+  semanticTimeoutDetail,
+  semanticTimeoutSummary,
   showExistingThreads,
   threadSeekUs,
 } from "./conversation";
@@ -85,5 +88,18 @@ describe("conversation workspace", () => {
     expect(conversationActions("mapped").join(" ")).not.toMatch(/Reel/);
     expect(providerLabel(state())).toBe("Local model — demo");
     expect(providerLabel(state())).not.toMatch(/sk-|api_key|127\.0\.0\.1/);
+  });
+
+  it("distinguishes provider readiness and local timeout details", () => {
+    expect(providerCheckLabel("ready")).toBe("Provider is ready.");
+    expect(providerCheckLabel("loading")).toBe("Provider is loading.");
+    expect(providerCheckLabel("busy")).toBe("Provider is busy with a semantic request.");
+    expect(providerCheckLabel("unavailable")).toBe("Provider is unavailable.");
+    expect(providerCheckLabel("failed")).toBe("Provider failed to start.");
+    const message = "Local semantic processing timed out. Chunk c0001. Request 2. Elapsed 180s. Timeout 180s. Provider managed-local. Model gemma-3-4b-it.";
+    expect(semanticTimeoutSummary(message)).toBe("Local semantic processing timed out.");
+    expect(semanticTimeoutDetail(message)).toContain("Chunk c0001");
+    expect(semanticTimeoutDetail(message)).not.toContain("transcript");
+    expect(semanticTimeoutSummary("The semantic provider took too long.")).toBe("The semantic provider took too long.");
   });
 });

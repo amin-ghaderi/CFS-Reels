@@ -15,13 +15,17 @@ from amix.amix_engine.semantic.input import SemanticTurn, build_semantic_input, 
 from amix.amix_engine.semantic.mapping import map_conversation, map_is_stale
 from amix.amix_engine.semantic.provider import (
     GENERATE_STRUCTURED,
+    STRICT_JSON_SCHEMA,
     ProviderDescriptor,
     StructuredRequest,
     assert_endpoint_allowed,
     is_loopback,
 )
+from amix.amix_engine.semantic.mapping import _chunk_fits
+from amix.amix_engine.semantic.registry import readiness_for_check_error
+from amix.amix_engine.semantic.tasks import CHUNK_TEXT_BUDGET, assignment_schema, output_token_limit
 from amix.amix_engine.semantic.tasks import SYSTEM_PROMPT
-from amix.amix_engine.semantic.validate import parse_draft, resolve_threads
+from amix.amix_engine.semantic.validate import parse_draft, resolve_threads, threads_from_assignments
 from amix.amix_engine.adapters.ai.openai_compatible import OpenAICompatibleProvider, _content_json
 from amix.amix_engine.storage.kinds import CONVERSATION_MAP
 from amix.amix_engine.storage.project import create_project, open_project
@@ -48,9 +52,15 @@ class FakeStructuredProvider:
 
 def _cover(request: StructuredRequest) -> dict:
     if request.payload.get("stage") == "merge":
-        ids = request.payload["turn_ids"]
+        if request.payload.get("turn_ids"):
+            start = request.payload["turn_ids"][0]
+            end = request.payload["turn_ids"][-1]
+        else:
+            candidates = request.payload["candidates"]
+            start = candidates[0]["start_turn_id"]
+            end = candidates[-1]["end_turn_id"]
         return {"threads": [{
-            "start_turn_id": ids[0], "end_turn_id": ids[-1], "title": "Whole", "summary": "All of it",
+            "start_turn_id": start, "end_turn_id": end, "title": "Whole", "summary": "All of it",
         }]}
     primary = [turn for turn in request.payload["turns"] if turn["role"] == "primary"]
     return {"threads": [{
@@ -317,6 +327,138 @@ class PersistenceTests(unittest.TestCase):
             self.assertEqual(reopened.get_active_run_id(asset, CONVERSATION_MAP), run_id)
         finally:
             reopened.close()
+
+
+class LocalTimeoutTests(unittest.TestCase):
+    def test_progress_after_planning_is_15_percent_and_the_next_chunk_is_17(self) -> None:
+        # UI percent is floor(progress_bp / 100). 15% is set once chunks exist,
+        # before any provider request returns. 17% is the first of 21 chunks.
+        self.assertEqual(1500 // 100, 15)
+        self.assertEqual((1500 + int(6000 * 1 / 21)) // 100, 17)
+        seen: list[int] = []
+        store, asset, _root = _seeded()
+        try:
+            map_conversation(store, asset, FakeStructuredProvider(_cover), CancellationToken(), seen.append)
+        finally:
+            store.close()
+        self.assertEqual(seen[0], 500)
+        self.assertEqual(seen[1], 1500)
+        self.assertGreater(seen[2], 1500)
+
+    def test_assignment_schema_covers_every_turn_and_caps_output(self) -> None:
+        store, asset, _root = _seeded()
+        try:
+            provider = FakeStructuredProvider(_assign)
+            provider.descriptor = ProviderDescriptor(
+                "managed-local", "gemma-3-4b-it", "openai_compatible", "gemma",
+                frozenset({GENERATE_STRUCTURED}), "local", "127.0.0.1",
+                structured_transport=STRICT_JSON_SCHEMA,
+            )
+            result = map_conversation(store, asset, provider, CancellationToken(), lambda _progress: None)
+            request = provider.requests[0]
+            primary = [turn for turn in request.payload["turns"] if turn["role"] == "primary"]
+            self.assertEqual(request.output_schema["properties"]["assignments"]["maxItems"], len(primary))
+            self.assertEqual(request.output_schema["properties"]["assignments"]["minItems"], len(primary))
+            self.assertLessEqual(request.output_token_limit, 1024)
+            self.assertEqual(result["repair_count"], 0)
+            threads = store.load_conversation_threads(result["conversation_map_run_id"])
+            self.assertEqual(threads[0]["first_turn_id"], "T1")
+            self.assertEqual(threads[-1]["last_turn_id"], "T2")
+        finally:
+            store.close()
+
+    def test_short_persian_turns_stay_inside_the_text_budget(self) -> None:
+        turns = tuple(
+            SemanticTurn(f"T{index:04d}", "a", "Ali", (f"w{index}",), "سلام گفتگو", index, index + 1)
+            for index in range(400)
+        )
+        chunks = chunk_turns(turns, fits=_chunk_fits)
+        covered = [turn.turn_id for chunk in chunks for turn in chunk.primary]
+        self.assertEqual(covered, [turn.turn_id for turn in turns])
+        self.assertGreater(len(chunks), 1)
+        for chunk in chunks:
+            self.assertLessEqual(sum(len(turn.text) for turn in chunk.primary), CHUNK_TEXT_BUDGET)
+            self.assertTrue(_chunk_fits(list(chunk.primary), list(chunk.context)))
+        self.assertEqual(assignment_schema(8)["properties"]["assignments"]["maxItems"], 8)
+        self.assertLessEqual(output_token_limit(56), 1024)
+
+    def test_timeout_keeps_the_previous_map(self) -> None:
+        store, asset, _root = _seeded()
+        try:
+            first = map_conversation(store, asset, FakeStructuredProvider(_cover), CancellationToken(), lambda _progress: None)
+            before = first["conversation_map_run_id"]
+
+            state = {"calls": 0}
+
+            def timed_out(_request):
+                state["calls"] += 1
+                raise SemanticError(
+                    "semantic_timeout",
+                    "Local semantic processing timed out.",
+                    detail="Chunk c0000. Request 1. Elapsed 180s. Timeout 180s.",
+                )
+
+            with self.assertRaises(SemanticError) as failed:
+                map_conversation(store, asset, FakeStructuredProvider(timed_out), CancellationToken(), lambda _progress: None)
+            self.assertEqual(failed.exception.code, "semantic_timeout")
+            self.assertEqual(state["calls"], 2)
+            self.assertEqual(store.get_active_run_id(asset, CONVERSATION_MAP), before)
+            self.assertEqual(len(store.load_conversation_threads(before)), 1)
+
+            recovered = {"calls": 0}
+
+            def retry_once(request):
+                recovered["calls"] += 1
+                if recovered["calls"] == 1:
+                    raise SemanticError("semantic_timeout", "Local semantic processing timed out.")
+                return _cover(request)
+
+            result = map_conversation(store, asset, FakeStructuredProvider(retry_once), CancellationToken(), lambda _progress: None)
+            self.assertEqual(recovered["calls"], 2)
+            self.assertEqual(result["repair_count"], 0)
+            self.assertEqual(result["request_count"], 2)
+            self.assertTrue(result["activated"])
+        finally:
+            store.close()
+
+    def test_per_turn_labels_collapse_to_a_bounded_partition(self) -> None:
+        units = [{"start_turn_id": f"T{index}", "end_turn_id": f"T{index}"} for index in range(6)]
+        alternating = {"assignments": [1, 2, 1, 2, 1, 2], "threads": [
+            {"key": 1, "title": "First", "summary": "A"},
+            {"key": 2, "title": "Second", "summary": "B"},
+        ]}
+        draft, error = threads_from_assignments(units, alternating)
+        self.assertIsNone(error)
+        self.assertEqual(draft[0]["start_turn_id"], "T0")
+        self.assertEqual(draft[-1]["end_turn_id"], "T5")
+        self.assertLessEqual(len(draft), 4)
+        stable = {"assignments": [1, 1, 1, 2, 2, 2], "threads": [
+            {"key": 1, "title": "Opening", "summary": "Start"},
+            {"key": 2, "title": "Later", "summary": "End"},
+        ]}
+        draft, error = threads_from_assignments(units, stable)
+        self.assertIsNone(error)
+        self.assertEqual([(item["start_turn_id"], item["end_turn_id"], item["title"]) for item in draft], [
+            ("T0", "T2", "Opening"),
+            ("T3", "T5", "Later"),
+        ])
+        missing = {"assignments": [1, 1, 2, 2], "threads": [{"key": 1, "title": "Only", "summary": ""}]}
+        draft, error = threads_from_assignments(units[:4], missing)
+        self.assertIsNone(error)
+        self.assertEqual(draft[1]["title"], "Untitled")
+
+    def test_provider_check_timeout_is_busy_and_not_a_generation(self) -> None:
+        self.assertEqual(readiness_for_check_error("semantic_timeout"), "busy")
+        self.assertEqual(readiness_for_check_error("semantic_provider_unavailable"), "unavailable")
+        self.assertEqual(readiness_for_check_error("semantic_request_failed"), "failed")
+
+
+def _assign(request: StructuredRequest) -> dict:
+    if request.payload.get("stage") == "merge":
+        count = len(request.payload["candidates"])
+        return {"assignments": [1] * count, "threads": [{"key": 1, "title": "Whole", "summary": "All of it"}]}
+    count = len([turn for turn in request.payload["turns"] if turn["role"] == "primary"])
+    return {"assignments": [1] * count, "threads": [{"key": 1, "title": "Chunk", "summary": "Kept"}]}
 
 
 class JobTests(unittest.TestCase):

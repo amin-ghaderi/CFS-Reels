@@ -5,7 +5,12 @@ import json
 import logging
 import unittest
 
-from amix.amix_engine.adapters.ai.openai_compatible import OpenAICompatibleProvider, _content_json
+from amix.amix_engine.adapters.ai.openai_compatible import (
+    LOCAL_READ_TIMEOUT_S,
+    READ_TIMEOUT_S,
+    OpenAICompatibleProvider,
+    _content_json,
+)
 from amix.amix_engine.jobs.runner import CancellationToken
 from amix.amix_engine.semantic.budget import (
     REQUEST_TOKEN_LIMIT,
@@ -269,6 +274,45 @@ class SchemaAndTransportTests(unittest.TestCase):
         rendered = "\n".join(records)
         self.assertNotIn(SENTENCE, rendered)
         self.assertNotIn("sk-test-secret", rendered)
+
+    def test_local_timeout_is_bounded_and_remote_stays_shorter(self) -> None:
+        self.assertGreater(LOCAL_READ_TIMEOUT_S, READ_TIMEOUT_S)
+        self.assertLessEqual(LOCAL_READ_TIMEOUT_S, 180)
+        seen = []
+
+        def transport(method, _url, payload, _headers, _connect, read_timeout, _max_bytes):
+            seen.append((method, read_timeout, None if payload is None else payload.get("max_tokens")))
+            raise TimeoutError("slow")
+
+        local = _provider(STRICT_JSON_SCHEMA, transport, execution="local")
+        with self.assertRaises(SemanticError) as local_timeout:
+            local.generate_structured(StructuredRequest(
+                "conversation_map", "p", "1", "chunk", "system", {"n": 1},
+                output_token_limit=512,
+            ))
+        self.assertEqual(local_timeout.exception.message, "Local semantic processing timed out.")
+        self.assertIn("Timeout 180s", local_timeout.exception.detail)
+        self.assertNotIn("transcript", local_timeout.exception.detail)
+        self.assertEqual(seen[-1], ("POST", LOCAL_READ_TIMEOUT_S, 512))
+
+        remote = _provider(STRICT_JSON_SCHEMA, transport, execution="remote")
+        with self.assertRaises(SemanticError) as remote_timeout:
+            remote.generate_structured(StructuredRequest("conversation_map", "p", "1", "chunk", "system", {"n": 1}))
+        self.assertEqual(remote_timeout.exception.message, "The semantic provider took too long.")
+        self.assertIn("Timeout 60s", remote_timeout.exception.detail)
+        self.assertEqual(seen[-1][1], READ_TIMEOUT_S)
+        self.assertIsNone(seen[-1][2])
+
+        def probe(method, url, payload, _headers, _connect, read_timeout, _max_bytes):
+            seen.append((method, url, payload, read_timeout))
+            return {"data": []}
+
+        checker = _provider(STRICT_JSON_SCHEMA, probe, execution="local")
+        checker.check()
+        self.assertEqual(seen[-1][0], "GET")
+        self.assertTrue(str(seen[-1][1]).endswith("/models"))
+        self.assertIsNone(seen[-1][2])
+        self.assertEqual(seen[-1][3], 5)
 
     def test_offline_still_blocks_a_remote_endpoint(self) -> None:
         with self.assertRaises(SemanticError) as blocked:
