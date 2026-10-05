@@ -97,7 +97,10 @@ def build_semantic_input(store: ProjectStore, asset_id: str) -> SemanticInput:
 
 
 def turn_request_tokens(turn: SemanticTurn) -> int:
-    return estimate_tokens(json.dumps(turn_payload(turn, "primary"), sort_keys=True))
+    """Cost of the compact row the conversation task actually sends."""
+    return estimate_tokens(json.dumps(
+        [turn.turn_id, 0, turn.text], ensure_ascii=False, separators=(",", ":"),
+    ))
 
 
 def take_primary(

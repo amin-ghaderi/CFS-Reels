@@ -22,21 +22,39 @@ SYSTEM_PROMPT = (
     "Return one JSON object and nothing else. "
     "Cover every requested turn id exactly once, in source order, with no gaps and no overlaps. "
     "Use only turn ids from the user message. "
-    "When the response schema requires assignments, return one integer per item in source order. "
-    "Equal adjacent values are the same thread. "
-    "Include a title and summary for every assignment value you use. "
+    "Turns are arrays of [turn id, speaker index, text]. Speaker index selects an entry in speakers. "
+    "context, when present, is the previous turn and is not assigned. "
+    "When the response schema requires assignments, return one integer per turns item, in source order. "
+    "Equal adjacent values are the same thread. Start a new integer only when the topic changes. "
+    "Do not give every turn its own topic. "
+    "When the response schema requires boundaries, return one 0 or 1 per candidate, in order. "
+    "1 starts a new thread and 0 continues the previous topic. The first boundary is 1. "
+    "Keep a boundary where the topic changes. Join a candidate only when it continues the same topic. "
+    "Include a title and summary for every thread you use. "
+    "Write each title and summary in the same language as the transcript text. Do not translate. "
     "Do not return timestamps, seconds, frames, or word times. "
     "You have no tools, filesystem, or network."
 )
 
-# A chunk may use at most this many topic groups. The grammar, not the sampler, enforces it.
-ASSIGNMENT_GROUP_LIMIT = 4
+# A single chunk may mark only a few topic groups. The grammar enforces the cap.
+CHUNK_GROUP_CEILING = 6
+# One merge call stays this small. A larger boundary schema did not finish on CPU
+# inside the local deadline (about 40 candidates, 1024 output tokens, 180s).
+MERGE_CANDIDATE_LIMIT = 8
 
 
-def assignment_schema(count: int, groups: int = ASSIGNMENT_GROUP_LIMIT) -> dict:
+def chunk_group_limit(count: int) -> int:
+    """How many topic groups a chunk may emit. One group per turn is not allowed."""
+    size = max(1, int(count))
+    if size < 2:
+        return 1
+    return min(CHUNK_GROUP_CEILING, size)
+
+
+def assignment_schema(count: int, groups: int | None = None) -> dict:
     """Fixed-length grouping schema. The array length is the coverage constraint."""
     size = max(1, int(count))
-    group_count = max(1, int(groups))
+    group_count = chunk_group_limit(size) if groups is None else max(1, int(groups))
     return {
         "type": "object",
         "properties": {
@@ -65,9 +83,83 @@ def assignment_schema(count: int, groups: int = ASSIGNMENT_GROUP_LIMIT) -> dict:
     }
 
 
-def output_token_limit(count: int) -> int:
-    """Bound completion length. Local llama.cpp otherwise defaults to unlimited generation."""
-    return min(1024, max(256, int(count) * 8 + 256))
+def boundary_schema(count: int) -> dict:
+    """One join/split flag per adjacent candidate. Threads cannot exceed the candidates."""
+    size = max(1, int(count))
+    return {
+        "type": "object",
+        "properties": {
+            "boundaries": {
+                "type": "array",
+                "minItems": size,
+                "maxItems": size,
+                "items": {"type": "integer", "minimum": 0, "maximum": 1},
+            },
+            "threads": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": size,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "key": {"type": "integer", "minimum": 1, "maximum": size},
+                        "title": {"type": "string", "maxLength": 80},
+                        "summary": {"type": "string", "maxLength": 180},
+                    },
+                    "required": ["key", "title", "summary"],
+                },
+            },
+        },
+        "required": ["boundaries", "threads"],
+    }
+
+
+def compact_chunk_payload(chunk_id: str, primary: list, context: list) -> dict:
+    """Model-facing chunk. Turn ids stay. Word ids, roles, and repeated names do not."""
+    speakers: list[str] = []
+    index: dict[str, int] = {}
+
+    def row(turn) -> list:
+        name = turn.participant_name or ""
+        if name not in index:
+            index[name] = len(speakers)
+            speakers.append(name)
+        return [turn.turn_id, index[name], turn.text]
+
+    payload = {
+        "stage": "chunk",
+        "chunk_id": chunk_id,
+        "speakers": speakers,
+        "turns": [row(turn) for turn in primary],
+    }
+    if context:
+        payload["context"] = [row(turn) for turn in context]
+    payload["speakers"] = speakers
+    return payload
+
+
+def compact_merge_payload(threads: list[dict]) -> dict:
+    """Merge sees local candidates only. It does not receive the transcript."""
+    return {
+        "stage": "merge",
+        "candidates": [
+            [thread["start_turn_id"], thread["end_turn_id"], thread["title"], thread["summary"]]
+            for thread in threads
+        ],
+    }
+
+
+def output_token_limit(count: int, groups: int | None = None) -> int:
+    """Bound completion length from the task shape. Local llama.cpp otherwise generates without a cap.
+
+    The estimate covers one small integer per item plus a title and summary per group.
+    A limit below that truncates the JSON object and the response cannot be parsed.
+    """
+    size = max(1, int(count))
+    group_count = size if groups is None else max(1, int(groups))
+    estimate = 96 + size * 4 + group_count * 80
+    ceiling = 1024 if group_count > CHUNK_GROUP_CEILING else 768
+    return min(ceiling, max(256, estimate))
 
 
 class ThreadDraft(BaseModel):

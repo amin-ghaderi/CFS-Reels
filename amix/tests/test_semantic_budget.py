@@ -303,6 +303,19 @@ class SchemaAndTransportTests(unittest.TestCase):
         self.assertEqual(seen[-1][1], READ_TIMEOUT_S)
         self.assertIsNone(seen[-1][2])
 
+        def capture(_method, _url, payload, _headers, *_rest):
+            seen.append(payload)
+            return _ok_body('{"ok": true}')
+
+        _provider(STRICT_JSON_SCHEMA, capture).generate_structured(StructuredRequest(
+            "conversation_map", "p", "1", "chunk", "system", {"turns": [["T1", 0, "سلام"]]},
+            output_schema={"type": "object"},
+            output_token_limit=160,
+        ))
+        content = seen[-1]["messages"][1]["content"]
+        self.assertIn("سلام", content)
+        self.assertNotIn("\\u", content)
+
         def probe(method, url, payload, _headers, _connect, read_timeout, _max_bytes):
             seen.append((method, url, payload, read_timeout))
             return {"data": []}

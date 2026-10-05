@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from amix.amix_engine.adapters.media.process import owned_pids
 from amix.amix_engine.appstate.local_server import (
+    desktop_thread_count,
     ensure_local_server,
     failure_message,
     local_server_snapshot,
@@ -46,7 +47,14 @@ class LocalSemanticTests(unittest.TestCase):
         self.assertIn("127.0.0.1", args)
         self.assertIn("--port", args)
         self.assertIn("2048", args)
-        self.assertEqual(server_arguments(str(FAKE), r"C:\models\model.gguf", 43111, "model-id", None, None)[-1], "16384")
+        self.assertIn("--parallel", args)
+        self.assertEqual(args[args.index("--parallel") + 1], "1")
+        self.assertIn("-t", args)
+        self.assertEqual(args[args.index("-t") + 1], "4")
+        blank = server_arguments(str(FAKE), r"C:\models\model.gguf", 43111, "model-id", None, None)
+        self.assertEqual(blank[-1], "16384")
+        self.assertEqual(blank[blank.index("--parallel") + 1], "1")
+        self.assertEqual(blank[blank.index("-t") + 1], str(desktop_thread_count()))
         self.assertNotIn(";", " ".join(args))
 
     def test_failure_messages_stay_short(self) -> None:

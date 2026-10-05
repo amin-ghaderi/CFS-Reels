@@ -115,6 +115,76 @@ export function providerLabel(state: ConversationState | null): string {
   return `${name} — ${state.provider_model_id}`;
 }
 
+export function phaseHeadline(phase: ConversationPhase, localAiState?: string | null): string {
+  switch (phase) {
+    case "no_media":
+      return "No media selected.";
+    case "no_transcript":
+      return "Create a transcript to continue.";
+    case "turns_required":
+      return "Speaker analysis is required before a conversation map.";
+    case "provider_missing":
+      return "Semantic provider is not configured.";
+    case "offline_blocked":
+      return "Offline mode blocks this provider.";
+    case "mapping":
+      return mappingActivity(localAiState);
+    case "failed":
+      return "Conversation mapping failed.";
+    case "stale":
+      return "The conversation map is stale.";
+    case "mapped":
+      return "Conversation map is ready.";
+    default:
+      return "Ready to map the conversation.";
+  }
+}
+
+export interface ConversationDisplay {
+  phase: ConversationPhase | "unavailable";
+  headline: string;
+  provider: string;
+  note: string | null;
+}
+
+export function conversationDisplay(input: {
+  hasMedia: boolean;
+  state: ConversationState | null;
+  loaded: boolean;
+  unavailable: boolean;
+  mapping: boolean;
+  failed: boolean;
+}): ConversationDisplay {
+  if (!input.hasMedia) {
+    return {
+      phase: "no_media",
+      headline: phaseHeadline("no_media"),
+      provider: "No semantic provider",
+      note: null,
+    };
+  }
+  if (input.unavailable && !input.loaded) {
+    return {
+      phase: "unavailable",
+      headline: "Status temporarily unavailable.",
+      provider: "Status temporarily unavailable.",
+      note: "Status temporarily unavailable.",
+    };
+  }
+  const phase = conversationPhase({
+    hasMedia: true,
+    state: input.state,
+    mapping: input.mapping,
+    failed: input.failed,
+  });
+  return {
+    phase,
+    headline: phaseHeadline(phase, input.state?.local_ai_state),
+    provider: providerLabel(input.state),
+    note: input.unavailable ? "Status temporarily unavailable." : null,
+  };
+}
+
 export function threadSeekUs(thread: ConversationThread): number {
   return thread.start_us;
 }

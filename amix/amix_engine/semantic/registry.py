@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import os
 
-from amix.amix_engine.adapters.ai.openai_compatible import OpenAICompatibleProvider
+from amix.amix_engine.adapters.ai.openai_compatible import OpenAICompatibleProvider, local_generation_active
 from amix.amix_engine.semantic.errors import SemanticError
 from amix.amix_engine.semantic.provider import (
     GENERATE_STRUCTURED,
@@ -188,6 +188,11 @@ def _describe_managed(mode: str) -> dict | None:
 
 def check_provider(environ: dict[str, str] | None = None) -> dict:
     """Reachability only. This does not run a semantic task or cancel one."""
+    if environ is None and _semantic_source() == "managed_local" and local_generation_active():
+        status = provider_status()
+        status["readiness"] = "busy"
+        status["reachable"] = True
+        return status
     if environ is None and _semantic_source() == "managed_local":
         waiting = _managed_readiness()
         if waiting is not None:

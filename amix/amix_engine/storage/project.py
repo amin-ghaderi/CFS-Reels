@@ -1031,6 +1031,16 @@ class ProjectStore:
                 raise ProjectDatabaseInvalid(f"no transcript for run {run_id}")
             return row.id
 
+    def word_text_revision(self) -> str:
+        """Changes when a word-text correction is added, edited, or removed."""
+        with self._session() as session:
+            count, newest = session.execute(
+                select(func.count(), func.max(ManualCorrectionRow.created_at)).where(
+                    ManualCorrectionRow.kind == WORD_TEXT
+                )
+            ).one()
+        return f"{int(count or 0)}:{newest or ''}"
+
     def load_words(self, transcript_run_id: str) -> list[StoredWord]:
         with self._session() as session:
             transcript = session.scalar(

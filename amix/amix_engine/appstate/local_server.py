@@ -5,6 +5,7 @@ not copied.
 """
 from __future__ import annotations
 
+import os
 import socket
 import threading
 import time
@@ -233,14 +234,32 @@ class _Runtime:
 _runtime = _Runtime()
 
 
+def desktop_thread_count() -> int:
+    """Leave two logical processors for the engine and the desktop when the machine has them.
+
+    llama.cpp's own default uses every logical processor. On this class of machine that
+    saturates the CPU for the whole prefill and the engine misses its read deadline.
+    """
+    logical = os.cpu_count() or 2
+    reserve = 2 if logical > 2 else 1
+    return max(1, logical - reserve)
+
+
 def server_arguments(executable: str, model_path: str, port: int, alias: str, context: int | None, threads: int | None) -> list[str]:
     from pathlib import Path
 
     if not isinstance(port, int) or port <= 0 or port > 65535:
         raise SemanticError("local_model_failed", "The local model failed to start.")
-    args = ["-m", model_path, "--host", LOOPBACK, "--port", str(port), "--alias", alias, "-c", str(DEFAULT_CONTEXT if context is None else int(context))]
-    if threads is not None:
-        args.extend(["-t", str(int(threads))])
+    chosen = desktop_thread_count() if threads is None else int(threads)
+    args = [
+        "-m", model_path,
+        "--host", LOOPBACK,
+        "--port", str(port),
+        "--alias", alias,
+        "--parallel", "1",
+        "-t", str(chosen),
+        "-c", str(DEFAULT_CONTEXT if context is None else int(context)),
+    ]
     return command_for(Path(executable), args)
 
 

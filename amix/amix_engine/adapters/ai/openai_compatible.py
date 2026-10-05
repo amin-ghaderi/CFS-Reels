@@ -20,6 +20,9 @@ from amix.amix_engine.semantic.provider import (
 
 log = logging.getLogger("amix.semantic")
 
+_LOCAL_INFLIGHT = 0
+_LOCAL_INFLIGHT_LOCK = threading.Lock()
+
 CONNECT_TIMEOUT_S = 5
 READ_TIMEOUT_S = 60
 # CPU prefill of a budget-sized local request plus a bounded completion.
@@ -53,7 +56,7 @@ class OpenAICompatibleProvider:
             "temperature": 0,
             "messages": [
                 {"role": "system", "content": request.system_prompt},
-                {"role": "user", "content": json.dumps(request.payload, sort_keys=True)},
+                {"role": "user", "content": json.dumps(request.payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))},
             ],
         }
         response_format = _response_format(self.descriptor.structured_transport, request.output_schema)
@@ -62,7 +65,10 @@ class OpenAICompatibleProvider:
         if request.output_token_limit is not None:
             body["max_tokens"] = int(request.output_token_limit)
         started = time.monotonic()
-        read_timeout = LOCAL_READ_TIMEOUT_S if self.descriptor.execution == "local" else READ_TIMEOUT_S
+        local = self.descriptor.execution == "local"
+        read_timeout = LOCAL_READ_TIMEOUT_S if local else READ_TIMEOUT_S
+        if local:
+            _enter_local_generation()
         try:
             try:
                 parsed = self._transport(
@@ -83,7 +89,6 @@ class OpenAICompatibleProvider:
         except SemanticError as exc:
             _log(self.descriptor, request, started, False, self.last_inference)
             if exc.code == "semantic_timeout":
-                local = self.descriptor.execution == "local"
                 elapsed = max(1, int(time.monotonic() - started))
                 message = "Local semantic processing timed out." if local else "The semantic provider took too long."
                 raise SemanticError(
@@ -92,11 +97,32 @@ class OpenAICompatibleProvider:
                     detail=f"Elapsed {elapsed}s. Timeout {int(read_timeout)}s.",
                 ) from exc
             raise
+        finally:
+            if local:
+                _leave_local_generation()
 
     def check(self) -> None:
         url = f"{self._base_url}/models"
         assert_endpoint_allowed(url, self._mode)
         self._transport("GET", url, None, _headers(self._api_key), CONNECT_TIMEOUT_S, 5, MAX_RESPONSE_BYTES)
+
+
+def local_generation_active() -> bool:
+    """True while a managed-local completion is in flight. It does not take the server lock."""
+    with _LOCAL_INFLIGHT_LOCK:
+        return _LOCAL_INFLIGHT > 0
+
+
+def _enter_local_generation() -> None:
+    global _LOCAL_INFLIGHT
+    with _LOCAL_INFLIGHT_LOCK:
+        _LOCAL_INFLIGHT += 1
+
+
+def _leave_local_generation() -> None:
+    global _LOCAL_INFLIGHT
+    with _LOCAL_INFLIGHT_LOCK:
+        _LOCAL_INFLIGHT = max(0, _LOCAL_INFLIGHT - 1)
 
 
 def _headers(api_key: str) -> dict[str, str]:
@@ -152,7 +178,9 @@ def _content_json(body: dict) -> dict:
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError as exc:
-        raise SemanticError("semantic_invalid_output", "The model response was not valid JSON.") from exc
+        finish = choices[0].get("finish_reason") if isinstance(choices[0], dict) else None
+        detail = f"Finish {finish}." if finish else ""
+        raise SemanticError("semantic_invalid_output", "The model response was not valid JSON.", detail=detail) from exc
     if not isinstance(parsed, dict):
         raise SemanticError("semantic_invalid_output", "The model response was not a JSON object.")
     return parsed
@@ -221,7 +249,7 @@ def _http_json(method: str, url: str, payload: dict | None, headers: dict, conne
     try:
         timer.start()
         connection.timeout = read_timeout
-        raw = None if payload is None else json.dumps(payload).encode("utf-8")
+        raw = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
         try:
             connection.request(method, path, body=raw, headers=headers)
             response = connection.getresponse()

@@ -7,12 +7,55 @@ from amix.amix_engine.semantic.input import SemanticTurn
 from amix.amix_engine.semantic.tasks import MapDraft
 
 
-def threads_from_assignments(units: list[dict], payload: object, *, group_limit: int = 4) -> tuple[list[dict] | None, str | None]:
+def threads_from_boundaries(units: list[dict], payload: object) -> tuple[list[dict] | None, str | None]:
+    """Join adjacent local candidates. 1 starts a thread. 0 continues the previous one."""
+    if not isinstance(payload, dict):
+        return None, "The model response was not a JSON object."
+    boundaries = payload.get("boundaries")
+    if not isinstance(boundaries, list) or len(boundaries) != len(units) or not units:
+        return None, "The map does not cover the whole conversation."
+    flags: list[int] = []
+    for item in boundaries:
+        if item not in (0, 1) or isinstance(item, bool):
+            return None, "The model response did not match the conversation schema."
+        flags.append(item)
+    if flags[0] != 1:
+        return None, "The model response did not match the conversation schema."
+    described: dict[int, dict] = {}
+    threads = payload.get("threads")
+    if threads is None:
+        threads = []
+    if not isinstance(threads, list):
+        return None, "The model response did not match the conversation schema."
+    for thread in threads:
+        if not isinstance(thread, dict) or isinstance(thread.get("key"), bool) or not isinstance(thread.get("key"), int):
+            continue
+        described[thread["key"]] = thread
+    grouped: list[dict] = []
+    start = 0
+    for index in range(1, len(flags) + 1):
+        if index != len(flags) and flags[index] == 0:
+            continue
+        key = len(grouped) + 1
+        meta = described.get(key) or {}
+        title = str(meta.get("title") or "").strip() or "Untitled"
+        summary = str(meta.get("summary") or "").strip()
+        grouped.append({
+            "start_turn_id": units[start]["start_turn_id"],
+            "end_turn_id": units[index - 1]["end_turn_id"],
+            "title": title,
+            "summary": summary,
+        })
+        start = index
+    return grouped, None
+
+
+def threads_from_assignments(units: list[dict], payload: object, *, group_limit: int = 6) -> tuple[list[dict] | None, str | None]:
     """Expand a fixed-length assignment array into ordered, non-overlapping threads.
 
-    A one-item run is absorbed into its neighbor. Extra runs beyond ``group_limit``
-    are absorbed too, so a per-turn labeling cannot publish dozens of tiny threads
-    or an unbounded merge request.
+    A one-item run is absorbed into its neighbor so a per-turn labeling cannot
+    publish a fragment for every turn. Longer runs stay until they exceed the
+    chunk's group limit.
     """
     if not isinstance(payload, dict):
         return None, "The model response was not a JSON object."

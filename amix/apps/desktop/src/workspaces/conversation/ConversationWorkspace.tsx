@@ -10,10 +10,8 @@ import { formatMicroseconds } from "../../time/format";
 import {
   CONVERSATION_PROFILE,
   conversationActions,
-  conversationPhase,
-  mappingActivity,
+  conversationDisplay,
   providerCheckLabel,
-  providerLabel,
   semanticTimeoutDetail,
   semanticTimeoutSummary,
   showExistingThreads,
@@ -45,24 +43,36 @@ export function ConversationWorkspace({ project }: { project: ProjectInfo }) {
   const [jobs, setJobs] = useState<JobInfo[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkNote, setCheckNote] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+  const assetId = asset?.asset_id ?? null;
 
   useEffect(() => {
-    if (!asset) {
+    if (!assetId) {
       setState(EMPTY);
+      setJobs([]);
+      setLoaded(false);
+      setUnavailable(false);
       return;
     }
     let cancel = false;
+    setLoaded(false);
+    setUnavailable(false);
+    setState(EMPTY);
     const tick = () => {
       Promise.all([
-        conversationState(project.handle, asset.asset_id),
+        conversationState(project.handle, assetId),
         listJobs(project.handle),
       ]).then(([next, listed]) => {
         if (!cancel) {
           setState(next);
           setJobs(listed);
+          setLoaded(true);
+          setUnavailable(false);
         }
       }).catch((error: unknown) => {
         if (!cancel) {
+          setUnavailable(true);
           data.setNotice(asFailure(error));
         }
       });
@@ -73,19 +83,22 @@ export function ConversationWorkspace({ project }: { project: ProjectInfo }) {
       cancel = true;
       window.clearInterval(timer);
     };
-  }, [asset, project.handle]);
+  }, [assetId, project.handle]);
 
   const mapping = jobs.some((job) => job.kind === "map_conversation" && job.media_asset_id === asset?.asset_id && !isTerminal(job.status));
   const failedJob = jobs.find((job) => job.kind === "map_conversation" && job.media_asset_id === asset?.asset_id && job.status === "FAILED");
-  const phase = conversationPhase({
+  const display = conversationDisplay({
     hasMedia: Boolean(asset),
     state,
+    loaded,
+    unavailable,
     mapping,
     failed: Boolean(failedJob),
   });
+  const phase = display.phase;
   const selected = state.threads.find((thread) => thread.thread_id === selectedId) ?? null;
-  const actions = conversationActions(phase);
-  const visible = showExistingThreads(phase, state.threads) || (phase === "mapped" && state.threads.length > 0);
+  const actions = phase === "unavailable" ? [] : conversationActions(phase);
+  const visible = phase !== "unavailable" && (showExistingThreads(phase, state.threads) || (phase === "mapped" && state.threads.length > 0));
 
   async function runMap() {
     if (!asset) {
@@ -124,8 +137,9 @@ export function ConversationWorkspace({ project }: { project: ProjectInfo }) {
   return (
     <div className="stack sticky-actions">
       <h2>Conversation</h2>
-      <p>{phaseText(phase, state?.local_ai_state)}</p>
-      <p>{providerLabel(state)}</p>
+      <p>{display.headline}</p>
+      <p>{display.provider}</p>
+      {display.note && loaded ? <p>{display.note}</p> : null}
       <div className="row">
         {actions.map((action) => (
           <button key={action} type="button" onClick={() => void runMap()} disabled={mapping}>
@@ -175,27 +189,3 @@ export function ConversationWorkspace({ project }: { project: ProjectInfo }) {
   );
 }
 
-function phaseText(phase: ReturnType<typeof conversationPhase>, localAiState?: string | null): string {
-  switch (phase) {
-    case "no_media":
-      return "No media selected.";
-    case "no_transcript":
-      return "Create a transcript to continue.";
-    case "turns_required":
-      return "Speaker analysis is required before a conversation map.";
-    case "provider_missing":
-      return "Semantic provider is not configured.";
-    case "offline_blocked":
-      return "Offline mode blocks this provider.";
-    case "mapping":
-      return mappingActivity(localAiState);
-    case "failed":
-      return "Conversation mapping failed.";
-    case "stale":
-      return "The conversation map is stale.";
-    case "mapped":
-      return "Conversation map is ready.";
-    default:
-      return "Ready to map the conversation.";
-  }
-}

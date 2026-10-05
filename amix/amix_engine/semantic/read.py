@@ -1,12 +1,50 @@
 """Conversation workspace read model. It does not call a provider."""
 from __future__ import annotations
 
+import threading
+
 from amix.amix_engine.semantic.errors import SemanticError
-from amix.amix_engine.semantic.input import build_semantic_input
+from amix.amix_engine.semantic.input import SemanticInput, build_semantic_input
 from amix.amix_engine.semantic.mapping import map_is_stale
 from amix.amix_engine.semantic.registry import provider_status
-from amix.amix_engine.storage.kinds import CONVERSATION_MAP
+from amix.amix_engine.storage.kinds import CONVERSATION_MAP, PARTICIPANT_ASSIGNMENT, TURNS
 from amix.amix_engine.storage.project import ProjectStore
+
+_CACHE: dict[tuple, SemanticInput] = {}
+_CACHE_LOCK = threading.Lock()
+
+
+def semantic_stamp(store: ProjectStore, asset_id: str) -> tuple:
+    """Cheap identity of the semantic input. It does not load word rows."""
+    transcript = store.active_transcript(asset_id)
+    return (
+        store.project_id,
+        asset_id,
+        None if transcript is None else transcript.analysis_run_id,
+        store.get_active_run_id(asset_id, TURNS),
+        store.get_active_run_id(asset_id, PARTICIPANT_ASSIGNMENT),
+        store.word_text_revision(),
+    )
+
+
+def cached_semantic_input(store: ProjectStore, asset_id: str) -> SemanticInput:
+    """Reuse a built input while the transcript, turns, and word text are unchanged."""
+    stamp = semantic_stamp(store, asset_id)
+    with _CACHE_LOCK:
+        found = _CACHE.get(stamp)
+    if found is not None:
+        return found
+    built = build_semantic_input(store, asset_id)
+    remember_semantic(store, asset_id, built)
+    return built
+
+
+def remember_semantic(store: ProjectStore, asset_id: str, semantic: SemanticInput) -> None:
+    stamp = semantic_stamp(store, asset_id)
+    with _CACHE_LOCK:
+        _CACHE[stamp] = semantic
+        while len(_CACHE) > 4:
+            _CACHE.pop(next(iter(_CACHE)))
 
 
 def conversation_view(store: ProjectStore, asset_id: str) -> dict:
@@ -30,7 +68,7 @@ def conversation_view(store: ProjectStore, asset_id: str) -> dict:
     ordered: list[str] = []
     if transcript is not None:
         try:
-            semantic = build_semantic_input(store, asset_id)
+            semantic = cached_semantic_input(store, asset_id)
         except SemanticError as exc:
             blocking = exc.code
         else:

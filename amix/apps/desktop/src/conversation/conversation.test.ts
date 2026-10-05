@@ -4,6 +4,7 @@ import { formatMicroseconds } from "../time/format";
 import type { ConversationState, ConversationThread } from "../api/types";
 import {
   conversationActions,
+  conversationDisplay,
   conversationPhase,
   mappingActivity,
   providerCheckLabel,
@@ -101,5 +102,33 @@ describe("conversation workspace", () => {
     expect(semanticTimeoutDetail(message)).toContain("Chunk c0001");
     expect(semanticTimeoutDetail(message)).not.toContain("transcript");
     expect(semanticTimeoutSummary("The semantic provider took too long.")).toBe("The semantic provider took too long.");
+  });
+
+  it("keeps the last conversation state when a status refresh fails", () => {
+    const known = state({ map_present: true, threads: [thread], conversation_map_run_id: "run" });
+    const failed = conversationDisplay({
+      hasMedia: true,
+      state: known,
+      loaded: true,
+      unavailable: true,
+      mapping: true,
+      failed: false,
+    });
+    expect(failed.note).toBe("Status temporarily unavailable.");
+    expect(failed.headline).toBe("Mapping conversation.");
+    expect(failed.provider).toBe("Local model — demo");
+    expect(failed.phase).toBe("mapping");
+    const unknown = conversationDisplay({
+      hasMedia: true,
+      state: state({ transcript_present: false, turns_ready: false, provider_configured: false, provider_model_id: null, capability_ready: false }),
+      loaded: false,
+      unavailable: true,
+      mapping: false,
+      failed: false,
+    });
+    expect(unknown.headline).toBe("Status temporarily unavailable.");
+    expect(unknown.provider).toBe("Status temporarily unavailable.");
+    expect(unknown.headline).not.toBe("Create a transcript to continue.");
+    expect(unknown.provider).not.toBe("No semantic provider");
   });
 });

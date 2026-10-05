@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 
 from amix.amix_engine.semantic.budget import (
+    MERGE_TOKEN_BUDGET,
     SEMANTIC_DATA_TOKEN_BUDGET,
     estimate_tokens,
     repair_payload,
@@ -16,7 +17,6 @@ from amix.amix_engine.semantic.input import (
     SemanticInput,
     build_semantic_input,
     chunk_turns,
-    turn_payload,
     turn_request_tokens,
 )
 from amix.amix_engine.semantic.provider import (
@@ -34,9 +34,20 @@ from amix.amix_engine.semantic.tasks import (
     TASK_ID,
     VALIDATION_VERSION,
     assignment_schema,
+    boundary_schema,
+    chunk_group_limit,
+    MERGE_CANDIDATE_LIMIT,
+    compact_chunk_payload,
+    compact_merge_payload,
     output_token_limit,
 )
-from amix.amix_engine.semantic.validate import coverage_error, parse_draft, resolve_threads, threads_from_assignments
+from amix.amix_engine.semantic.validate import (
+    coverage_error,
+    parse_draft,
+    resolve_threads,
+    threads_from_assignments,
+    threads_from_boundaries,
+)
 from amix.amix_engine.storage.project import ProjectStore
 from amix.amix_engine.time.clock import TimeRange
 
@@ -49,7 +60,9 @@ def map_is_stale(store: ProjectStore, asset_id: str) -> bool:
         return False
     recorded = store.analysis_record(run_id)["config"]
     try:
-        current = build_semantic_input(store, asset_id)
+        from amix.amix_engine.semantic.read import cached_semantic_input
+
+        current = cached_semantic_input(store, asset_id)
     except SemanticError:
         return True
     return (
@@ -64,6 +77,9 @@ def map_conversation(store: ProjectStore, asset_id: str, provider, cancellation,
         raise SemanticError("semantic_capability_missing", "This provider cannot produce structured output.")
     progress(500)
     semantic = build_semantic_input(store, asset_id)
+    from amix.amix_engine.semantic.read import remember_semantic
+
+    remember_semantic(store, asset_id, semantic)
     for turn in semantic.turns:
         if len(turn.text) > MAX_TURN_CHARS or turn_request_tokens(turn) > SEMANTIC_DATA_TOKEN_BUDGET:
             raise SemanticError("semantic_context_too_large", "A turn is too large for this semantic profile.")
@@ -145,11 +161,7 @@ def _publish(store, asset_id, semantic: SemanticInput, chunks, threads, provider
 
 
 def _chunk_fits(primary, context) -> bool:
-    payload = {
-        "stage": "chunk",
-        "chunk_id": "fit",
-        "turns": [turn_payload(turn, "context") for turn in context] + [turn_payload(turn, "primary") for turn in primary],
-    }
+    payload = compact_chunk_payload("fit", primary, context)
     diagnostics = request_diagnostics(
         profile_id=PROFILE_ID,
         ordinal=0,
@@ -167,14 +179,13 @@ def _chunk_fits(primary, context) -> bool:
 def _chunk_draft(provider, chunk: SemanticChunk, cancellation, ordinal) -> tuple[list[dict], int, int]:
     context = list(chunk.context)
     primary = list(chunk.primary)
-    visible = [turn_payload(turn, "context") for turn in context] + [turn_payload(turn, "primary") for turn in primary]
-    if context and estimate_tokens(json.dumps(visible, sort_keys=True)) > SEMANTIC_DATA_TOKEN_BUDGET:
+    rendered = json.dumps(
+        compact_chunk_payload(chunk.chunk_id, primary, context),
+        sort_keys=True, ensure_ascii=False, separators=(",", ":"),
+    )
+    if context and estimate_tokens(rendered) > SEMANTIC_DATA_TOKEN_BUDGET:
         context = []
-    payload = {
-        "stage": "chunk",
-        "chunk_id": chunk.chunk_id,
-        "turns": [turn_payload(turn, "context") for turn in context] + [turn_payload(turn, "primary") for turn in primary],
-    }
+    payload = compact_chunk_payload(chunk.chunk_id, primary, context)
     primary_ids = [turn.turn_id for turn in chunk.primary]
     words = sum(len(turn.word_ids) for turn in chunk.primary)
     units = [{"start_turn_id": turn_id, "end_turn_id": turn_id} for turn_id in primary_ids]
@@ -186,26 +197,57 @@ def _chunk_draft(provider, chunk: SemanticChunk, cancellation, ordinal) -> tuple
 
 def _merge_draft(provider, semantic: SemanticInput, candidates: list[dict], cancellation, ordinal) -> tuple[list[dict], int, int]:
     units = [thread for item in candidates for thread in item["threads"]]
-    payload = {
-        "stage": "merge",
-        "candidates": [
-            {
-                "index": index,
-                "start_turn_id": thread["start_turn_id"],
-                "end_turn_id": thread["end_turn_id"],
-                "title": thread["title"],
-                "summary": thread["summary"],
-            }
-            for index, thread in enumerate(units)
-        ],
-    }
-    repair_ids = [thread["start_turn_id"] for thread in units]
-    repair_ids.append(units[-1]["end_turn_id"])
+    turn_ids = [turn.turn_id for turn in semantic.turns]
     words = sum(len(turn.word_ids) for turn in semantic.turns)
+    return _merge_level(provider, units, turn_ids, words, cancellation, ordinal)
+
+
+def _merge_level(provider, units, turn_ids, words, cancellation, ordinal) -> tuple[list[dict], int, int]:
+    """Merge adjacent candidates. A payload that does not fit is merged in halves."""
+    payload = compact_merge_payload(units)
+    span = _span_ids(turn_ids, units)
+    too_many = len(units) > MERGE_CANDIDATE_LIMIT
+    if len(units) > 1 and (too_many or not _merge_fits(provider, payload, len(span), words, len(units))):
+        mid = len(units) // 2
+        left, left_requests, left_repairs = _merge_level(provider, units[:mid], turn_ids, words, cancellation, ordinal)
+        right, right_requests, right_repairs = _merge_level(provider, units[mid:], turn_ids, words, cancellation, ordinal)
+        combined = left + right
+        requests = left_requests + right_requests
+        repairs = left_repairs + right_repairs
+        shrunk = compact_merge_payload(combined)
+        if len(combined) >= len(units) or not _merge_fits(provider, shrunk, len(span), words, len(combined)):
+            return combined, requests, repairs
+        draft, used_requests, used_repairs = _merge_level(provider, combined, turn_ids, words, cancellation, ordinal)
+        return draft, requests + used_requests, repairs + used_repairs
+    repair_ids = [unit["start_turn_id"] for unit in units]
+    repair_ids.append(units[-1]["end_turn_id"])
     return _generate(
-        provider, "merge", payload, [turn.turn_id for turn in semantic.turns], units, cancellation, ordinal,
-        chunk_id=None, turns=len(semantic.turns), words=words, context_turns=0, repair_ids=repair_ids,
+        provider, "merge", payload, span, units, cancellation, ordinal,
+        chunk_id=None, turns=len(span), words=words, context_turns=0, repair_ids=repair_ids,
+        budget=MERGE_TOKEN_BUDGET,
     )
+
+
+def _span_ids(turn_ids: list[str], units: list[dict]) -> list[str]:
+    index = {turn_id: position for position, turn_id in enumerate(turn_ids)}
+    start = index[units[0]["start_turn_id"]]
+    end = index[units[-1]["end_turn_id"]]
+    return turn_ids[start:end + 1]
+
+
+def _merge_fits(provider, payload: dict, turns: int, words: int, count: int) -> bool:
+    diagnostics = request_diagnostics(
+        profile_id=PROFILE_ID,
+        ordinal=0,
+        chunk_id=None,
+        turns=turns,
+        words=words,
+        context_turns=0,
+        system_prompt=SYSTEM_PROMPT,
+        schema=boundary_schema(count) if getattr(provider.descriptor, "structured_transport", "") == STRICT_JSON_SCHEMA else None,
+        payload=payload,
+    )
+    return within_request_budget(diagnostics, ceiling=MERGE_TOKEN_BUDGET)
 
 
 class _Ordinal:
@@ -220,8 +262,11 @@ class _Ordinal:
 def _generate(
     provider, stage: str, payload: dict, turn_ids: list[str], units: list[dict], cancellation, ordinal: _Ordinal, *,
     chunk_id: str | None, turns: int, words: int, context_turns: int, repair_ids: list[str] | None = None,
+    budget: int | None = None,
 ) -> tuple[list[dict], int, int]:
-    request = _request(provider, stage, payload, ordinal, chunk_id, turns, words, context_turns, len(units))
+    request = _request(
+        provider, stage, payload, ordinal, chunk_id, turns, words, context_turns, len(units), budget=budget,
+    )
     first, error, attempts = _once(provider, request, units)
     cancellation.raise_if_cancelled()
     previous = None
@@ -234,7 +279,7 @@ def _generate(
     repaired = repair_payload(payload, error or "The model response could not be used.", previous, repair_ids or turn_ids)
     second, second_error, second_attempts = _once(
         provider,
-        _request(provider, stage, repaired, ordinal, chunk_id, turns, words, 0, len(units)),
+        _request(provider, stage, repaired, ordinal, chunk_id, turns, words, 0, len(units), budget=budget),
         units,
     )
     cancellation.raise_if_cancelled()
@@ -250,8 +295,11 @@ def _once(provider, request: StructuredRequest, units: list[dict]) -> tuple[list
     raw, error, attempts = _call(provider, request)
     if error is not None:
         return None, error, attempts
+    if isinstance(raw, dict) and "boundaries" in raw:
+        draft, problem = threads_from_boundaries(units, raw)
+        return draft, problem, attempts
     if isinstance(raw, dict) and "assignments" in raw:
-        draft, problem = threads_from_assignments(units, raw)
+        draft, problem = threads_from_assignments(units, raw, group_limit=chunk_group_limit(len(units)))
         return draft, problem, attempts
     draft, problem = parse_draft(raw)
     return draft, problem, attempts
@@ -263,13 +311,15 @@ def _call(provider, request: StructuredRequest) -> tuple[dict | None, str | None
         return provider.generate_structured(request), None, 1
     except SemanticError as exc:
         if exc.code == "semantic_invalid_output":
-            return None, exc.message, 1
+            text = exc.message if not exc.detail else f"{exc.message} {exc.detail}"
+            return None, text, 1
         if exc.code == "semantic_timeout" and getattr(provider.descriptor, "execution", "") == "local":
             try:
                 return provider.generate_structured(request), None, 2
             except SemanticError as again:
                 if again.code == "semantic_invalid_output":
-                    return None, again.message, 2
+                    text = again.message if not again.detail else f"{again.message} {again.detail}"
+                    return None, text, 2
                 if again.code == "semantic_timeout":
                     raise _timeout(again, provider, request) from again
                 raise
@@ -301,10 +351,17 @@ def _timeout(exc: SemanticError, provider, request: StructuredRequest) -> Semant
 def _request(
     provider, stage: str, payload: dict, ordinal: _Ordinal,
     chunk_id: str | None, turns: int, words: int, context_turns: int, assignment_count: int,
+    budget: int | None = None,
 ) -> StructuredRequest:
     strict = getattr(provider.descriptor, "structured_transport", "") == STRICT_JSON_SCHEMA
-    schema = assignment_schema(assignment_count) if strict else None
-    limit = output_token_limit(assignment_count)
+    groups = assignment_count if stage == "merge" else chunk_group_limit(assignment_count)
+    if strict and stage == "merge":
+        schema = boundary_schema(assignment_count)
+    elif strict:
+        schema = assignment_schema(assignment_count, groups)
+    else:
+        schema = None
+    limit = output_token_limit(assignment_count, groups)
     diagnostics = request_diagnostics(
         profile_id=PROFILE_ID,
         ordinal=ordinal.next(),
@@ -316,7 +373,7 @@ def _request(
         schema=schema,
         payload=payload,
     )
-    if not within_request_budget(diagnostics):
+    if not within_request_budget(diagnostics, ceiling=budget):
         raise SemanticError("semantic_context_too_large", "This semantic request is larger than the profile limit.")
     return StructuredRequest(
         task_id=TASK_ID,
