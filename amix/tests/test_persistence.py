@@ -50,7 +50,7 @@ class SchemaTests(unittest.TestCase):
             root = Path(tmp) / "Empty"
             store = create_project(root, "Empty")
             try:
-                self.assertEqual(head_revision(), "0010_caption_track")
+                self.assertEqual(head_revision(), "0011_reel_dismissal")
                 self.assertEqual(store.alembic_revision(), head_revision())
                 self.assertEqual(store.pragma("foreign_keys"), "1")
                 self.assertEqual(store.pragma("journal_mode"), "delete")
@@ -83,7 +83,7 @@ class SchemaTests(unittest.TestCase):
                 }
             finally:
                 connection.close()
-            self.assertEqual(revision, "0010_caption_track")
+            self.assertEqual(revision, "0011_reel_dismissal")
             self.assertIn("project", tables)
             self.assertIn("diarization_segment", tables)
             self.assertIn("word", tables)
@@ -120,7 +120,7 @@ class SchemaTests(unittest.TestCase):
                 ).fetchone()[0]
             finally:
                 connection.close()
-            self.assertEqual(revision, "0010_caption_track")
+            self.assertEqual(revision, "0011_reel_dismissal")
             self.assertNotIn("REAL", sql.upper())
             self.assertNotIn("BLOB", sql.upper())
 

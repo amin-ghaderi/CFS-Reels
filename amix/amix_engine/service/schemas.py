@@ -499,6 +499,7 @@ class ReelStateResponse(_Model):
     discovery_stale: bool
     reel_discovery_run_id: str | None = None
     candidates: list[ReelCandidateResponse]
+    dismissed_count: int = 0
     drafts: list[ReelDraftResponse]
 
 

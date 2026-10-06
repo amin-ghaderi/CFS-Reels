@@ -109,6 +109,24 @@ export function jobTitle(kind: string, spec?: Record<string, unknown> | null): s
   return "Background job";
 }
 
+/** Activity starts collapsed. A running job still names itself on the status bar. */
+export const ACTIVITY_STARTS_OPEN = false;
+
+export function compactActivityLabel(
+  jobs: readonly { kind: string; status: JobStatus; progress_bp: number; spec?: Record<string, unknown> | null }[],
+): string {
+  const running = jobs.filter((job) => !isTerminal(job.status));
+  if (running.length === 0) {
+    const failed = jobs.filter((job) => job.status === "FAILED").length;
+    return failed > 0 ? `${failed} failed` : "No active job";
+  }
+  const current = running[0];
+  const percent = progressPercent(current.progress_bp);
+  const title = jobTitle(current.kind, current.spec);
+  const extra = running.length > 1 ? ` +${running.length - 1}` : "";
+  return percent > 0 ? `${title} ${percent}%${extra}` : `${title}${extra}`;
+}
+
 const PRESET_LABELS: Record<string, string> = {
   landscape_1080: "Landscape 1080",
   landscape_720: "Landscape 720",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canCancel, canRetry, isTerminal, jobTitle, orderJobs, progressPercent } from "./jobs";
+import { canCancel, canRetry, compactActivityLabel, isTerminal, jobTitle, orderJobs, progressPercent, ACTIVITY_STARTS_OPEN } from "./jobs";
 import type { JobInfo } from "./types";
 
 describe("job display helpers", () => {
@@ -46,6 +46,20 @@ describe("job display helpers", () => {
       job("queued", "QUEUED", "2020-01-01T00:00:01Z"),
     ];
     expect(orderJobs(jobs).map((item) => item.job_id)).toEqual(["running", "queued", "newer-done", "old-done"]);
+  });
+
+  it("keeps activity collapsed and names a running discover or export on the status bar", () => {
+    expect(ACTIVITY_STARTS_OPEN).toBe(false);
+    expect(compactActivityLabel([])).toBe("No active job");
+    expect(compactActivityLabel([
+      { kind: "discover_reels", status: "RUNNING", progress_bp: 4200 },
+    ])).toBe("Discover reels 42%");
+    expect(compactActivityLabel([
+      { kind: "render_sequence", status: "RUNNING", progress_bp: 1000, spec: { visual_treatment: "source_program", render_profile_id: "landscape_1080" } },
+    ])).toMatch(/^Render · Source \/ Program/);
+    expect(compactActivityLabel([
+      { kind: "discover_reels", status: "FAILED", progress_bp: 0 },
+    ])).toBe("1 failed");
   });
 });
 

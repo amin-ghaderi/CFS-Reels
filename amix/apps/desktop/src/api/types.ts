@@ -387,6 +387,7 @@ export interface ReelState {
   discovery_stale: boolean;
   reel_discovery_run_id: string | null;
   candidates: ReelCandidate[];
+  dismissed_count?: number;
   drafts: ReelDraft[];
 }
 

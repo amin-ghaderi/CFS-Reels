@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { cancelJob, createJob, listJobs, retryJob } from "../api/client";
 import { asFailure, jobProblemMessage } from "../api/errors";
 import { semanticTimeoutDetail, semanticTimeoutSummary } from "../conversation/conversation";
-import { canCancel, canRetry, isTerminal, JOBS_CHANGED_EVENT, jobStatusLabel, jobTitle, orderJobs, progressPercent } from "../api/jobs";
+import { ACTIVITY_STARTS_OPEN, canCancel, canRetry, compactActivityLabel, isTerminal, JOBS_CHANGED_EVENT, jobStatusLabel, jobTitle, orderJobs, progressPercent } from "../api/jobs";
 import type { EngineFailure, JobInfo, ProjectInfo } from "../api/types";
 import { missingCount } from "../media/present";
 import { useProjectData } from "../project/ProjectData";
@@ -20,14 +20,12 @@ export function ActivityBar({
 }) {
   const media = useProjectData();
   const [jobs, setJobs] = useState<JobInfo[]>([]);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(ACTIVITY_STARTS_OPEN);
   const [token, setToken] = useState(0);
   const ordered = orderJobs(jobs);
-  const active = jobs.filter((job) => !isTerminal(job.status)).length;
   const mediaJobs = useRef("");
-  const failed = jobs.filter((job) => job.status === "FAILED").length;
   const missing = missingCount(media.assets);
-  const summary = active > 0 ? `${active} running` : failed > 0 ? `${failed} failed` : "No active job";
+  const summary = compactActivityLabel(jobs);
 
   useEffect(() => {
     const wake = () => setToken((value) => value + 1);
@@ -73,12 +71,6 @@ export function ActivityBar({
       void media.refresh();
     }
   }, [mediaSignature, media]);
-
-  useEffect(() => {
-    if (active > 0) {
-      setOpen(true);
-    }
-  }, [active]);
 
   async function runIntegrity() {
     onNotice(null);

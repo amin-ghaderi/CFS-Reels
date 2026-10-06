@@ -1,33 +1,39 @@
 import { useEffect, useState } from "react";
 
-import { createJob, createReelDraft, listExports, listJobs, reelState, removeEditClip, resetEdit, sequenceRenderReadiness, splitEdit } from "../../api/client";
+import { createJob, createReelDraft, dismissReelSuggestion, listExports, listJobs, reelState, removeEditClip, resetEdit, sequenceRenderReadiness, splitEdit } from "../../api/client";
 import { asFailure } from "../../api/errors";
 import { isTerminal } from "../../api/jobs";
 import type { ExportRecord, JobInfo, ProjectInfo, ReelCandidate, ReelDraft, ReelState, SequenceRenderReadiness } from "../../api/types";
+import { CaptionOverlay } from "../../captions/CaptionOverlay";
+import { CaptionPanel, useCaptionTrack } from "../../captions/CaptionPanel";
 import type { OutputFormat, OutputResolution } from "../../multicam/multicam";
 import { usePlayback } from "../../playback/PlaybackSession";
 import { PreviewPlayer } from "../../playback/PreviewPlayer";
 import { useProjectData } from "../../project/ProjectData";
 import {
+  DISMISS_LABEL,
+  EXPORT_REEL_LABEL,
+  FORMAT_LABELS,
+  PICTURE_LABELS,
   REEL_PROFILE,
+  SUGGESTIONS_LABEL,
+  USE_REEL_LABEL,
   candidateSeekUs,
   discoveryAction,
   discoveryActivity,
   draftTimeline,
   editorActions,
-  FORMAT_LABELS,
-  PICTURE_LABELS,
+  pictureChoices,
   reelPhase,
   reelRenderSpec,
   renderEnabled,
+  suggestionEmptyMessage,
   treatmentReason,
   type PictureTreatment,
 } from "../../reels/reels";
 import { formatMicroseconds } from "../../time/format";
 import { TimelineCanvas } from "../../timeline/TimelineCanvas";
 import { splitAllowed } from "../../timeline/timeline";
-import { CaptionOverlay } from "../../captions/CaptionOverlay";
-import { CaptionPanel, useCaptionTrack } from "../../captions/CaptionPanel";
 
 const EMPTY: ReelState = {
   transcript_present: false,
@@ -42,8 +48,11 @@ const EMPTY: ReelState = {
   discovery_stale: false,
   reel_discovery_run_id: null,
   candidates: [],
+  dismissed_count: 0,
   drafts: [],
 };
+
+type ReelMode = "suggestions" | "edit" | "export";
 
 export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
   const data = useProjectData();
@@ -51,6 +60,7 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
   const asset = data.selected;
   const [state, setState] = useState<ReelState>(EMPTY);
   const [jobs, setJobs] = useState<JobInfo[]>([]);
+  const [mode, setMode] = useState<ReelMode>("suggestions");
   const [candidateId, setCandidateId] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [clipId, setClipId] = useState<string | null>(null);
@@ -102,6 +112,9 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
   const action = discoveryAction(phase);
   const selectedCandidate = state.candidates.find((item) => item.candidate_id === candidateId) ?? null;
   const selectedDraft = state.drafts.find((item) => item.sequence_id === draftId) ?? null;
+  const editing = mode === "edit" && selectedDraft != null;
+  const exporting = mode === "export" && selectedDraft != null;
+
   useEffect(() => {
     if (!asset || !draftId) {
       setReadiness(null);
@@ -113,6 +126,9 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
       .then((next) => {
         if (!cancel) {
           setReadiness(next);
+          if (!next.multicam_ready) {
+            setPicture("source_program");
+          }
         }
       })
       .catch(() => undefined);
@@ -128,9 +144,22 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
     };
   }, [asset, draftId, jobs, project.handle, state.drafts]);
 
-  const timeline = selectedDraft ? draftTimeline(selectedDraft) : null;
-  const captions = useCaptionTrack(project.handle, selectedDraft?.sequence_id ?? null, selectedDraft?.revision ?? null);
+  const timeline = editing && selectedDraft ? draftTimeline(selectedDraft) : null;
+  const captions = useCaptionTrack(
+    project.handle,
+    (editing || exporting) ? selectedDraft?.sequence_id ?? null : null,
+    (editing || exporting) ? selectedDraft?.revision ?? null : null,
+  );
   const selectedClip = timeline?.clips.find((clip) => clip.clip_id === clipId) ?? null;
+  const previewRange = (editing || exporting) && selectedDraft
+    ? { startUs: selectedDraft.source_start_us, endUs: selectedDraft.source_end_us }
+    : selectedCandidate
+      ? { startUs: selectedCandidate.start_us, endUs: selectedCandidate.end_us }
+      : null;
+  const emptyMessage = state.discovery_present
+    ? suggestionEmptyMessage(state.candidates.length, state.dismissed_count ?? 0)
+    : null;
+  const choices = readiness ? pictureChoices(readiness) : [];
 
   async function discover() {
     if (!asset) {
@@ -147,12 +176,20 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
     }
   }
 
-  function chooseCandidate(candidate: ReelCandidate) {
+  function chooseSuggestion(candidate: ReelCandidate) {
+    setMode("suggestions");
     setCandidateId(candidate.candidate_id);
     playback.requestSeek(candidateSeekUs(candidate));
   }
 
-  async function makeDraft() {
+  function openReel(draft: ReelDraft) {
+    setDraftId(draft.sequence_id);
+    setClipId(null);
+    setMode("edit");
+    playback.requestSeek(draft.source_start_us);
+  }
+
+  async function useReel() {
     if (!asset || !selectedCandidate) {
       return;
     }
@@ -163,7 +200,24 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
       const created = [...next.drafts].reverse().find((item) => item.origin_candidate_id === selectedCandidate.candidate_id);
       if (created) {
         setDraftId(created.sequence_id);
+        setClipId(null);
+        setMode("edit");
+        playback.requestSeek(created.source_start_us);
       }
+    } catch (error) {
+      data.setNotice(asFailure(error));
+    }
+  }
+
+  async function dismiss() {
+    if (!asset || !selectedCandidate) {
+      return;
+    }
+    data.setNotice(null);
+    try {
+      const next = await dismissReelSuggestion(project.handle, asset.asset_id, selectedCandidate.candidate_id);
+      setState(next);
+      setCandidateId(null);
     } catch (error) {
       data.setNotice(asFailure(error));
     }
@@ -235,87 +289,98 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
     <div className="reels-workspace sticky-actions">
       <section className="reels-context">
         <h1>Reels</h1>
-        <p>{phaseText(phase, state.drafts.length, Boolean(selectedDraft), state.local_ai_state)}</p>
+        <p>{phaseText(phase, state.local_ai_state, editing)}</p>
         {action ? <button type="button" onClick={() => void discover()}>{action}</button> : null}
-        <h2>Candidates</h2>
+        <h2>{SUGGESTIONS_LABEL}</h2>
+        {emptyMessage ? <p>{emptyMessage}</p> : null}
         <ul className="review-list">
           {state.candidates.map((candidate) => (
-            <li key={candidate.candidate_id} className={candidate.candidate_id === candidateId ? "is-current" : ""}>
-              <button type="button" onClick={() => chooseCandidate(candidate)}>
+            <li key={candidate.candidate_id} className={candidate.candidate_id === candidateId && mode === "suggestions" ? "is-current" : ""}>
+              <button type="button" onClick={() => chooseSuggestion(candidate)}>
                 <span dir="auto">{candidate.title}</span>
-                <span dir="ltr"> {formatMicroseconds(candidate.start_us)}–{formatMicroseconds(candidate.end_us)}</span>
+                <span dir="ltr"> {formatMicroseconds(candidate.duration_us)}</span>
+                <span dir="ltr"> Episode {formatMicroseconds(candidate.start_us)}–{formatMicroseconds(candidate.end_us)}</span>
+                {candidate.thread_title ? <span dir="auto"> {candidate.thread_title}</span> : null}
+                {candidate.hook ? <span dir="auto"> {candidate.hook}</span> : <span dir="auto"> {candidate.summary}</span>}
               </button>
             </li>
           ))}
         </ul>
-        <h2>Drafts</h2>
-        {state.drafts.length === 0 ? <p>No reel drafts.</p> : null}
-        <ul className="review-list">
-          {state.drafts.map((draft) => (
-            <li key={draft.sequence_id} className={draft.sequence_id === draftId ? "is-current" : ""}>
-              <button type="button" onClick={() => { setDraftId(draft.sequence_id); setClipId(null); }}>
-                <span dir="auto">{draft.display_name}</span>
-                <span dir="ltr"> {formatMicroseconds(draft.duration_us)} · rev {draft.revision}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        {state.drafts.length > 0 ? (
+          <>
+            <h2>Your Reels</h2>
+            <ul className="review-list">
+              {state.drafts.map((draft) => (
+                <li key={draft.sequence_id} className={draft.sequence_id === draftId && (editing || exporting) ? "is-current" : ""}>
+                  <button type="button" onClick={() => openReel(draft)}>
+                    <span dir="auto">{draft.display_name}</span>
+                    <span dir="ltr"> {formatMicroseconds(draft.duration_us)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
       </section>
       <section className="reels-main">
         <PreviewPlayer
           project={project}
-          overlay={<CaptionOverlay cues={captions.state?.cues ?? []} playheadUs={playback.playheadUs} />}
+          range={previewRange}
+          overlay={(editing || exporting) ? <CaptionOverlay cues={captions.state?.cues ?? []} playheadUs={playback.playheadUs} /> : undefined}
         />
-        {timeline ? (
-          <TimelineCanvas
-            timeline={timeline}
-            playheadUs={playback.playheadUs}
-            selectedClipId={clipId}
-            showCamera={false}
-            onSeek={(sourceUs) => playback.requestSeek(sourceUs)}
-            onSelect={setClipId}
-          />
-        ) : <p>Select a reel draft to edit it.</p>}
-        {selectedDraft ? (
+        {mode === "suggestions" && selectedCandidate ? (
           <div className="row">
-            {editorActions().map((label) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => {
-                  if (label === "Split at Playhead") {
-                    void split();
-                  } else if (label === "Remove Clip") {
-                    void remove();
-                  } else {
-                    setConfirmReset(true);
-                  }
-                }}
-              >
-                {label}
-              </button>
-            ))}
+            <p dir="ltr">Reel {formatMicroseconds(selectedCandidate.duration_us)}</p>
+            <p dir="ltr">Episode {formatMicroseconds(selectedCandidate.start_us)}–{formatMicroseconds(selectedCandidate.end_us)}</p>
+            <button type="button" onClick={() => void useReel()}>{USE_REEL_LABEL}</button>
+            <button type="button" onClick={() => void dismiss()}>{DISMISS_LABEL}</button>
           </div>
         ) : null}
-        <CaptionPanel
-          project={project}
-          sequenceId={selectedDraft?.sequence_id ?? null}
-          state={captions.state}
-          onChange={captions.setState}
-        />
-        {selectedDraft && readiness ? (
-          <section aria-label="Render">
-            <h2>Render</h2>
+        {editing && timeline && selectedDraft ? (
+          <>
+            <p dir="ltr">Kept {formatMicroseconds(selectedDraft.duration_us)}</p>
+            <TimelineCanvas
+              timeline={timeline}
+              playheadUs={playback.playheadUs}
+              selectedClipId={clipId}
+              showCamera={false}
+              onSeek={(sourceUs) => playback.requestSeek(sourceUs)}
+              onSelect={setClipId}
+            />
+            <div className="row">
+              {editorActions().map((label) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    if (label === "Split at Playhead") {
+                      void split();
+                    } else if (label === "Remove Clip") {
+                      void remove();
+                    } else {
+                      setConfirmReset(true);
+                    }
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+              <button type="button" onClick={() => setMode("export")}>{EXPORT_REEL_LABEL}</button>
+              <button type="button" onClick={() => setMode("suggestions")}>Back to suggestions</button>
+            </div>
+            <CaptionPanel
+              project={project}
+              sequenceId={selectedDraft.sequence_id}
+              state={captions.state}
+              onChange={captions.setState}
+            />
+          </>
+        ) : null}
+        {mode === "export" && selectedDraft && readiness ? (
+          <section aria-label="Export">
+            <h2>Export</h2>
             <label>
-              Picture
-              <select value={picture} onChange={(event) => setPicture(event.target.value as PictureTreatment)}>
-                <option value="source_program">{PICTURE_LABELS.source_program}</option>
-                <option value="multicam" disabled={!readiness.multicam_ready}>{PICTURE_LABELS.multicam}</option>
-              </select>
-            </label>
-            {!readiness.multicam_ready ? <p>{treatmentReason(readiness.multicam_reason)}</p> : null}
-            <label>
-              Format
+              Aspect ratio
               <select value={format} onChange={(event) => setFormat(event.target.value as OutputFormat)}>
                 <option value="16:9">{FORMAT_LABELS["16:9"]}</option>
                 <option value="9:16">{FORMAT_LABELS["9:16"]}</option>
@@ -328,14 +393,25 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
                 <option value="720">720</option>
               </select>
             </label>
+            <label>
+              Picture
+              <select value={picture} onChange={(event) => setPicture(event.target.value as PictureTreatment)}>
+                {choices.map((choice) => (
+                  <option key={choice} value={choice}>{PICTURE_LABELS[choice]}</option>
+                ))}
+              </select>
+            </label>
+            {!readiness.multicam_ready ? <p>{treatmentReason(readiness.multicam_reason) || "Multicam is not available for this reel."}</p> : null}
+            {!readiness.source_program_ready ? <p>{treatmentReason(readiness.source_program_reason)}</p> : null}
+            <p>Captions export as a subtitle file from the edit step. This video export does not burn them in.</p>
             <button
               type="button"
               disabled={!renderEnabled(readiness, picture) || rendering}
               onClick={() => void renderDraft()}
             >
-              Render
+              {rendering ? "Exporting…" : EXPORT_REEL_LABEL}
             </button>
-            {exportsForDraft.length === 0 ? <p>No completed exports for this draft.</p> : (
+            {exportsForDraft.length > 0 ? (
               <ul className="review-list">
                 {exportsForDraft.map((row) => (
                   <li key={row.job_id}>
@@ -344,57 +420,43 @@ export function ReelsWorkspace({ project }: { project: ProjectInfo }) {
                   </li>
                 ))}
               </ul>
-            )}
+            ) : null}
+            <button type="button" onClick={() => setMode("edit")}>Back to edit</button>
           </section>
         ) : null}
         {confirmReset ? (
           <div className="row">
-            <span>Reset this reel draft to its original candidate range?</span>
-            <button type="button" onClick={() => void reset()}>Reset</button>
+            <span>Reset this reel to the original suggestion?</span>
+            <button type="button" onClick={() => void reset()}>Reset to original suggestion</button>
             <button type="button" onClick={() => setConfirmReset(false)}>Cancel</button>
           </div>
         ) : null}
       </section>
-      <Inspector candidate={selectedCandidate} draft={selectedDraft} onCreate={() => void makeDraft()} />
+      <section className="reels-inspector" aria-label="Reel details">
+        {mode === "suggestions" && selectedCandidate ? (
+          <>
+            <h2 dir="auto">{selectedCandidate.title}</h2>
+            <p dir="auto">{selectedCandidate.hook}</p>
+            <p dir="auto">{selectedCandidate.summary}</p>
+            <p dir="ltr">Reel {formatMicroseconds(selectedCandidate.duration_us)}</p>
+            <p dir="ltr">Episode {formatMicroseconds(selectedCandidate.start_us)} – {formatMicroseconds(selectedCandidate.end_us)}</p>
+            {selectedCandidate.thread_title ? <p dir="auto">{selectedCandidate.thread_title}</p> : null}
+            <button type="button" onClick={() => void useReel()}>{USE_REEL_LABEL}</button>
+          </>
+        ) : null}
+        {(editing || exporting) && selectedDraft ? (
+          <>
+            <h2 dir="auto">{selectedDraft.display_name}</h2>
+            <p dir="ltr">Kept {formatMicroseconds(selectedDraft.duration_us)}</p>
+            <p dir="ltr">Episode {formatMicroseconds(selectedDraft.source_start_us)} – {formatMicroseconds(selectedDraft.source_end_us)}</p>
+          </>
+        ) : null}
+      </section>
     </div>
   );
 }
 
-function Inspector({
-  candidate,
-  draft,
-  onCreate,
-}: {
-  candidate: ReelCandidate | null;
-  draft: ReelDraft | null;
-  onCreate: () => void;
-}) {
-  return (
-    <section className="reels-inspector" aria-label="Reel details">
-      {candidate ? (
-        <>
-          <h2 dir="auto">{candidate.title}</h2>
-          <p dir="auto">{candidate.summary}</p>
-          <p dir="auto">{candidate.hook}</p>
-          <p dir="ltr">{formatMicroseconds(candidate.start_us)} – {formatMicroseconds(candidate.end_us)}</p>
-          <p>{candidate.thread_title}</p>
-          <p>{candidate.participant_names.join(", ")}</p>
-          <button type="button" onClick={onCreate}>Create Reel Draft</button>
-        </>
-      ) : null}
-      {draft ? (
-        <>
-          <h3 dir="auto">{draft.display_name}</h3>
-          <p dir="ltr">{formatMicroseconds(draft.source_start_us)} – {formatMicroseconds(draft.source_end_us)}</p>
-          <p>Revision {draft.revision}</p>
-          <p>Kept {formatMicroseconds(draft.duration_us)}</p>
-        </>
-      ) : null}
-    </section>
-  );
-}
-
-function phaseText(phase: ReturnType<typeof reelPhase>, drafts: number, selected: boolean, localAiState?: string | null): string {
+function phaseText(phase: ReturnType<typeof reelPhase>, localAiState: string | null | undefined, editing: boolean): string {
   switch (phase) {
     case "no_media":
       return "No media selected.";
@@ -413,9 +475,9 @@ function phaseText(phase: ReturnType<typeof reelPhase>, drafts: number, selected
     case "failed":
       return "Reel discovery failed.";
     case "discovery_stale":
-      return drafts ? "Discovery is stale. Existing reel drafts are unchanged." : "Discovery is stale.";
+      return "Discovery is stale. Reels you already chose are unchanged.";
     case "candidates_ready":
-      return selected ? "Reel draft selected." : drafts ? "Candidates are ready." : "Candidates are ready. No reel drafts.";
+      return editing ? "Editing this reel." : "Reel suggestions are ready.";
     default:
       return "Ready to discover reels.";
   }

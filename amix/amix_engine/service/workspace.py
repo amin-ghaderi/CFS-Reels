@@ -294,6 +294,11 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
         authorize(request)
         return call(lambda: _create_reel(runtime, handle, asset_id, body))
 
+    @app.post("/v1/projects/{handle}/media/{asset_id}/reels/dismiss", response_model=ReelStateResponse)
+    def dismiss_reel(handle: str, asset_id: str, body: CreateReelDraftRequest, request: Request) -> ReelStateResponse:
+        authorize(request)
+        return call(lambda: _dismiss_reel(runtime, handle, asset_id, body))
+
     @app.get("/v1/projects/{handle}/media/{asset_id}/conversation", response_model=ConversationStateResponse)
     def conversation_state(handle: str, asset_id: str, request: Request) -> ConversationStateResponse:
         authorize(request)
@@ -962,6 +967,16 @@ def _create_reel(runtime: EngineRuntime, handle: str, asset_id: str, body: Creat
     store = _store(runtime, handle)
     try:
         create_reel_draft(store, asset_id, body.candidate_id)
+    except SequenceRejected as exc:
+        status = 404 if exc.code == "unknown_candidate" else 400
+        raise ApiError(status, exc.code, exc.message) from exc
+    return ReelStateResponse.model_validate(reel_view(store, asset_id))
+
+
+def _dismiss_reel(runtime: EngineRuntime, handle: str, asset_id: str, body: CreateReelDraftRequest) -> ReelStateResponse:
+    store = _store(runtime, handle)
+    try:
+        store.dismiss_reel_candidate(asset_id, body.candidate_id)
     except SequenceRejected as exc:
         status = 404 if exc.code == "unknown_candidate" else 400
         raise ApiError(status, exc.code, exc.message) from exc

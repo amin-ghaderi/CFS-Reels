@@ -299,6 +299,10 @@ export function createReelDraft(handle: string, assetId: string, candidateId: st
   return request("POST", `/v1/projects/${handle}/media/${assetId}/reel-drafts`, { candidate_id: candidateId });
 }
 
+export function dismissReelSuggestion(handle: string, assetId: string, candidateId: string): Promise<ReelState> {
+  return request("POST", `/v1/projects/${handle}/media/${assetId}/reels/dismiss`, { candidate_id: candidateId });
+}
+
 export function conversationState(handle: string, assetId: string): Promise<ConversationState> {
   return request("GET", `/v1/projects/${handle}/media/${assetId}/conversation`);
 }

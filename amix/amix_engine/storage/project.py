@@ -77,6 +77,7 @@ from amix.amix_engine.storage.models import (
     AnalysisRunRow,
     ConversationThreadRow,
     ReelCandidateRow,
+    ReelDismissalRow,
     DiarizationSegmentRow,
     LayoutBindingRow,
     ManualCorrectionRow,
@@ -1522,6 +1523,40 @@ class ProjectStore:
                 "summary": row.summary,
                 "hook": row.hook,
             }
+
+    def dismissed_reel_ranges(self, asset_id: str) -> set[tuple[str, str]]:
+        with self._session() as session:
+            rows = session.scalars(
+                select(ReelDismissalRow).where(ReelDismissalRow.media_asset_id == asset_id)
+            ).all()
+            return {(row.first_turn_id, row.last_turn_id) for row in rows}
+
+    def dismiss_reel_candidate(self, asset_id: str, candidate_id: str) -> None:
+        """Hide this suggestion. The candidate row and any reel sequence stay."""
+        self._require_write()
+        candidate = self.load_reel_candidate(candidate_id)
+        if candidate is None or candidate["media_asset_id"] != asset_id:
+            from amix.amix_engine.editorial.sequence import SequenceRejected
+            raise SequenceRejected("unknown_candidate", "That reel candidate is not in this project.")
+        now = _now()
+        with self._session() as session:
+            existing = session.scalar(
+                select(ReelDismissalRow).where(
+                    ReelDismissalRow.media_asset_id == asset_id,
+                    ReelDismissalRow.first_turn_id == candidate["first_turn_id"],
+                    ReelDismissalRow.last_turn_id == candidate["last_turn_id"],
+                )
+            )
+            if existing is not None:
+                return
+            session.add(ReelDismissalRow(
+                project_id=self.project_id,
+                media_asset_id=asset_id,
+                first_turn_id=candidate["first_turn_id"],
+                last_turn_id=candidate["last_turn_id"],
+                created_at=now,
+            ))
+            session.commit()
 
     def load_conversation_threads(self, run_id: str) -> list[dict]:
         with self._session() as session:

@@ -467,6 +467,23 @@ class ReelCandidateRow(Base):
     hook: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
 
+class ReelDismissalRow(Base):
+    """A suggestion the editor dismissed. The turn range stays hidden across polls and rebuilds."""
+
+    __tablename__ = "reel_dismissal"
+    __table_args__ = (
+        UniqueConstraint("media_asset_id", "first_turn_id", "last_turn_id", name="uq_reel_dismissal_range"),
+        Index("ix_reel_dismissal_asset", "media_asset_id"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(ForeignKey("project.id", ondelete="RESTRICT"), nullable=False)
+    media_asset_id: Mapped[str] = mapped_column(ForeignKey("media_asset.id", ondelete="RESTRICT"), nullable=False)
+    first_turn_id: Mapped[str] = mapped_column(Text, nullable=False)
+    last_turn_id: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[str] = mapped_column(Text, nullable=False)
+
+
 class ConversationThreadRow(Base):
     """One topic span anchored to turns and words. Times are derived by AMIX."""
 

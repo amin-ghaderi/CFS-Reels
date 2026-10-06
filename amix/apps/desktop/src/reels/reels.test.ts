@@ -10,9 +10,14 @@ import {
   exportsForSequence,
   FORMAT_LABELS,
   PICTURE_LABELS,
+  pictureChoices,
+  previewShouldStop,
+  reelClockUs,
   reelPhase,
   reelRenderSpec,
   renderEnabled,
+  replayStartUs,
+  suggestionEmptyMessage,
   treatmentReason,
   workspaceOffers,
 } from "./reels";
@@ -94,7 +99,7 @@ describe("reel workspace", () => {
     expect(timeline.sequence_id).toBe("reel-a");
     expect(timeline.camera).toEqual([]);
     expect(timeline.removed).toEqual([{ clip_id: "gap-1", source_start_us: 2_000_000, source_end_us: 3_000_000 }]);
-    expect(editorActions()).toEqual(["Split at Playhead", "Remove Clip", "Reset"]);
+    expect(editorActions()).toEqual(["Split at Playhead", "Remove Clip", "Reset to original suggestion"]);
   });
 
   it("does not store aspect, score, or ranking on the draft", () => {
@@ -139,5 +144,28 @@ describe("reel workspace", () => {
     ];
     expect(exportsForSequence(rows, "reel-a").map((row) => row.job_id)).toEqual(["a"]);
     expect(exportsForSequence(rows, "reel-b").map((row) => row.job_id)).toEqual(["b"]);
+  });
+
+  it("stops a bounded preview at the suggestion end and replays from the start", () => {
+    expect(previewShouldStop(candidate.end_us, candidate.end_us)).toBe(true);
+    expect(previewShouldStop(candidate.end_us - 1, candidate.end_us)).toBe(false);
+    expect(replayStartUs(candidate.start_us)).toBe(candidate.start_us);
+    expect(reelClockUs(candidate.start_us + 500_000, candidate.start_us, candidate.end_us)).toBe(500_000);
+    expect(reelClockUs(candidate.end_us + 1_000, candidate.start_us, candidate.end_us)).toBe(candidate.duration_us);
+  });
+
+  it("hides multicam until a shot plan exists and says when discovery found nothing usable", () => {
+    const readiness: SequenceRenderReadiness = {
+      source_program_ready: true,
+      multicam_ready: false,
+      source_program_reason: null,
+      multicam_reason: "shot_plan_missing",
+      ffmpeg_ready: true,
+    };
+    expect(pictureChoices(readiness)).toEqual(["source_program"]);
+    expect(pictureChoices({ ...readiness, multicam_ready: true })).toEqual(["source_program", "multicam"]);
+    expect(suggestionEmptyMessage(0, 0)).toBe("No usable Reel suggestions were found.");
+    expect(suggestionEmptyMessage(0, 2)).toBe("No Reel suggestions left.");
+    expect(suggestionEmptyMessage(1, 0)).toBeNull();
   });
 });

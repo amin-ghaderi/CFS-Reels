@@ -107,7 +107,50 @@ export function draftTimeline(draft: ReelDraft): TimelineState {
 }
 
 export function editorActions(): readonly string[] {
-  return ["Split at Playhead", "Remove Clip", "Reset"];
+  return ["Split at Playhead", "Remove Clip", "Reset to original suggestion"];
+}
+
+/** Play stops once the playhead reaches the suggestion or reel end. */
+export function previewShouldStop(playheadUs: number, endUs: number): boolean {
+  return playheadUs >= endUs;
+}
+
+/** Replay always begins at the suggestion or reel start. */
+export function replayStartUs(startUs: number): number {
+  return startUs;
+}
+
+/** Elapsed time inside the reel, separate from the episode clock. */
+export function reelClockUs(playheadUs: number, startUs: number, endUs: number): number {
+  const duration = Math.max(0, endUs - startUs);
+  return Math.min(duration, Math.max(0, playheadUs - startUs));
+}
+
+export function suggestionEmptyMessage(count: number, dismissed: number): string | null {
+  if (count > 0) {
+    return null;
+  }
+  if (dismissed > 0) {
+    return "No Reel suggestions left.";
+  }
+  return "No usable Reel suggestions were found.";
+}
+
+export const USE_REEL_LABEL = "Use this Reel";
+export const EXPORT_REEL_LABEL = "Export Reel";
+export const DISMISS_LABEL = "Dismiss";
+export const SUGGESTIONS_LABEL = "Reel Suggestions";
+
+/** Multicam is a choice only when a current shot plan can actually render. */
+export function pictureChoices(readiness: { source_program_ready: boolean; multicam_ready: boolean }): PictureTreatment[] {
+  const choices: PictureTreatment[] = [];
+  if (readiness.source_program_ready) {
+    choices.push("source_program");
+  }
+  if (readiness.multicam_ready) {
+    choices.push("multicam");
+  }
+  return choices;
 }
 
 export function workspaceOffers(): { renderSection: true; aspectOnDraft: false; score: false; jev: false; captions: false } {
@@ -149,7 +192,7 @@ export function treatmentReason(code: string | null): string {
     case "ffmpeg_missing":
       return "FFmpeg is not available.";
     case "empty_sequence":
-      return "This reel draft has no kept picture.";
+      return "This reel has no kept picture.";
     default:
       return "";
   }
