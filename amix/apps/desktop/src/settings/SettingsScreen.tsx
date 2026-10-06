@@ -21,6 +21,11 @@ import {
   setProviderCredential,
   startLocalAi,
   stopLocalAi,
+  checkCursor,
+  refreshCursorModels,
+  saveCursorModel,
+  setSemanticSource,
+  signInCursor,
   testProvider,
   useManagedLocalAi,
 } from "../api/client";
@@ -30,6 +35,7 @@ import { Alert } from "../components/Alert";
 import {
   applyState,
   catalogMessage,
+  cursorStatusLabel,
   credentialLabel,
   importSpeechCopy,
   localAiSummary,
@@ -121,7 +127,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
       <section>
         <h2>General / Privacy</h2>
         <p>{networkLabel(status.network_policy)}</p>
-        <p className="muted">Offline keeps project data on this computer. Network enabled allows a configured remote provider.</p>
+        <p className="muted">Offline keeps project data on this computer. Network enabled allows a configured remote provider and Cursor Development.</p>
         <div className="actions">
           <button type="button" disabled={busy || status.network_policy === "offline"} onClick={() => void run(() => saveNetworkPolicy("offline"))}>
             Offline
@@ -168,6 +174,48 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
       </section>
       <section>
         <h2>Semantic AI</h2>
+        <h3>Semantic Provider</h3>
+        <p className="muted">One provider is used for Conversation Mapping, Reel Discovery, and later semantic tasks.</p>
+        <div className="actions">
+          <button type="button" disabled={busy || status.semantic_source === "managed_local"} onClick={() => void run(() => useManagedLocalAi())}>
+            Managed Local
+          </button>
+          <button type="button" disabled={busy || status.semantic_source === "cursor-development"} onClick={() => void run(() => setSemanticSource("cursor-development"))}>
+            Cursor Development
+          </button>
+          <button
+            type="button"
+            disabled={busy || status.semantic_source === "provider"}
+            onClick={() => {
+              const current = [...remoteProviders, ...localProviders].find((item) => item.selected)
+                || remoteProviders[0]
+                || localProviders[0];
+              if (!current) {
+                setNote("Add a provider below, then select it.");
+                return;
+              }
+              void run(() => selectProvider(current.provider_id));
+            }}
+          >
+            Remote API
+          </button>
+        </div>
+        {status.semantic_source === "managed_local" ? (
+          <p>Managed Local is selected. Gemma / llama.cpp. Private. Offline capable.</p>
+        ) : null}
+        {status.semantic_source === "cursor-development" ? (
+          <CursorDevelopment
+            status={status}
+            busy={busy}
+            onCheck={() => void run(async () => { await checkCursor(); })}
+            onRefresh={() => void run(async () => { await refreshCursorModels(); })}
+            onModel={(modelId) => void run(async () => { await saveCursorModel(modelId); })}
+            onSignIn={() => void run(async () => { await signInCursor(); })}
+          />
+        ) : null}
+        {status.semantic_source === "provider" ? (
+          <p>Remote API is selected. Network required. Credentials stay in the existing credential store.</p>
+        ) : null}
         <h3>Managed local model</h3>
         <p>{localSummary}{status.local_ai.selected ? " · Selected" : ""}</p>
         <p className="muted">{status.local_ai.message}</p>
@@ -333,6 +381,58 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
     }
     await run(() => removeProviderCredential(provider.credential_ref as string));
   }
+}
+
+function CursorDevelopment({
+  status,
+  busy,
+  onCheck,
+  onRefresh,
+  onModel,
+  onSignIn,
+}: {
+  status: RuntimeStatus;
+  busy: boolean;
+  onCheck: () => void;
+  onRefresh: () => void;
+  onModel: (modelId: string) => void;
+  onSignIn: () => void;
+}) {
+  const cursor = status.cursor;
+  const listed = cursor.model_id && !cursor.models.some((item) => item.id === cursor.model_id)
+    ? [{ id: cursor.model_id, name: cursor.model_id }, ...cursor.models]
+    : cursor.models;
+  return (
+    <div>
+      <p>Development</p>
+      <p>Cursor Agent CLI. Uses your Cursor account. Network required. Development only.</p>
+      <p className="muted">Transcript and semantic text are sent through your Cursor account. This is not local or private processing.</p>
+      <p>Status: {cursorStatusLabel(cursor.status)}</p>
+      <p className="muted">{cursor.message}</p>
+      <p>{cursor.installed ? `Agent CLI ${cursor.version || ""}`.trim() : "Agent CLI is not installed."}</p>
+      {cursor.path ? <p className="muted">{cursor.path}</p> : null}
+      <label>
+        Model{" "}
+        <select
+          value={cursor.model_id || ""}
+          disabled={busy || listed.length === 0}
+          onChange={(event) => onModel(event.target.value)}
+        >
+          {cursor.model_id ? null : <option value="">Choose a model</option>}
+          {listed.map((item) => (
+            <option key={item.id} value={item.id}>{item.name}</option>
+          ))}
+        </select>
+      </label>
+      <div className="actions">
+        <button type="button" disabled={busy || cursor.status === "busy"} onClick={onCheck}>Check Cursor</button>
+        <button type="button" disabled={busy || cursor.status === "busy"} onClick={onRefresh}>Refresh Models</button>
+        {cursor.status === "login_required" ? (
+          <button type="button" disabled={busy} onClick={onSignIn}>Sign in</button>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 function ResourceList({

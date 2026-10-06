@@ -109,12 +109,15 @@ def take_primary(
     *,
     budget: int = CHUNK_TEXT_BUDGET,
     token_budget: int = SEMANTIC_DATA_TOKEN_BUDGET,
+    max_turns: int | None = None,
 ) -> tuple[list[SemanticTurn], int]:
     """Take a whole-turn prefix that fits both the text budget and the data token budget."""
     primary: list[SemanticTurn] = []
     size = 0
     tokens = 0
     while index < len(ordered):
+        if max_turns is not None and len(primary) >= max_turns:
+            break
         turn = ordered[index]
         added = turn_request_tokens(turn)
         if primary and (size + len(turn.text) > budget or tokens + added > token_budget):
@@ -132,6 +135,7 @@ def chunk_turns(
     budget: int = CHUNK_TEXT_BUDGET,
     token_budget: int = SEMANTIC_DATA_TOKEN_BUDGET,
     fits=None,
+    max_turns: int | None = None,
 ) -> list[SemanticChunk]:
     """Split on turn boundaries only. A turn longer than either budget stays whole.
 
@@ -142,7 +146,9 @@ def chunk_turns(
     chunks: list[SemanticChunk] = []
     index = 0
     while index < len(ordered):
-        primary, index = take_primary(ordered, index, budget=budget, token_budget=token_budget)
+        primary, index = take_primary(
+            ordered, index, budget=budget, token_budget=token_budget, max_turns=max_turns,
+        )
         context: tuple[SemanticTurn, ...] = ()
         if chunks and CONTEXT_TURN_COUNT:
             context = chunks[-1].primary[-CONTEXT_TURN_COUNT:]

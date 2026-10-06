@@ -50,11 +50,11 @@ def owned_pids() -> list[int]:
         return list(_owned)
 
 
-def spawn_background(args: list[str]) -> subprocess.Popen:
+def spawn_background(args: list[str], cwd: str | None = None) -> subprocess.Popen:
     """Start a long-lived owned child. The caller stops it with ``stop_background``."""
     if not args or not isinstance(args, list):
         raise ValueError("processes take an argument list")
-    process = _spawn_owned(args, None)
+    process = _spawn_owned(args, None, cwd=cwd)
     tail = bytearray()
     lock = threading.Lock()
     process._amix_tail = tail  # type: ignore[attr-defined]
@@ -121,10 +121,17 @@ def run_process(
     on_line: Callable[[str], None] | None = None,
     max_stdout: int = 2_000_000,
     env: Mapping[str, str] | None = None,
+    cwd: str | None = None,
+    stdin_text: str | None = None,
+    timeout_s: float | None = None,
 ) -> ProcessResult:
     if not args or not isinstance(args, list):
         raise ValueError("media tools take an argument list")
-    process = _spawn_owned(args, cancel, env)
+    process = _spawn_owned(args, cancel, env, cwd=cwd, stdin_pipe=stdin_text is not None)
+    if stdin_text is not None:
+        _write_stdin(process, stdin_text)
+    deadline = None if timeout_s is None else time.monotonic() + max(0.0, timeout_s)
+    timed_out = False
     stdout_lines: Queue[bytes | None] = Queue()
     stderr_tail = bytearray()
     stderr_lock = threading.Lock()
@@ -147,7 +154,11 @@ def run_process(
     killed = False
     try:
         while True:
-            if cancel is not None and cancel.is_cancelled() and not killed:
+            if deadline is not None and time.monotonic() >= deadline and not killed:
+                _terminate_tree(process)
+                killed = True
+                timed_out = True
+            elif cancel is not None and cancel.is_cancelled() and not killed:
                 _terminate_tree(process)
                 killed = True
             try:
@@ -177,6 +188,8 @@ def run_process(
         stderr_thread.join(timeout=1)
         with stderr_lock:
             tail = bytes(stderr_tail).decode("utf-8", errors="replace")
+    if timed_out:
+        raise TimeoutError("The process exceeded its time limit.")
     if killed:
         raise ProcessCancelled()
     return ProcessResult(code=code, stdout="".join(collected), stderr_tail=tail[-_STDERR_CAP:])
@@ -242,10 +255,31 @@ def _release(process: subprocess.Popen) -> None:
             _owned.pop(process.pid, None)
 
 
+def _write_stdin(process: subprocess.Popen, text: str) -> None:
+    pipe = process.stdin
+    if pipe is None:
+        return
+    payload = text.encode("utf-8")
+
+    def _send() -> None:
+        try:
+            pipe.write(payload)
+            pipe.close()
+        except (OSError, ValueError):
+            try:
+                pipe.close()
+            except OSError:
+                return
+
+    threading.Thread(target=_send, name="amix-process-stdin", daemon=True).start()
+
+
 def _spawn_owned(
     args: list[str],
     cancel: CancelSignal | None,
     env: Mapping[str, str] | None = None,
+    cwd: str | None = None,
+    stdin_pipe: bool = False,
 ) -> subprocess.Popen:
     """Create the child and register it before returning to the caller."""
     _begin_spawn()
@@ -257,9 +291,11 @@ def _spawn_owned(
         kwargs = _spawn_kwargs()
         if env is not None:
             kwargs["env"] = dict(env)
+        if cwd:
+            kwargs["cwd"] = cwd
         process = subprocess.Popen(
             args,
-            stdin=subprocess.DEVNULL,
+            stdin=subprocess.PIPE if stdin_pipe else subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False,

@@ -519,6 +519,23 @@ export interface ProviderConfig {
   selected: boolean;
 }
 
+export interface CursorModelOption {
+  id: string;
+  name: string;
+}
+
+export interface CursorDevelopmentStatus {
+  installed: boolean;
+  version: string | null;
+  path: string | null;
+  model_id: string | null;
+  models: CursorModelOption[];
+  status: string;
+  message: string;
+  selected: boolean;
+  development: boolean;
+}
+
 export interface SemanticStatus {
   configured: boolean;
   network_mode: string;
@@ -551,6 +568,7 @@ export interface RuntimeStatus {
   resources: InstalledResource[];
   semantic_source: string;
   local_ai: LocalAiStatus;
+  cursor: CursorDevelopmentStatus;
   providers: ProviderConfig[];
   catalog: CatalogEntry[];
 }

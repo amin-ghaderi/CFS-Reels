@@ -409,6 +409,26 @@ export function useManagedLocalAi(): Promise<void> {
   return request("POST", "/v1/runtime/local-ai/use", { source: "managed_local" });
 }
 
+export function setSemanticSource(source: "managed_local" | "cursor-development" | "provider"): Promise<void> {
+  return request("POST", "/v1/runtime/semantic-source", { source });
+}
+
+export function saveCursorModel(modelId: string): Promise<void> {
+  return request("POST", "/v1/runtime/cursor/model", { model_id: modelId });
+}
+
+export function checkCursor(): Promise<void> {
+  return request("POST", "/v1/runtime/cursor/check");
+}
+
+export function refreshCursorModels(): Promise<void> {
+  return request("POST", "/v1/runtime/cursor/models");
+}
+
+export function signInCursor(): Promise<void> {
+  return request("POST", "/v1/runtime/cursor/login");
+}
+
 export function startLocalAi(): Promise<void> {
   return request("POST", "/v1/runtime/local-ai/start");
 }

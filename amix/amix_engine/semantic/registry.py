@@ -40,6 +40,8 @@ def resolve_provider(environ: dict[str, str] | None = None, cancel=None) -> Open
         raise SemanticError("semantic_provider_missing", "No semantic provider is configured.")
     if _semantic_source() == "managed_local":
         return _from_managed(env, cancel)
+    if _semantic_source() == "cursor-development":
+        return _from_cursor(env, cancel)
     return _from_store(env)
 
 
@@ -81,6 +83,34 @@ def _from_store(env: dict[str, str]) -> OpenAICompatibleProvider:
     mode = network_mode(env, state.network_policy)
     secret = bound_secrets().get(row.credential_ref) or ""
     return _provider(row.provider_id, row.base_url, row.model_id, secret, mode, row.display_name)
+
+
+def _from_cursor(env: dict[str, str], cancel):
+    from amix.amix_engine.adapters.ai.cursor_agent import (
+        CursorAgentSemanticProvider,
+        descriptor_for,
+        find_cursor_agent,
+        validate_model_id,
+    )
+    from amix.amix_engine.appstate.bind import bound_store
+
+    store = bound_store()
+    if store is None:
+        raise SemanticError("semantic_provider_missing", "No semantic provider is configured.")
+    mode = network_mode(env, store.state().network_policy)
+    if mode == "offline":
+        raise SemanticError(
+            "offline_provider_forbidden",
+            "Offline mode does not send project data to Cursor.",
+        )
+    install = find_cursor_agent()
+    if install is None:
+        raise SemanticError("semantic_provider_unavailable", "Cursor Agent CLI is not installed.")
+    try:
+        model_id = validate_model_id(store.state().cursor_model_id or "")
+    except ValueError as exc:
+        raise SemanticError("semantic_provider_unavailable", "Choose an explicit Cursor model.") from exc
+    return CursorAgentSemanticProvider(descriptor_for(model_id, install.version), install, mode, cancel)
 
 
 def _from_managed(env: dict[str, str], cancel) -> OpenAICompatibleProvider:
@@ -138,6 +168,8 @@ def provider_status(environ: dict[str, str] | None = None) -> dict:
         if described is not None:
             return described
         return _status(False, mode, None, False) | {"local_ai_state": "STOPPED"}
+    if not explicit and _semantic_source() == "cursor-development":
+        return _describe_cursor(mode)
     try:
         provider = resolve_provider(environ)
     except SemanticError as exc:
@@ -186,8 +218,31 @@ def _describe_managed(mode: str) -> dict | None:
     return status
 
 
+def _describe_cursor(mode: str) -> dict:
+    from amix.amix_engine.adapters.ai.cursor_agent import cursor_panel
+    from amix.amix_engine.appstate.bind import bound_store
+
+    panel = cursor_panel(bound_store())
+    offline = mode == "offline"
+    ready = panel["status"] == "ready" and not offline
+    status = _status(
+        bool(panel["installed"] and panel["model_id"]),
+        mode,
+        panel["model_id"],
+        offline,
+        execution="remote",
+        display_name="Cursor Development",
+        provider_id="cursor-development",
+        capability=ready,
+    )
+    status["readiness"] = "unavailable" if offline else panel["status"]
+    return status
+
+
 def check_provider(environ: dict[str, str] | None = None) -> dict:
     """Reachability only. This does not run a semantic task or cancel one."""
+    if environ is None and _semantic_source() == "cursor-development":
+        return _check_cursor()
     if environ is None and _semantic_source() == "managed_local" and local_generation_active():
         status = provider_status()
         status["readiness"] = "busy"
@@ -208,6 +263,23 @@ def check_provider(environ: dict[str, str] | None = None) -> dict:
     status = provider_status(environ)
     status["readiness"] = "ready"
     status["reachable"] = True
+    return status
+
+
+def _check_cursor() -> dict:
+    from amix.amix_engine.adapters.ai.cursor_agent import check_cursor, cursor_generation_active
+    from amix.amix_engine.appstate.bind import bound_store
+
+    if cursor_generation_active():
+        status = provider_status()
+        status["readiness"] = "busy"
+        status["reachable"] = True
+        return status
+    store = bound_store()
+    if store is not None:
+        check_cursor(store)
+    status = provider_status()
+    status["reachable"] = status.get("readiness") == "ready"
     return status
 
 

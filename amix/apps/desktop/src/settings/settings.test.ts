@@ -13,6 +13,7 @@ import {
   networkLabel,
   offlineRemoteWarning,
   originLabel,
+  cursorStatusLabel,
   providerSummary,
   resourceFix,
   resourceSummary,
@@ -44,6 +45,11 @@ describe("settings", () => {
     expect(offlineRemoteWarning("offline", "remote")).toContain("Offline mode");
     expect(offlineRemoteWarning("network_enabled", "remote")).toBeNull();
     expect(providerSummary({ configured: false, offline_blocked: false, display_name: null })).toContain("not configured");
+    expect(cursorStatusLabel("ready")).toBe("Ready");
+    expect(cursorStatusLabel("login_required")).toBe("Login required");
+    expect(cursorStatusLabel("not_installed")).toBe("Not installed");
+    expect(cursorStatusLabel("busy")).toBe("Busy");
+    expect(cursorStatusLabel("other")).toBe("Unavailable");
   });
 
   it("shows a credential indicator and never a stored key", () => {

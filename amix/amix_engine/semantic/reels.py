@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -20,9 +21,10 @@ from amix.amix_engine.editorial.sequence import sequence_duration_us
 from amix.amix_engine.semantic.mapping import map_is_stale
 from amix.amix_engine.semantic.provider import (
     GENERATE_STRUCTURED,
-    STRICT_JSON_SCHEMA,
     StructuredRequest,
+    requests_output_schema,
     runtime_provenance as _runtime_provenance,
+    transport_delta,
 )
 from amix.amix_engine.storage.kinds import CONVERSATION_MAP, REEL_DISCOVERY
 from amix.amix_engine.storage.project import ProjectStore
@@ -204,12 +206,13 @@ def discovery_is_stale(store: ProjectStore, asset_id: str) -> bool:
 
 
 def discover_reels(store, asset_id: str, provider, cancellation, progress) -> dict:
+    started = time.monotonic()
     if GENERATE_STRUCTURED not in provider.descriptor.capabilities:
         raise SemanticError(
             "semantic_capability_missing",
             "This provider cannot return the structured output this task needs.",
         )
-    prepared = _prepare(store, asset_id)
+    prepared = _prepare(store, asset_id, max_turns=provider.descriptor.preferred_max_turns)
     for turn in prepared.semantic_turns:
         if turn_request_tokens(turn) > SEMANTIC_DATA_TOKEN_BUDGET:
             raise SemanticError("semantic_context_too_large", "A turn is too large for this semantic profile.")
@@ -253,6 +256,7 @@ def discover_reels(store, asset_id: str, provider, cancellation, progress) -> di
         store, asset_id, prepared, final, provider, requests, repairs,
         pre_consolidation_valid_count=len(pre_valid),
         rejected=rejected,
+        duration_ms=int((time.monotonic() - started) * 1000),
     )
     return {
         "activated": True,
@@ -276,7 +280,7 @@ class _Prepared:
     chunks: tuple[_Chunk, ...]
 
 
-def _prepare(store: ProjectStore, asset_id: str) -> _Prepared:
+def _prepare(store: ProjectStore, asset_id: str, *, max_turns: int | None = None) -> _Prepared:
     map_id = store.get_active_run_id(asset_id, CONVERSATION_MAP)
     if map_id is None:
         raise SemanticError("conversation_map_required", "Map the conversation before discovering reels.")
@@ -297,7 +301,7 @@ def _prepare(store: ProjectStore, asset_id: str) -> _Prepared:
         threads.append(_Thread(stored["thread_id"], stored["title"], turns))
     chunks: list[_Chunk] = []
     for thread in threads:
-        chunks.extend(_chunk_thread(thread, len(chunks)))
+        chunks.extend(_chunk_thread(thread, len(chunks), max_turns=max_turns))
     return _Prepared(
         semantic.turns,
         semantic.transcript_run_id,
@@ -309,12 +313,14 @@ def _prepare(store: ProjectStore, asset_id: str) -> _Prepared:
     )
 
 
-def _chunk_thread(thread: _Thread, offset: int) -> list[_Chunk]:
+def _chunk_thread(thread: _Thread, offset: int, *, max_turns: int | None = None) -> list[_Chunk]:
     ordered = list(thread.turns)
     pieces: list[tuple[SemanticTurn, ...]] = []
     index = 0
     while index < len(ordered):
-        primary, index = take_primary(ordered, index, budget=CHUNK_TEXT_BUDGET, token_budget=SEMANTIC_DATA_TOKEN_BUDGET)
+        primary, index = take_primary(
+            ordered, index, budget=CHUNK_TEXT_BUDGET, token_budget=SEMANTIC_DATA_TOKEN_BUDGET, max_turns=max_turns,
+        )
         pieces.append(tuple(primary))
     chunks: list[_Chunk] = []
     for primary in pieces:
@@ -422,7 +428,7 @@ def _consolidate_payload(gathered: list[dict], *, brief: bool) -> dict:
 
 
 def _request_fits(provider, payload: dict, limit: int) -> bool:
-    schema = reel_output_schema(limit) if getattr(provider.descriptor, "structured_transport", "") == STRICT_JSON_SCHEMA else None
+    schema = reel_output_schema(limit) if requests_output_schema(provider.descriptor) else None
     diagnostics = request_diagnostics(
         profile_id=PROFILE_ID,
         ordinal=0,
@@ -466,22 +472,26 @@ def _generate(
     chunk_id, turns, words, context_turns, candidate_limit: int,
 ):
     limit = max(1, int(candidate_limit))
+    before = int(getattr(provider, "transport_attempts", 0) or 0)
     first, error = _once(provider, _request(
         provider, stage, payload, ordinal, chunk_id, turns, words, context_turns, limit,
     ))
+    attempts = transport_delta(provider, before)
     cancellation.raise_if_cancelled()
     previous = None
     if error is None and first is not None:
         problem = _structural_error(threads, first)
         if problem is None:
             accepted, rejected = _accepted(threads, first)
-            return accepted, 1, 0, rejected
+            return accepted, attempts, 0, rejected
         error = problem
         previous = first
     repaired = repair_payload(payload, error or "The model response could not be used.", previous, _anchor_ids(payload))
+    before_repair = int(getattr(provider, "transport_attempts", 0) or 0)
     second, second_error = _once(provider, _request(
         provider, stage, repaired, ordinal, chunk_id, turns, words, 0, limit,
     ))
+    attempts += transport_delta(provider, before_repair)
     cancellation.raise_if_cancelled()
     if second is None or second_error is not None:
         raise SemanticError("semantic_invalid_output", second_error or "The model response could not be used.")
@@ -489,7 +499,7 @@ def _generate(
     if problem is not None:
         raise SemanticError("semantic_invalid_output", problem)
     accepted, rejected = _accepted(threads, second)
-    return accepted, 2, 1, rejected
+    return accepted, attempts, 1, rejected
 
 
 def _once(provider, request: StructuredRequest):
@@ -660,7 +670,7 @@ def _resolve(threads: tuple[_Thread, ...], drafts: list[dict]) -> list[dict]:
 def _request(
     provider, stage: str, payload: dict, ordinal, chunk_id, turns: int, words: int, context_turns: int, limit: int,
 ) -> StructuredRequest:
-    schema = reel_output_schema(limit) if getattr(provider.descriptor, "structured_transport", "") == STRICT_JSON_SCHEMA else None
+    schema = reel_output_schema(limit) if requests_output_schema(provider.descriptor) else None
     diagnostics = request_diagnostics(
         profile_id=PROFILE_ID,
         ordinal=ordinal.next(),
@@ -689,13 +699,15 @@ def _request(
 
 def _publish(
     store, asset_id, prepared: _Prepared, candidates, provider, requests: int, repairs: int, *,
-    pre_consolidation_valid_count: int, rejected: dict[str, int],
+    pre_consolidation_valid_count: int, rejected: dict[str, int], duration_ms: int = 0,
 ) -> str:
     descriptor = provider.descriptor
     execution = "local" if descriptor.execution == "local" else "remote"
     config = {
         "profile_id": PROFILE_ID,
         "profile_version": PROFILE_VERSION,
+        "task_id": TASK_ID,
+        "duration_ms": int(duration_ms),
         "media_asset_id": asset_id,
         "conversation_map_run_id": prepared.map_run_id,
         "transcript_run_id": prepared.transcript_run_id,

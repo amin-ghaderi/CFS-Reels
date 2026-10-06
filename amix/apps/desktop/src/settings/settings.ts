@@ -60,6 +60,22 @@ export function offlineRemoteWarning(policy: string, placement: string): string 
   return null;
 }
 
+export function cursorStatusLabel(status: string): string {
+  if (status === "not_installed") {
+    return "Not installed";
+  }
+  if (status === "login_required") {
+    return "Login required";
+  }
+  if (status === "ready") {
+    return "Ready";
+  }
+  if (status === "busy") {
+    return "Busy";
+  }
+  return "Unavailable";
+}
+
 export function providerSummary(input: {
   configured: boolean;
   offline_blocked: boolean;

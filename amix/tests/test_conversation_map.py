@@ -784,3 +784,142 @@ class OptionalLocalProviderTests(unittest.TestCase):
             self.assertGreater(store.load_conversation_threads(result["conversation_map_run_id"]).__len__(), 0)
         finally:
             store.close()
+
+
+def _many_turns(count: int):
+    tmp = tempfile.TemporaryDirectory()
+    root = Path(tmp.name) / "Take"
+    store = create_project(root, "Take")
+    source = root / "master.mov"
+    source.write_bytes(b"master")
+    asset = store.add_media_asset(display_name="master.mov", location_kind="external", external_path=str(source))
+    store.add_participant("a", "Alice")
+    words = []
+    assignments = []
+    turns = []
+    for index in range(count):
+        word_id = f"w{index}"
+        start = index * 10
+        words.append(Word(word_id, start, start + 10, "سلام"))
+        assignments.append(SpeakerAssignment(word_id, A))
+        turns.append(Turn(f"T{index:04d}", A, start, start + 10, (word_id,)))
+    window = TimeRange(0, count * 10)
+    transcript = store.save_transcript(
+        asset_id=asset, words=words, algorithm_id="amix.transcript.import",
+        algorithm_version="1", fingerprint=f"t{count}", window=window,
+    )
+    store.set_active(asset, "transcript", transcript)
+    assignment = store.save_assignments(
+        asset_id=asset, assignments=assignments, depends_on=[transcript],
+        algorithm_id="amix.assign.v1", algorithm_version="1", fingerprint=f"as{count}", window=window,
+    )
+    store.set_active(asset, "participant_assignment", assignment)
+    turns_run = store.save_turns(
+        asset_id=asset, turns=turns, depends_on=[assignment], algorithm_id="amix.turns.v1",
+        algorithm_version="1", fingerprint=f"tu{count}", window=window,
+    )
+    store.set_active(asset, "turns", turns_run)
+    store._tmp = tmp
+    return store, asset
+
+
+def _stop_when_large(limit: int):
+    def respond(request: StructuredRequest):
+        if request.payload.get("stage") != "chunk":
+            return _cover(request)
+        if len(request.payload["turns"]) > limit:
+            raise SemanticError("semantic_repetition_stop", "Cursor Agent stopped a repeating response.")
+        return _cover(request)
+    return respond
+
+
+class RepetitionRecoveryTests(unittest.TestCase):
+    def test_a_looped_chunk_splits_on_turn_boundaries_and_publishes(self) -> None:
+        store, asset = _many_turns(20)
+        provider = FakeStructuredProvider(_stop_when_large(10))
+        seen = []
+        try:
+            first = map_conversation(store, asset, FakeStructuredProvider(_cover), CancellationToken(), lambda _value: None)
+            result = map_conversation(store, asset, provider, CancellationToken(), seen.append)
+            self.assertEqual(seen, sorted(seen))
+            self.assertEqual(result["loop_stop_count"], 1)
+            self.assertEqual(result["split_count"], 1)
+            self.assertEqual(result["request_count"], 3)
+            self.assertEqual(result["repair_count"], 0)
+            sizes = [len(request.payload["turns"]) for request in provider.requests if request.payload.get("stage") == "chunk"]
+            self.assertEqual(sizes, [20, 10, 10])
+            self.assertEqual(provider.requests[1].payload["turns"][0][0], "T0000")
+            self.assertEqual(provider.requests[2].payload["turns"][0][0], "T0010")
+            self.assertEqual(provider.descriptor.model_id, "fake-model")
+            config = store.analysis_record(result["conversation_map_run_id"])["config"]
+            self.assertEqual(config["provider_id"], "fake")
+            self.assertEqual(config["model_id"], "fake-model")
+            self.assertEqual(config["loop_stop_count"], 1)
+            self.assertEqual(config["split_count"], 1)
+            self.assertEqual(config["request_count"], 3)
+            threads = store.load_conversation_threads(result["conversation_map_run_id"])
+            self.assertEqual(threads[0]["first_turn_id"], "T0000")
+            self.assertEqual(threads[-1]["last_turn_id"], "T0019")
+            self.assertNotEqual(result["conversation_map_run_id"], first["conversation_map_run_id"])
+            self.assertEqual(store.analysis_record(first["conversation_map_run_id"])["run_id"], first["conversation_map_run_id"])
+        finally:
+            store.close()
+
+    def test_split_depth_and_leaf_size_stop_an_unrecoverable_loop(self) -> None:
+        from amix.amix_engine.semantic.mapping import MAX_REPETITION_SPLIT_DEPTH, MIN_REPETITION_LEAF_TURNS
+
+        self.assertEqual(MAX_REPETITION_SPLIT_DEPTH, 2)
+        self.assertEqual(MIN_REPETITION_LEAF_TURNS, 8)
+        store, asset = _many_turns(20)
+        provider = FakeStructuredProvider(_stop_when_large(0))
+        try:
+            kept = map_conversation(store, asset, FakeStructuredProvider(_cover), CancellationToken(), lambda _value: None)
+            with self.assertRaises(SemanticError) as raised:
+                map_conversation(store, asset, provider, CancellationToken(), lambda _value: None)
+            self.assertEqual(raised.exception.code, "semantic_repetition_stop")
+            sizes = [len(request.payload["turns"]) for request in provider.requests]
+            self.assertEqual(sizes, [20, 10])
+            self.assertGreaterEqual(min(sizes), MIN_REPETITION_LEAF_TURNS)
+            self.assertEqual(store.get_active_run_id(asset, CONVERSATION_MAP), kept["conversation_map_run_id"])
+        finally:
+            store.close()
+        small, small_asset = _many_turns(10)
+        small_provider = FakeStructuredProvider(_stop_when_large(0))
+        try:
+            with self.assertRaises(SemanticError):
+                map_conversation(small, small_asset, small_provider, CancellationToken(), lambda _value: None)
+            self.assertEqual(len(small_provider.requests), 1)
+        finally:
+            small.close()
+
+    def test_cancellation_during_a_split_does_not_run_the_other_half(self) -> None:
+        store, asset = _many_turns(20)
+        token = CancellationToken()
+
+        def respond(request: StructuredRequest):
+            if len(request.payload.get("turns") or []) > 10:
+                raise SemanticError("semantic_repetition_stop", "Cursor Agent stopped a repeating response.")
+            token.request()
+            return _cover(request)
+
+        provider = FakeStructuredProvider(respond)
+        try:
+            with self.assertRaises(JobCancelled):
+                map_conversation(store, asset, provider, token, lambda _value: None)
+            self.assertEqual(len(provider.requests), 2)
+        finally:
+            store.close()
+
+    def test_cursor_turn_cap_is_separate_from_the_default_chunker(self) -> None:
+        from amix.amix_engine.adapters.ai.cursor_agent import descriptor_for
+
+        turns = [
+            SemanticTurn(f"T{index:04d}", "a", "Alice", (f"w{index}",), "سلام", index * 10, index * 10 + 10)
+            for index in range(40)
+        ]
+        self.assertEqual(len(chunk_turns(turns)), 1)
+        capped = chunk_turns(turns, max_turns=descriptor_for("grok-4.7-high", "test").preferred_max_turns)
+        self.assertGreater(len(capped), 1)
+        self.assertTrue(all(len(chunk.primary) <= 29 for chunk in capped))
+        self.assertEqual(capped[0].primary[0].turn_id, "T0000")
+        self.assertEqual(capped[-1].primary[-1].turn_id, "T0039")

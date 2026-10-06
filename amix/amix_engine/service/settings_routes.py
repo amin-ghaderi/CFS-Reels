@@ -82,6 +82,10 @@ class SemanticSourceBody(BaseModel):
     source: str
 
 
+class CursorModelBody(BaseModel):
+    model_id: str = Field(min_length=1, max_length=128)
+
+
 def register_settings_routes(app: FastAPI, runtime: EngineRuntime, authorize, call) -> None:
     @app.get("/v1/runtime/status")
     def runtime_status(request: Request) -> dict:
@@ -162,6 +166,31 @@ def register_settings_routes(app: FastAPI, runtime: EngineRuntime, authorize, ca
     def use_local_ai(body: SemanticSourceBody, request: Request) -> dict:
         authorize(request)
         return call(lambda: _use_local_ai(runtime, body.source))
+
+    @app.post("/v1/runtime/semantic-source")
+    def semantic_source(body: SemanticSourceBody, request: Request) -> dict:
+        authorize(request)
+        return call(lambda: _use_local_ai(runtime, body.source))
+
+    @app.post("/v1/runtime/cursor/model")
+    def cursor_model(body: CursorModelBody, request: Request) -> dict:
+        authorize(request)
+        return call(lambda: _cursor_model(runtime, body.model_id))
+
+    @app.post("/v1/runtime/cursor/check")
+    def cursor_check(request: Request) -> dict:
+        authorize(request)
+        return call(lambda: _cursor_check(runtime))
+
+    @app.post("/v1/runtime/cursor/models")
+    def cursor_models(request: Request) -> dict:
+        authorize(request)
+        return call(lambda: _cursor_models(runtime))
+
+    @app.post("/v1/runtime/cursor/login")
+    def cursor_login(request: Request) -> dict:
+        authorize(request)
+        return call(_cursor_login)
 
     @app.post("/v1/runtime/local-ai/start")
     def start_local_ai(request: Request) -> dict:
@@ -246,6 +275,7 @@ def _status(runtime: EngineRuntime) -> dict:
         "resources": resources,
         "semantic_source": "provider" if runtime.app is None else (runtime.app.state().semantic_source or "provider"),
         "local_ai": _local_ai_status(runtime),
+        "cursor": _cursor_status(runtime),
         "providers": providers,
         "catalog": [
             {
@@ -331,7 +361,7 @@ def _public_provider(runtime: EngineRuntime, item) -> dict:
         "model_id": item.model_id,
         "credential_ref": item.credential_ref,
         "credential_configured": configured,
-        "selected": runtime.app.state().semantic_source != "managed_local" and runtime.app.state().selected_provider_id == item.provider_id,
+        "selected": (runtime.app.state().semantic_source or "provider") == "provider" and runtime.app.state().selected_provider_id == item.provider_id,
     }
 
 
@@ -601,6 +631,43 @@ def _local_limits(runtime: EngineRuntime, body: LocalLimitsBody) -> dict:
         store.set_local_limits(body.context_size, body.threads)
     except SettingsRejected as exc:
         raise ApiError(400, exc.code, exc.message) from exc
+    return {"restart_required": False}
+
+
+def _cursor_status(runtime: EngineRuntime) -> dict:
+    from amix.amix_engine.adapters.ai.cursor_agent import cursor_panel
+
+    return cursor_panel(runtime.app)
+
+
+def _cursor_model(runtime: EngineRuntime, model_id: str) -> dict:
+    store = _store(runtime)
+    try:
+        store.set_cursor_model(model_id)
+    except SettingsRejected as exc:
+        raise ApiError(400, exc.code, exc.message) from exc
+    return {"restart_required": False}
+
+
+def _cursor_check(runtime: EngineRuntime) -> dict:
+    from amix.amix_engine.adapters.ai.cursor_agent import check_cursor
+
+    check_cursor(_store(runtime))
+    return {"restart_required": False}
+
+
+def _cursor_models(runtime: EngineRuntime) -> dict:
+    from amix.amix_engine.adapters.ai.cursor_agent import refresh_cursor_models
+
+    refresh_cursor_models(_store(runtime))
+    return {"restart_required": False}
+
+
+def _cursor_login() -> dict:
+    from amix.amix_engine.adapters.ai.cursor_agent import start_cursor_login
+
+    if not start_cursor_login():
+        raise ApiError(400, "semantic_provider_unavailable", "Cursor Agent CLI is not installed.")
     return {"restart_required": False}
 
 

@@ -22,6 +22,7 @@ LONG_CONTEXT = "LONG_CONTEXT"
 STRICT_JSON_SCHEMA = "strict_json_schema"
 JSON_OBJECT_ONLY = "json_object_only"
 PROMPT_ONLY_STRUCTURED = "prompt_only_structured"
+SCHEMA_IN_PROMPT = "schema_in_prompt"
 
 CAPABILITIES = frozenset({
     GENERATE_TEXT,
@@ -47,6 +48,7 @@ class ProviderDescriptor:
     runtime_kind: str | None = None
     runtime_version: str | None = None
     structured_transport: str = JSON_OBJECT_ONLY
+    preferred_max_turns: int | None = None
 
 
 @dataclass(frozen=True)
@@ -60,6 +62,11 @@ class StructuredRequest:
     output_schema: dict | None = None
     diagnostics: dict | None = None
     output_token_limit: int | None = None
+
+
+def requests_output_schema(descriptor: ProviderDescriptor) -> bool:
+    """True when the task should attach its schema. Transport decides how it is sent."""
+    return descriptor.structured_transport in {STRICT_JSON_SCHEMA, SCHEMA_IN_PROMPT}
 
 
 def runtime_provenance(descriptor: ProviderDescriptor) -> dict:
@@ -117,3 +124,11 @@ def assert_endpoint_allowed(url: str, mode: str) -> None:
             "offline_provider_forbidden",
             "Offline mode does not send project data to a remote provider.",
         )
+
+
+def transport_delta(provider, before: int) -> int:
+    """How many provider transports the last call used. Other providers count as one."""
+    after = getattr(provider, "transport_attempts", None)
+    if after is None:
+        return 1
+    return max(1, int(after) - int(before))

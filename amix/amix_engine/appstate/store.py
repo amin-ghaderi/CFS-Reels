@@ -57,6 +57,7 @@ class AppState:
     selected_gguf_model_id: str | None
     local_context_size: int | None
     local_threads: int | None
+    cursor_model_id: str | None
 
 
 @dataclass(frozen=True)
@@ -147,6 +148,7 @@ class AppStore:
             selected_gguf_model_id=row["selected_gguf_model_id"],
             local_context_size=row["local_context_size"],
             local_threads=row["local_threads"],
+            cursor_model_id=row["cursor_model_id"],
         )
 
     def set_network_policy(self, policy: str) -> None:
@@ -155,13 +157,22 @@ class AppStore:
         self._update_setting(network_policy=policy)
 
     def set_semantic_source(self, source: str) -> None:
-        if source not in {"provider", "managed_local"}:
+        if source not in {"provider", "managed_local", "cursor-development"}:
             raise SettingsRejected("invalid_provider", "That semantic source is not available.")
         if source == "managed_local":
             state = self.state()
             if not state.selected_llama_runtime_id or not state.selected_gguf_model_id:
                 raise SettingsRejected("local_model_missing", "Choose a llama.cpp runtime and a GGUF model.")
         self._update_setting(semantic_source=source)
+
+    def set_cursor_model(self, model_id: str) -> None:
+        from amix.amix_engine.adapters.ai.cursor_agent import validate_model_id
+
+        try:
+            chosen = validate_model_id(model_id)
+        except ValueError as exc:
+            raise SettingsRejected("invalid_provider", "Choose an explicit Cursor model.") from exc
+        self._update_setting(cursor_model_id=chosen)
 
     def set_local_limits(self, context_size: int | None, threads: int | None) -> None:
         if context_size is not None and (not isinstance(context_size, int) or context_size < 256 or context_size > 131072):

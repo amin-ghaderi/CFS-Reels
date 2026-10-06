@@ -25,6 +25,7 @@ app_setting = Table(
     Column("selected_gguf_model_id", Text),
     Column("local_context_size", Integer),
     Column("local_threads", Integer),
+    Column("cursor_model_id", Text),
     CheckConstraint("id = 1", name="ck_app_setting_singleton"),
 )
 
