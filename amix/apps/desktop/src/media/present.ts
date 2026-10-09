@@ -8,7 +8,7 @@ export function mediaAvailability(status: MediaAsset["status"]): "Available" | "
 export const IMPORT_MEDIA = "Import Media";
 export const PEOPLE_LABEL = "People";
 
-export function mediaCardLabel(state: string | null | undefined): "Preparing" | "Ready" | "Missing" | "Failed" {
+export function mediaCardLabel(state: string | null | undefined): "Preparing" | "Ready" | "Missing" | "Failed" | "Preview needed" {
   if (state === "ready") {
     return "Ready";
   }
@@ -18,16 +18,32 @@ export function mediaCardLabel(state: string | null | undefined): "Preparing" | 
   if (state === "failed") {
     return "Failed";
   }
+  if (state === "preview_required") {
+    return "Preview needed";
+  }
   return "Preparing";
+}
+
+export function playbackLabel(kind: string | null | undefined): "Original" | "Proxy" | "Unavailable" {
+  if (kind === "source") {
+    return "Original";
+  }
+  if (kind === "proxy") {
+    return "Proxy";
+  }
+  return "Unavailable";
 }
 
 export function mediaGuidance(hasMedia: boolean, state: string | null | undefined): string {
   if (!hasMedia) {
     return "Import media to begin.";
   }
+  if (state === "preview_required") {
+    return "This file needs a proxy before it can play.";
+  }
   const label = mediaCardLabel(state);
   if (label === "Preparing") {
-    return "AMIX is analyzing the file and preparing playback.";
+    return "AMIX is analyzing the file.";
   }
   if (label === "Ready") {
     return "Media is ready. Next: Transcribe.";

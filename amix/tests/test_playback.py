@@ -89,7 +89,8 @@ class DescriptorTests(unittest.TestCase):
                     source_mtime_ns=source_file.stat().st_mtime_ns,
                     timestamp_policy="container_normalized_v1",
                 )
-                described = resolve_playback(store, asset_id)
+                described = resolve_playback(store, asset_id, prefer="proxy")
+                self.assertEqual(described.playback_kind, "proxy")
                 self.assertTrue(described.playable)
                 self.assertEqual(described.status, "ready")
                 self.assertEqual(described.playback_media_asset_id, published.asset_id)
@@ -216,10 +217,14 @@ class DescriptorTests(unittest.TestCase):
                     timestamp_policy="container_normalized_v1",
                 )
                 source_file.write_bytes(b"clip-edited")
-                stale = resolve_playback(store, asset_id)
-                self.assertFalse(stale.playable)
-                self.assertEqual(stale.status, "stale")
-                self.assertIsNone(stale.resolved_path)
+                direct = resolve_playback(store, asset_id)
+                self.assertTrue(direct.playable)
+                self.assertEqual(direct.playback_kind, "source")
+                self.assertEqual(Path(direct.resolved_path or ""), source_file.resolve())
+                stale = resolve_playback(store, asset_id, prefer="proxy")
+                self.assertTrue(stale.playable)
+                self.assertEqual(stale.playback_kind, "source")
+                self.assertEqual(Path(stale.resolved_path or ""), source_file.resolve())
 
                 fresh = root / "clip-fresh.bin"
                 fresh.write_bytes(b"clip")
@@ -230,7 +235,7 @@ class DescriptorTests(unittest.TestCase):
                     byte_size=4,
                     file_mtime_ns=fresh.stat().st_mtime_ns,
                 )
-                store.apply_probe(other, _record(byte_size=4, file_mtime_ns=fresh.stat().st_mtime_ns))
+                store.apply_probe(other, _record(byte_size=4, file_mtime_ns=fresh.stat().st_mtime_ns, video_codec="hevc"))
                 other_proxy = private_directory(root) / "proxy" / "other.mp4"
                 other_proxy.write_bytes(b"proxy")
                 store.publish_proxy(
@@ -270,6 +275,100 @@ class DescriptorTests(unittest.TestCase):
                 self.assertEqual(described.status, "not_generated")
                 self.assertIsNone(described.resolved_path)
                 self.assertIsNone(described.canonical_origin_us)
+            finally:
+                store.close()
+
+    def test_compatible_source_is_ready_and_plays_the_original(self) -> None:
+        from amix.amix_engine.jobs.media import prepare_state
+        from amix.amix_engine.storage.jobs import StoredJob
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Show"
+            outside = Path(tmp) / "camera" / "0202.mp4"
+            outside.parent.mkdir()
+            outside.write_bytes(b"source-bytes")
+            store = create_project(root, "Show")
+            try:
+                asset_id = store.add_media_asset(
+                    display_name="0202.mp4",
+                    location_kind="external",
+                    external_path=str(outside),
+                    byte_size=outside.stat().st_size,
+                    file_mtime_ns=outside.stat().st_mtime_ns,
+                )
+                store.apply_probe(asset_id, _record(
+                    byte_size=outside.stat().st_size,
+                    file_mtime_ns=outside.stat().st_mtime_ns,
+                    container="mov,mp4,m4a,3gp,3g2,mj2",
+                    container_start_us=0,
+                    duration_us=3_075_733_333,
+                ))
+                asset = store.get_media(asset_id)
+                self.assertEqual(prepare_state(
+                    asset, None, [],
+                    source_present=True,
+                    source_size=outside.stat().st_size,
+                    source_mtime_ns=outside.stat().st_mtime_ns,
+                    proxy_file_present=False,
+                ), "ready")
+                described = resolve_playback(store, asset_id)
+                self.assertTrue(described.playable)
+                self.assertEqual(described.playback_kind, "source")
+                self.assertEqual(Path(described.resolved_path or ""), outside.resolve())
+                self.assertEqual(described.playback_duration_us, 3_075_733_333)
+                self.assertEqual(described.canonical_origin_us, 0)
+                self.assertEqual(described.timestamp_policy, "source_media")
+                self.assertFalse(list((private_directory(root)).rglob("0202.mp4")))
+                running = StoredJob(
+                    "job", store.project_id, asset_id, "generate_proxy", "RUNNING", 3800,
+                    {}, None, None, None, "now", "now", None, False, 1, None, None,
+                )
+                self.assertEqual(prepare_state(
+                    asset, None, [running],
+                    source_present=True,
+                    source_size=outside.stat().st_size,
+                    source_mtime_ns=outside.stat().st_mtime_ns,
+                    proxy_file_present=False,
+                ), "ready")
+                while_generating = resolve_playback(store, asset_id)
+                self.assertEqual(while_generating.playback_kind, "source")
+                self.assertTrue(while_generating.playable)
+                master = store.require_media(asset_id)
+                self.assertEqual(master.resolve(), outside.resolve())
+            finally:
+                store.close()
+
+    def test_incompatible_source_still_needs_a_proxy(self) -> None:
+        from amix.amix_engine.jobs.media import prepare_state
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Show"
+            source_file = Path(tmp) / "clip.mkv"
+            source_file.write_bytes(b"clip")
+            store = create_project(root, "Show")
+            try:
+                asset_id = store.add_media_asset(
+                    display_name="clip.mkv",
+                    location_kind="external",
+                    external_path=str(source_file),
+                    byte_size=4,
+                    file_mtime_ns=source_file.stat().st_mtime_ns,
+                )
+                stored = store.apply_probe(asset_id, _record(
+                    byte_size=4,
+                    file_mtime_ns=source_file.stat().st_mtime_ns,
+                    container="matroska,webm",
+                    video_codec="hevc",
+                ))
+                described = resolve_playback(store, asset_id)
+                self.assertFalse(described.playable)
+                self.assertEqual(described.status, "preview_required")
+                self.assertIsNone(described.playback_kind)
+                self.assertEqual(prepare_state(
+                    stored, None, [],
+                    source_present=True, source_size=4,
+                    source_mtime_ns=source_file.stat().st_mtime_ns, proxy_file_present=False,
+                ), "preview_required")
             finally:
                 store.close()
 
@@ -326,10 +425,19 @@ class PlaybackApiTests(unittest.TestCase):
                 self.assertEqual(playback.status_code, 200, playback.text)
                 body = playback.json()
                 self.assertTrue(body["playable"])
+                self.assertEqual(body["playback_kind"], "source")
                 self.assertEqual(body["canonical_origin_us"], 1_500_000)
                 self.assertIsInstance(body["canonical_origin_us"], int)
-                self.assertTrue(str(body["resolved_path"]).endswith("chosen.mp4"))
-                self.assertNotIn(asset_id, Path(body["resolved_path"]).name)
+                self.assertEqual(Path(body["resolved_path"]), media.resolve())
+                proxy_playback = client.get(
+                    f"/v1/projects/{handle}/media/{asset_id}/playback?prefer=proxy",
+                    headers=_headers(),
+                )
+                self.assertEqual(proxy_playback.status_code, 200, proxy_playback.text)
+                proxy_body = proxy_playback.json()
+                self.assertEqual(proxy_body["playback_kind"], "proxy")
+                self.assertTrue(str(proxy_body["resolved_path"]).endswith("chosen.mp4"))
+                self.assertNotIn(asset_id, Path(proxy_body["resolved_path"]).name)
 
                 at_start = client.get(
                     f"/v1/projects/{handle}/media/{asset_id}/transcript/word-at/0",

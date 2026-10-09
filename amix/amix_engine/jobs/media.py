@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import os
 
+from amix.amix_engine.adapters.media.compatible import source_directly_playable
 from amix.amix_engine.adapters.media.discovery import discover_tools
 from amix.amix_engine.adapters.media.errors import MediaToolMissing, ProbeFailed, ProcessCancelled
 from amix.amix_engine.adapters.media.process import run_process
@@ -49,8 +50,6 @@ class MediaProbeJob:
         ctx.cancellation.raise_if_cancelled()
         stored = ctx.store.apply_probe(asset_id, _record(metadata, stat.st_size, stat.st_mtime_ns, tools.ffprobe_version))
         ctx.report_progress(10000)
-        if stored.width is not None and stored.height is not None:
-            _queue_preview(ctx, asset_id)
         return {
             "asset_id": stored.asset_id,
             "duration_us": stored.duration_us,
@@ -167,17 +166,6 @@ class GenerateProxyJob:
         }
 
 
-def _queue_preview(ctx: JobContext, asset_id: str) -> None:
-    """Queue one preview proxy after a successful probe. A job already in flight is left alone."""
-    related = [
-        job for job in ctx.store.list_processing_jobs()
-        if job.kind == GENERATE_PROXY and job.media_asset_id == asset_id and job.status in _ACTIVE
-    ]
-    if related:
-        return
-    ctx.follow_up(GENERATE_PROXY, {"profile": PROXY_PROFILE}, asset_id)
-
-
 def prepare_state(
     source: StoredMedia,
     proxy: StoredMedia | None,
@@ -188,15 +176,13 @@ def prepare_state(
     source_mtime_ns: int | None,
     proxy_file_present: bool,
 ) -> str:
-    """User-facing media state. Probe and preview jobs are included."""
+    """User-facing media state. A playable master does not wait on its proxy."""
     if not source_present:
         return "missing"
     related = [
         job for job in jobs
-        if job.media_asset_id == source.asset_id and job.kind in {MEDIA_PROBE, GENERATE_PROXY}
+        if job.media_asset_id == source.asset_id and job.kind == MEDIA_PROBE
     ]
-    if any(job.status in _ACTIVE for job in related):
-        return "preparing"
     observed = proxy_state(
         source,
         proxy,
@@ -205,17 +191,25 @@ def prepare_state(
         source_mtime_ns=source_mtime_ns,
         proxy_file_present=proxy_file_present,
     )
-    video = source.width is not None and source.height is not None
     probed = source.probed_at is not None
+    video = source.width is not None and source.height is not None
+    if source_directly_playable(source):
+        return "ready"
+    if observed == "ready" and probed:
+        return "ready"
+    if any(job.status in _ACTIVE for job in related) and not probed:
+        return "preparing"
     if video:
         if observed in {"queued", "generating"}:
             return "preparing"
-        if observed == "ready" and probed:
-            return "ready"
-        return "failed"
+        if probed:
+            return "preview_required"
+        if any(job.status == FAILED for job in related):
+            return "failed"
+        return "preparing"
     if probed:
         return "ready"
-    if any(job.kind == MEDIA_PROBE and job.status == FAILED for job in related):
+    if any(job.status == FAILED for job in related):
         return "failed"
     return "preparing"
 

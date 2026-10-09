@@ -180,6 +180,9 @@ function statusMessage(status: string | undefined, failure: string | null): stri
   }
   switch (status) {
     case "not_generated":
+      return "Analyzing the file…";
+    case "preview_required":
+      return "This file needs a proxy before it can play.";
     case "queued":
     case "generating":
       return "Preparing preview…";
@@ -190,7 +193,7 @@ function statusMessage(status: string | undefined, failure: string | null): stri
     case "failed":
       return "Preview preparation failed.";
     case "unsupported":
-      return "This proxy could not be played.";
+      return "This media could not be played.";
     case "unavailable":
       return failure ?? "Preview file is unavailable.";
     default:

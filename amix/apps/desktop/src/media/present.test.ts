@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { MediaAsset } from "../api/types";
-import { IMPORT_MEDIA, PEOPLE_LABEL, mediaAvailability, mediaCardLabel, mediaFacts, mediaGuidance, proxyLabel, sourceAssets } from "./present";
+import { IMPORT_MEDIA, PEOPLE_LABEL, mediaAvailability, mediaCardLabel, mediaFacts, mediaGuidance, playbackLabel, proxyLabel, sourceAssets } from "./present";
 
 const asset: MediaAsset = {
   asset_id: "a",
@@ -41,9 +41,16 @@ describe("media presentation", () => {
     expect(mediaCardLabel("missing")).toBe("Missing");
     expect(mediaCardLabel("failed")).toBe("Failed");
     expect(mediaGuidance(false, null)).toBe("Import media to begin.");
-    expect(mediaGuidance(true, "preparing")).toMatch(/preparing playback/);
+    expect(mediaCardLabel("preview_required")).toBe("Preview needed");
+    expect(mediaGuidance(true, "preparing")).toMatch(/analyzing the file/i);
+    expect(mediaGuidance(true, "preparing")).not.toMatch(/proxy/i);
     expect(mediaGuidance(true, "ready")).toMatch(/Transcribe/);
     expect(mediaGuidance(true, "ready")).not.toMatch(/Generate proxy|Analyze media/);
+    expect(mediaGuidance(true, "preview_required")).toMatch(/proxy/);
+    expect(playbackLabel("source")).toBe("Original");
+    expect(playbackLabel("proxy")).toBe("Proxy");
+    expect(playbackLabel(null)).toBe("Unavailable");
+    expect(proxyLabel("not_generated")).toBe("Not generated");
   });
 
   it("names missing media without inventing a picture size", () => {

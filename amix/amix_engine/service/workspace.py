@@ -128,9 +128,9 @@ def register_workspace_routes(app: FastAPI, runtime: EngineRuntime, authorize, c
         return call(lambda: _word_at(runtime, handle, asset_id, time_us))
 
     @app.get("/v1/projects/{handle}/media/{asset_id}/playback", response_model=PlaybackResponse)
-    def playback(handle: str, asset_id: str, request: Request) -> PlaybackResponse:
+    def playback(handle: str, asset_id: str, request: Request, prefer: str | None = None) -> PlaybackResponse:
         authorize(request)
-        return call(lambda: _playback(runtime, handle, asset_id))
+        return call(lambda: _playback(runtime, handle, asset_id, prefer))
 
     @app.post("/v1/projects/{handle}/media/{asset_id}/words/{word_id}/text", response_model=TranscriptWordResponse)
     def correct_word(handle: str, asset_id: str, word_id: str, body: WordTextRequest, request: Request) -> TranscriptWordResponse:
@@ -404,8 +404,10 @@ def _word_at(runtime: EngineRuntime, handle: str, asset_id: str, time_us: str) -
     )
 
 
-def _playback(runtime: EngineRuntime, handle: str, asset_id: str) -> PlaybackResponse:
-    return _playback_view(resolve_playback(_store(runtime, handle), asset_id))
+def _playback(runtime: EngineRuntime, handle: str, asset_id: str, prefer: str | None = None) -> PlaybackResponse:
+    if prefer not in {None, "source", "proxy"}:
+        raise ApiError(400, "invalid_playback_preference", "Playback can use the original or the proxy.")
+    return _playback_view(resolve_playback(_store(runtime, handle), asset_id, prefer=prefer))
 
 
 def _playback_view(described: PlaybackDescriptor) -> PlaybackResponse:
@@ -428,6 +430,7 @@ def _playback_view(described: PlaybackDescriptor) -> PlaybackResponse:
         container=described.container,
         mime=described.mime,
         source_present=described.source_present,
+        playback_kind=described.playback_kind,
     )
 
 
@@ -527,8 +530,16 @@ def _media_view(store: ProjectStore, asset: StoredMedia, jobs: list | None = Non
             proxy_file_present=proxy_present,
         ),
         proxy_asset_id=None if derivative is None else derivative.asset_id,
+        playback_kind=_playback_kind(store, asset),
         status=store.media_status(asset.asset_id),
     )
+
+
+def _playback_kind(store: ProjectStore, asset: StoredMedia) -> str | None:
+    if asset.role == "proxy":
+        return None
+    described = resolve_playback(store, asset.asset_id)
+    return described.playback_kind if described.playable else None
 
 
 def _word_view(word: TranscriptWordView) -> TranscriptWordResponse:

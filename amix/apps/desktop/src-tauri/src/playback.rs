@@ -1,10 +1,9 @@
 // Playback session registry.
 //
-// JavaScript asks for a media asset id. Rust asks the engine which proxy that
-// asset uses, then exposes one hard link of that file through Tauri's asset
-// protocol. The original proxy path is never added to the scope. Each session
-// link is unique so it can be forbidden permanently without blocking a later
-// preview of the same proxy.
+// JavaScript asks for a media asset id. Rust asks the engine which file that
+// asset plays, then exposes one hard link of that file through Tauri's asset
+// protocol. The original path is never added to the scope. Each session link
+// is unique so it can be forbidden permanently without blocking a later preview.
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -127,25 +126,53 @@ fn encode_uri_component(value: &str) -> String {
     out
 }
 
+pub fn playback_link_dir(project_root: &Path) -> PathBuf {
+    if project_root.join(".amix").join("project.sqlite").is_file() {
+        project_root.join(".amix").join("proxy").join(".playback")
+    } else {
+        project_root.join("proxy").join(".playback")
+    }
+}
+
 pub fn confined_proxy(project_root: &Path, resolved: &Path) -> Result<PathBuf, String> {
     let root = project_root
         .canonicalize()
         .map_err(|_| "The project folder is unavailable.".to_string())?;
-    let proxy_root = root.join("proxy");
     let file = resolved
         .canonicalize()
         .map_err(|_| "The preview file is unavailable.".to_string())?;
-    if !file.starts_with(&proxy_root) || !file.is_file() {
+    if !file.is_file() {
         return Err("The preview file is unavailable.".into());
     }
-    if file.starts_with(proxy_root.join(".playback")) {
+    let roots = [root.join(".amix").join("proxy"), root.join("proxy")];
+    let allowed = roots.iter().any(|proxy_root| {
+        file.starts_with(proxy_root) && !file.starts_with(proxy_root.join(".playback"))
+    });
+    if !allowed {
+        return Err("The preview file is unavailable.".into());
+    }
+    Ok(file)
+}
+
+/// The engine named one regular file. Only a session hard link of it is exposed.
+pub fn accept_source_file(project_root: &Path, resolved: &Path) -> Result<PathBuf, String> {
+    let _root = project_root
+        .canonicalize()
+        .map_err(|_| "The project folder is unavailable.".to_string())?;
+    let file = resolved
+        .canonicalize()
+        .map_err(|_| "The preview file is unavailable.".to_string())?;
+    if !file.is_file() {
+        return Err("The preview file is unavailable.".into());
+    }
+    if file.components().any(|part| part.as_os_str() == ".playback") {
         return Err("The preview file is unavailable.".into());
     }
     Ok(file)
 }
 
 pub fn create_session_link(project_root: &Path, source_file: &Path, request_id: u64) -> Result<PathBuf, String> {
-    let dir = project_root.join("proxy").join(".playback");
+    let dir = playback_link_dir(project_root);
     std::fs::create_dir_all(&dir).map_err(|_| "Preview could not be prepared.".to_string())?;
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -187,6 +214,7 @@ pub struct PreparedPlayback {
     pub byte_size: Option<i64>,
     pub file_mtime_ns: Option<i64>,
     pub stale: bool,
+    pub playback_kind: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -202,6 +230,12 @@ struct EnginePlayback {
     canonical_origin_us: Option<i64>,
     byte_size: Option<i64>,
     file_mtime_ns: Option<i64>,
+    #[serde(default = "default_playback_kind")]
+    playback_kind: String,
+}
+
+fn default_playback_kind() -> String {
+    "proxy".to_string()
 }
 
 #[tauri::command]
@@ -209,11 +243,14 @@ pub async fn prepare_playback(
     state: State<'_, EngineState>,
     source_media_asset_id: String,
     request_id: u64,
+    prefer: Option<String>,
 ) -> Result<PreparedPlayback, String> {
     let engine = EngineState::clone(&state);
-    tauri::async_runtime::spawn_blocking(move || prepare_blocking(&engine, &source_media_asset_id, request_id))
-        .await
-        .map_err(|_| "Preview could not be prepared.".to_string())?
+    tauri::async_runtime::spawn_blocking(move || {
+        prepare_blocking(&engine, &source_media_asset_id, request_id, prefer.as_deref())
+    })
+    .await
+    .map_err(|_| "Preview could not be prepared.".to_string())?
 }
 
 #[tauri::command]
@@ -225,7 +262,12 @@ pub fn release_playback(state: State<'_, EngineState>, request_id: u64) {
     });
 }
 
-fn prepare_blocking(state: &EngineState, source_id: &str, request_id: u64) -> Result<PreparedPlayback, String> {
+fn prepare_blocking(
+    state: &EngineState,
+    source_id: &str,
+    request_id: u64,
+    prefer: Option<&str>,
+) -> Result<PreparedPlayback, String> {
     if !valid_asset_id(source_id) {
         return Err("Choose a media asset to preview.".into());
     }
@@ -241,7 +283,11 @@ fn prepare_blocking(state: &EngineState, source_id: &str, request_id: u64) -> Re
         Some(epoch) => epoch,
         None => return Ok(stale_view(source_id, request_id)),
     };
-    let path = format!("/v1/projects/{}/media/{source_id}/playback", project.handle);
+    let preference = match prefer {
+        Some("proxy") => "?prefer=proxy",
+        _ => "",
+    };
+    let path = format!("/v1/projects/{}/media/{source_id}/playback{preference}", project.handle);
     let response = match state.request("GET", &path, None) {
         Ok(response) => response,
         Err(_) => return Err("The engine is not ready.".into()),
@@ -266,7 +312,12 @@ fn prepare_blocking(state: &EngineState, source_id: &str, request_id: u64) -> Re
         return Ok(stale_view(source_id, request_id));
     }
     let resolved = described.resolved_path.as_deref().ok_or("The preview file is unavailable.")?;
-    let file = confined_proxy(Path::new(&project.path), Path::new(resolved))?;
+    let project_path = Path::new(&project.path);
+    let file = if described.playback_kind == "source" {
+        accept_source_file(project_path, Path::new(resolved))?
+    } else {
+        confined_proxy(project_path, Path::new(resolved))?
+    };
     let link = create_session_link(Path::new(&project.path), &file, request_id)?;
     let app = state.app_handle();
     let committed = state.with_playback(|book| {
@@ -336,6 +387,7 @@ fn stale_view(source_id: &str, request_id: u64) -> PreparedPlayback {
         byte_size: None,
         file_mtime_ns: None,
         stale: true,
+        playback_kind: None,
     }
 }
 
@@ -355,6 +407,7 @@ fn message_view(source_id: &str, request_id: u64, message: &str) -> PreparedPlay
         byte_size: None,
         file_mtime_ns: None,
         stale: false,
+        playback_kind: None,
     }
 }
 
@@ -374,6 +427,7 @@ fn described_view(described: &EnginePlayback, request_id: u64, asset_url: Option
         byte_size: described.byte_size,
         file_mtime_ns: described.file_mtime_ns,
         stale: false,
+        playback_kind: Some(described.playback_kind.clone()),
     }
 }
 
@@ -542,6 +596,41 @@ mod tests {
     }
 
     #[test]
+    fn a_modern_proxy_and_an_external_source_link_inside_the_session_dir() {
+        let root = std::env::temp_dir().join(format!("amix-source-playback-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join(".amix").join("proxy")).unwrap();
+        fs::write(root.join(".amix").join("project.sqlite"), b"db").unwrap();
+        let proxy = root.join(".amix").join("proxy").join("clip.mp4");
+        fs::write(&proxy, b"proxy-bytes").unwrap();
+        let outside = root.join("secret.mp4");
+        fs::write(&outside, b"nope").unwrap();
+        assert!(confined_proxy(&root, &proxy).is_ok());
+        assert!(confined_proxy(&root, &outside).is_err());
+        let source = std::env::temp_dir().join(format!("amix-source-file-{}.mp4", std::process::id()));
+        fs::write(&source, b"source-bytes").unwrap();
+        let accepted = accept_source_file(&root, &source).unwrap();
+        assert_eq!(accepted, source.canonicalize().unwrap());
+        let link = create_session_link(&root, &accepted, 9).unwrap();
+        assert!(link.starts_with(root.join(".amix").join("proxy").join(".playback")));
+        assert_eq!(fs::read(&link).unwrap(), b"source-bytes");
+        let mut book = PlaybackBook::default();
+        book.begin(9).unwrap();
+        book.install(Grant {
+            generation: 1,
+            project_id: "p".into(),
+            source_id: "source".into(),
+            request_id: 9,
+            exposed: link.clone(),
+        });
+        assert!(book.allows(&link));
+        assert!(!book.allows(&source));
+        assert!(!book.allows(&proxy));
+        let _ = fs::remove_file(&source);
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn the_prepared_view_does_not_carry_a_filesystem_path() {
         let view = described_view(
             &EnginePlayback {
@@ -556,6 +645,7 @@ mod tests {
                 canonical_origin_us: Some(1_500_000),
                 byte_size: Some(4),
                 file_mtime_ns: Some(9),
+                playback_kind: "proxy".into(),
             },
             3,
             Some("http://asset.localhost/link".into()),

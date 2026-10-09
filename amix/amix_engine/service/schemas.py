@@ -106,6 +106,7 @@ class MediaResponse(_Model):
     proxy_state: str | None = None
     proxy_asset_id: str | None = None
     prepare_state: str = "preparing"
+    playback_kind: str | None = None
     status: str
 
 
@@ -178,6 +179,7 @@ class PlaybackResponse(_Model):
     container: str | None = None
     mime: str | None = None
     source_present: bool
+    playback_kind: str | None = None
 
 
 class ParticipantResponse(_Model):

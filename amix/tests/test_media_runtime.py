@@ -496,6 +496,41 @@ def _ffmpeg_available() -> bool:
 
 @unittest.skipUnless(_ffmpeg_available(), "ffmpeg/ffprobe are not installed")
 class FfmpegIntegrationTests(unittest.TestCase):
+    def test_probe_of_a_compatible_file_does_not_queue_a_proxy(self) -> None:
+        tools = discover_tools()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "Picture"
+            source = Path(tmp) / "landscape.mp4"
+            _synthetic(tools.ffmpeg, source, 320, 240)
+            runtime = EngineRuntime(ServiceConfig(shutdown_timeout_s=60, session_token="direct", worker_count=1))
+            try:
+                session = runtime.create_project(root, "Picture")
+                asset_id = _link(session.store, source)
+                runtime.jobs.submit(session.store, "media_probe", {}, asset_id)
+                self.assertTrue(runtime.jobs.wait_until_idle(session.store, 60))
+                jobs = session.store.list_processing_jobs()
+                self.assertTrue(jobs)
+                self.assertTrue(all(job.kind != GENERATE_PROXY for job in jobs))
+                self.assertTrue(all(job.status == "SUCCEEDED" for job in jobs))
+                described = resolve_playback(session.store, asset_id)
+                self.assertEqual(described.playback_kind, "source")
+                self.assertEqual(Path(described.resolved_path or ""), source.resolve())
+                self.assertEqual(described.playback_duration_us, session.store.get_media(asset_id).duration_us)
+                listed = session.store.get_media(asset_id)
+                from amix.amix_engine.jobs.media import prepare_state
+                self.assertEqual(prepare_state(
+                    listed, None, jobs,
+                    source_present=True,
+                    source_size=source.stat().st_size,
+                    source_mtime_ns=source.stat().st_mtime_ns,
+                    proxy_file_present=False,
+                ), "ready")
+                proxy_dir = private_directory(root) / "proxy"
+                published = [] if not proxy_dir.exists() else [path for path in proxy_dir.rglob("*") if path.is_file()]
+                self.assertEqual(published, [])
+            finally:
+                runtime.shutdown()
+
     def test_probe_and_proxy_round_trip(self) -> None:
         tools = discover_tools()
         with tempfile.TemporaryDirectory() as tmp:
@@ -538,10 +573,14 @@ class FfmpegIntegrationTests(unittest.TestCase):
                 self.assertFalse((landscape.parent / "proxy").exists())
                 described = resolve_playback(session.store, landscape_id)
                 self.assertTrue(described.playable)
-                self.assertEqual(described.playback_media_asset_id, wide_proxy.asset_id)
-                self.assertEqual(described.profile, "amix.proxy.v1")
-                self.assertIsInstance(described.canonical_origin_us, int)
-                self.assertTrue((described.resolved_path or "").endswith(f"{landscape_id}.mp4"))
+                self.assertEqual(described.playback_kind, "source")
+                self.assertEqual(Path(described.resolved_path or ""), landscape.resolve())
+                chosen = resolve_playback(session.store, landscape_id, prefer="proxy")
+                self.assertEqual(chosen.playback_kind, "proxy")
+                self.assertEqual(chosen.playback_media_asset_id, wide_proxy.asset_id)
+                self.assertEqual(chosen.profile, "amix.proxy.v1")
+                self.assertIsInstance(chosen.canonical_origin_us, int)
+                self.assertTrue((chosen.resolved_path or "").endswith(f"{landscape_id}.mp4"))
                 project_id = session.store.project_id
             finally:
                 runtime.shutdown()

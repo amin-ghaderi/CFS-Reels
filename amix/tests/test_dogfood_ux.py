@@ -132,7 +132,16 @@ class LayoutCandidateTests(unittest.TestCase):
                 self.assertEqual(prepare_state(
                     asset, None, [running],
                     source_present=True, source_size=4, source_mtime_ns=1, proxy_file_present=False,
+                ), "ready")
+                hevc = store.apply_probe(asset_id, _record(byte_size=4, file_mtime_ns=1, video_codec="hevc"))
+                self.assertEqual(prepare_state(
+                    hevc, None, [running],
+                    source_present=True, source_size=4, source_mtime_ns=1, proxy_file_present=False,
                 ), "preparing")
+                self.assertEqual(prepare_state(
+                    hevc, None, [],
+                    source_present=True, source_size=4, source_mtime_ns=1, proxy_file_present=False,
+                ), "preview_required")
             finally:
                 store.close()
 

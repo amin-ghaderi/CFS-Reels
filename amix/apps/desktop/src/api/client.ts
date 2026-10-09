@@ -331,8 +331,12 @@ export function exportCaptions(handle: string, sequenceId: string, format: "srt"
   return request("POST", `/v1/projects/${handle}/sequences/${sequenceId}/captions/export`, { format });
 }
 
-export function preparePlayback(sourceMediaAssetId: string, requestId: number): Promise<PreparedPlayback> {
-  return invoke<PreparedPlayback>("prepare_playback", { sourceMediaAssetId, requestId });
+export function preparePlayback(
+  sourceMediaAssetId: string,
+  requestId: number,
+  prefer: "source" | "proxy" = "source",
+): Promise<PreparedPlayback> {
+  return invoke<PreparedPlayback>("prepare_playback", { sourceMediaAssetId, requestId, prefer });
 }
 
 export function releasePlayback(requestId: number): Promise<void> {

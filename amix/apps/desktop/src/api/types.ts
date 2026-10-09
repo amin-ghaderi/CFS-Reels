@@ -101,7 +101,8 @@ export interface MediaAsset {
   source_media_asset_id: string | null;
   proxy_state: string | null;
   proxy_asset_id: string | null;
-  prepare_state?: "preparing" | "ready" | "missing" | "failed";
+  prepare_state?: "preparing" | "ready" | "missing" | "failed" | "preview_required";
+  playback_kind?: "source" | "proxy" | null;
   status: "present" | "missing";
 }
 
@@ -204,6 +205,7 @@ export interface PreparedPlayback {
   byte_size: number | null;
   file_mtime_ns: number | null;
   stale: boolean;
+  playback_kind: "source" | "proxy" | null;
 }
 
 export interface OverlapRegionView {

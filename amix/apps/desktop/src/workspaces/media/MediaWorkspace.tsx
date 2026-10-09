@@ -3,7 +3,8 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { createJob, linkMedia, relinkMedia } from "../../api/client";
 import { asFailure } from "../../api/errors";
 import type { ProjectInfo } from "../../api/types";
-import { IMPORT_MEDIA, mediaCardLabel, mediaFacts, mediaGuidance, proxyLabel, roleLabel, sourceAssets } from "../../media/present";
+import { IMPORT_MEDIA, mediaCardLabel, mediaFacts, mediaGuidance, playbackLabel, proxyLabel, roleLabel, sourceAssets } from "../../media/present";
+import { usePlayback } from "../../playback/PlaybackSession";
 import { useProjectData } from "../../project/ProjectData";
 import { SplitPane } from "../../shell/SplitPane";
 import { LayoutEditor } from "./LayoutEditor";
@@ -12,6 +13,7 @@ import { ParticipantsPanel } from "./ParticipantsPanel";
 
 export function MediaWorkspace({ project }: { project: ProjectInfo }) {
   const data = useProjectData();
+  const playback = usePlayback();
   const selected = data.selected;
   const sources = sourceAssets(data.assets);
   const guidanceAsset = selected ?? sources[0];
@@ -105,6 +107,12 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
           <dt>Status</dt>
           <dd>{mediaCardLabel(selected.prepare_state)}</dd>
         </div>
+        {selected.role === "master" ? (
+          <div>
+            <dt>Playback</dt>
+            <dd>{playbackLabel(playback.view?.source_media_asset_id === selected.asset_id ? playback.view.playback_kind : selected.playback_kind)}</dd>
+          </div>
+        ) : null}
         <div>
           <dt>Location</dt>
           <dd>{selected.location_kind === "external" ? "External file" : "Inside the project"}</dd>
@@ -126,6 +134,21 @@ export function MediaWorkspace({ project }: { project: ProjectInfo }) {
       </dl>
       {selected.external_path ? <p className="path">{selected.external_path}</p> : null}
       {selected.relative_path ? <p className="path">{selected.relative_path}</p> : null}
+      {selected.role === "master" && selected.status === "present" && selected.proxy_state !== "ready" && selected.proxy_state !== "queued" && selected.proxy_state !== "generating" ? (
+        <button type="button" onClick={() => void generateProxy()} disabled={data.busy || project.read_only}>
+          Generate proxy
+        </button>
+      ) : null}
+      {selected.role === "master" && selected.proxy_state === "ready" && playback.previewPreference !== "proxy" ? (
+        <button type="button" onClick={() => playback.setPreviewPreference("proxy")} disabled={data.busy}>
+          Play proxy
+        </button>
+      ) : null}
+      {selected.role === "master" && playback.previewPreference === "proxy" ? (
+        <button type="button" onClick={() => playback.setPreviewPreference("source")} disabled={data.busy}>
+          Play original
+        </button>
+      ) : null}
       {selected.status === "missing" ? (
         <button type="button" className="primary" onClick={() => void relink()} disabled={data.busy || project.read_only}>
           Relink

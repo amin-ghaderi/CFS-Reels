@@ -16,6 +16,8 @@ interface PlaybackValue {
   mediaFailed: boolean;
   videoRef: RefObject<HTMLVideoElement | null>;
   requestSeek: (canonicalUs: number) => boolean;
+  previewPreference: "source" | "proxy";
+  setPreviewPreference: (prefer: "source" | "proxy") => void;
   toggle: () => void;
   reportTime: (seconds: number) => void;
   setPlaying: (playing: boolean) => void;
@@ -43,6 +45,9 @@ export function PlaybackProvider({ generation, children }: { generation: number;
   const [seekSerial, setSeekSerial] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [mediaFailed, setMediaFailed] = useState(false);
+  const [preference, setPreference] = useState<{ assetId: string; prefer: "source" | "proxy" } | null>(null);
+  const prefer: "source" | "proxy" = preference && preference.assetId === selected?.asset_id ? preference.prefer : "source";
+  const proxyRefresh = prefer === "proxy" ? `${selected?.proxy_state ?? ""}:${selected?.proxy_asset_id ?? ""}` : "";
 
   useEffect(() => {
     viewRef.current = view;
@@ -59,7 +64,7 @@ export function PlaybackProvider({ generation, children }: { generation: number;
     setRequestedSeekUs(null);
     const assetId = selected?.role === "master" ? selected.asset_id : null;
     if (assetId) {
-      void preparePlayback(assetId, requestId)
+      void preparePlayback(assetId, requestId, prefer)
         .then((prepared) => {
           if (stop || prepared.stale || prepared.request_id !== requestId) {
             return;
@@ -89,7 +94,7 @@ export function PlaybackProvider({ generation, children }: { generation: number;
         void releasePlayback(requestId).catch(() => undefined);
       }
     };
-  }, [selected?.asset_id, selected?.role, selected?.proxy_state, selected?.proxy_asset_id, generation]);
+  }, [selected?.asset_id, selected?.role, selected?.prepare_state, prefer, proxyRefresh, generation]);
 
   function requestSeek(canonicalUs: number): boolean {
     const current = viewRef.current;
@@ -137,6 +142,13 @@ export function PlaybackProvider({ generation, children }: { generation: number;
     mediaFailed,
     videoRef,
     requestSeek,
+    previewPreference: prefer,
+    setPreviewPreference: (next) => {
+      const assetId = selected?.asset_id;
+      if (assetId) {
+        setPreference({ assetId, prefer: next });
+      }
+    },
     toggle,
     reportTime,
     setPlaying,
